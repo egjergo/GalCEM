@@ -1,2 +1,3 @@
 # GalCEM
-By Eda Gjergo (Wuhan University)
+## Author
+Eda Gjergo (Wuhan University) <GalacticCEM@gmail.com>
