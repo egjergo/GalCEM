@@ -57,7 +57,8 @@ AZ_SNIa = c_class.extract_AZ_pairs_SNIa(yields_SNIa_class)
 AZ_Massive = c_class.extract_AZ_pairs_Massive(yields_Massive_class)
 AZ_all = np.vstack((AZ_LIMS, AZ_SNIa, AZ_Massive))
 AZ_sorted = c_class.AZ_sorted(AZ_all) # 321 isotopes with 'km20', 198 w/ 'i99' # will compute over 10 million integrals and recursions
-elemZ_for_metallicity = np.where(AZ_sorted[:,0]>2)[0][0] # metallicity index selection
+AZ_Symb_list = IN.periodic['elemSymb'][c_class.AZ_Symb(AZ_sorted)]
+elemZ_for_metallicity = np.where(AZ_sorted[:,0]>2)[0][0] # metallicity starting index selection
 
 
 ''' Initialize tracked quantities '''
@@ -117,7 +118,6 @@ def pick_yields(yields_switch, AZ_Symb, stellar_mass_idx = None, metallicity_idx
 #pick_yields('LIMS', 'Na', stellar_mass_idx=0, metallicity_idx=0)
 #pick_yields('Massive', 'Na', stellar_mass_idx=0, metallicity_idx=0, vel_idx=0)
 #pick_yields('SNIa', 'Na')
-
 
 
 class Convergence:
@@ -210,7 +210,7 @@ class Wi_integrand:
 		all_args = tuple()
 		return np.sum(Yield_i_birthtime) 
 	
-	def dM_vs_dtauM_component(self, derlog = False): # [!!!!!!!] derlog test for comparison w/ mwgK09
+	def dM_vs_dtauM_component(self, derlog = False):
 		'''
 		computes the derivative of M(tauM) w.r.t. tauM
 		'''
@@ -311,6 +311,8 @@ class Evolution:
 		return None
 
 	def evolve():
+		for t in time_uniform:
+			run_timesteps(t)
 		"..."
 		#"..."
 		#Tracking_class.run(Gi_vector)

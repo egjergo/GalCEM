@@ -330,6 +330,9 @@ class Concentrations:
 		AZ_sorted = Z_sorted[list(flatten(A_sorted))]
 		return np.unique(AZ_sorted, axis=0)
 	
+	def AZ_Symb(self, AZ_sorted):
+		return [np.where(IN.periodic['elemZ'] == AZ_sorted[i,0])[0][0] for i in range(len(AZ_sorted))]
+	
 		
 class Yields_BBN:
 	'''
