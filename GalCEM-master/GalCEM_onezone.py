@@ -231,12 +231,9 @@ class Wi_integrand:
 		return integrand_SNIa, M1_min, M1_max
 		
 	def Mass_i_infall(self):
-		Minfall_dt = infall(Gyr_age)
-		BBN_AZ_list = np.array(list(zip(yields_BBN_class.elemZ, yields_BBN_class.elemA)))
-		BBN_idx = [np.where((AZ_sorted[:,0] == BBN_AZ_list[i,0]) 
-					& (AZ_sorted[:,1] == BBN_AZ_list[i,1]))[0][0] 
-					for i in range(len(BBN_AZ_list))]
-		for i in range(len(BBN_AZ_list)):
+		Minfall_dt = infall(self.Gyr_age)
+		BBN_idx = c_class.R_M_i_idx(yield_BBN_class, AZ_sorted)
+		for i in range(len(BBN_idx)):
 			self.Mass_i_t[BBN_idx[i]] += yields_BBN_class.yields[i] * Minfall_dt
 			
 	def compute(self):

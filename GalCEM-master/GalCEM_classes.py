@@ -331,8 +331,25 @@ class Concentrations:
 		return np.unique(AZ_sorted, axis=0)
 	
 	def AZ_Symb(self, AZ_sorted):
+		'''
+		Returns a complete list of the element symbol associated 
+		with each entry in AZ_sorted
+		'''
 		return [np.where(IN.periodic['elemZ'] == AZ_sorted[i,0])[0][0] for i in range(len(AZ_sorted))]
-	
+		
+	def R_M_i_idx(self, yield_class, AZ_sorted, Mstar=None, metallicity=None, vel=None)
+		'''
+		This function is able to associate the entry in isotope-wide tracked quantities
+		with the respective yield. e.g.:
+		
+			for i in range(len(BBN_idx)):
+				self.Mass_i_t[BBN_idx[i]] += yields_BBN_class.yields[i] * Minfall_dt
+		'''
+		yieldchoice_AZ_list = np.array(list(zip(yields_class.elemZ, yields_class.elemA)))
+		yieldchoice_idx = [np.where((AZ_sorted[:,0] == yieldchoice_AZ_list[i,0]) 
+					& (AZ_sorted[:,1] == yieldchoice_AZ_list[i,1]))[0][0] 
+					for i in range(len(yieldchoice_AZ_list))]
+		return yieldchoice_idx
 		
 class Yields_BBN:
 	'''
