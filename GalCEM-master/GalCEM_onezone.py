@@ -9,7 +9,7 @@ from scipy.integrate import quad
 from scipy.misc import derivative
 
 import input_parameters as IN
-import _classes as pc
+import GalCEM_classes as pc
 
 ''' Setup '''
 lifetime_class = pc.Stellar_Lifetimes()
