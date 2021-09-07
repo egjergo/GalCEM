@@ -60,7 +60,6 @@ AZ_sorted = c_class.AZ_sorted(AZ_all) # 321 isotopes with 'km20', 198 w/ 'i99' #
 elemZ_for_metallicity = np.where(AZ_sorted[:,0]>2)[0][0] # metallicity index selection
 
 
-
 ''' Initialize tracked quantities '''
 Gi = [np.zeros(len(AZ_sorted))]	# Gi Global
 Mtot = np.insert(np.cumsum((infall(time_uniform)[1:] + infall(time_uniform)[:-1]) * IN.iTimeStep / 2), 0, 0)
