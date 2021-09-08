@@ -237,8 +237,9 @@ class Wi_integrand:
 			self.Mass_i_t[BBN_idx[i]] += yields_BBN_class.yields[i] * Minfall_dt
 			
 	def compute(self):
-		self.Gi_infall
-		return None
+		#self.Gi_infall
+		total = self.Mass_i_infall(self)
+		return total
 
 class Wi:
 	'''
@@ -273,8 +274,8 @@ class Wi:
 	def mapping(self):
 		return None
 
-	#Wi_integrand_class = Wi_integrand(self.Mstar, self.metallicity)
-	#Wi_integrand_class.compute()
+	Wi_integrand_class = Wi_integrand(self.Mstar, self.metallicity)
+	Wi = Wi_integrand_class.compute()
 	
 	def compute_gauss_quad(self, Gyr_age, metallicity, yields_switch, AZ_Symb, llimit_lifetime, ulimit_lifetime, 
 					stellar_mass_idx = None, metallicity_idx = None, vel_idx = None):
