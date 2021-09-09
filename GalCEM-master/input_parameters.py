@@ -17,6 +17,7 @@ Mbu = 12 # Upper limit for total binary mass for SNIae [Msun]
 A = 0.035 # Fraction of white dwarfs that underwent a SNIa
 
 delta_max = 8e-2 # Convergence limit for (e. 28, Portinari+98)
+epsilon = 1e-8 # Avoid numerical errors - consistent with BBN
 
 custom_IMF = None
 custom_SFR = None

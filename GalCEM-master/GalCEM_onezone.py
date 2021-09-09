@@ -62,11 +62,14 @@ elemZ_for_metallicity = np.where(AZ_sorted[:,0]>2)[0][0] # metallicity starting 
 
 
 ''' Initialize tracked quantities '''
-Gi = [np.zeros(len(AZ_sorted))]	# Gi Global
 Mtot = np.insert(np.cumsum((infall(time_uniform)[1:] + infall(time_uniform)[:-1]) * IN.iTimeStep / 2), 0, 0)
-Z = [0.] # Metallicity Global
-G = [0.] # G Global
-S = [0.]	# S = 1 - G Global
+Gi_v = np.zeros((len(AZ_sorted), len(time_uniform)))	# Gi Global
+G_v = np.zeros(len(time_uniform)) # G Global
+S_v = np.zeros(len(time_uniform)) # S = 1 - G Global
+Z_v = np.zeros(len(time_uniform)) # Metallicity Global
+SFR_v =  np.zeros(len(time_uniform)) 
+Gi_v[:,0] = epsilon
+G_v[0] = epsilon
 
 class Tracked_quantities:
 	'''
@@ -130,18 +133,11 @@ class Convergence:
 	def mapping(self):
 		return None
 	
-	def eta_SFR(self, SFR_n, G_n):
-		'''
-		Equation after (24)
-		'''
-		# while deltai_k
-		return np.divide(SFR_n, G_n)
+	def eta_SFR(self):
+		return np.divide(SFR_v[-1], G_v[-1])
 		
-	def ratio_Wi_eta(self):
-		'''
-		Wi / eta
-		'''
-		# while deltai_k
+	def ratio_Wi_eta(self, Wi):
+		return np.divide(Wi, self.eta_SFR())
 		
 		return None
 		
@@ -170,12 +166,17 @@ class Convergence:
 		# while deltai_kplus1 >= delta_max: Gi_kplus1
 		return np.divide(Gi_k - Ai, betai - Gi) 
 	
-	def Gi_kplus1(self, Gi_k, deltai_kplus1):
+	def Gi_kplus1_convergence(self, Gi_k, deltai_kplus1):
 		'''
 		Equation (27)
 		'''
 		return np.multiply(Gi_k, 1 + deltai_kplus1)
 
+	def Gi_kplus1(self, i):
+		Gi_k1 = Gi_k
+		delta_i = self.deltai_kplus1(self, Ai, betai, Gi_k)
+		while delta_i >= IN.delta_max:
+			Gi_k1 *= (1 + delta_i)
 
 class Wi_integrand:
 	'''
@@ -229,17 +230,7 @@ class Wi_integrand:
 		int_SNIa = lambda nu: f_nu(nu) * IMF(M1 / nu)
 		integrand_SNIa = quad(int_SNIa, nu_min, nu_max)[0]
 		return integrand_SNIa, M1_min, M1_max
-		
-	def Mass_i_infall(self):
-		Minfall_dt = infall(self.Gyr_age)
-		BBN_idx = c_class.R_M_i_idx(yield_BBN_class, AZ_sorted)
-		for i in range(len(BBN_idx)):
-			self.Mass_i_t[BBN_idx[i]] += yields_BBN_class.yields[i] * Minfall_dt
-			
-	def compute(self):
-		#self.Gi_infall
-		total = self.Mass_i_infall(self)
-		return total
+
 
 class Wi:
 	'''
@@ -274,8 +265,8 @@ class Wi:
 	def mapping(self):
 		return None
 
-	Wi_integrand_class = Wi_integrand(self.Mstar, self.metallicity)
-	Wi = Wi_integrand_class.compute()
+	#Wi_integrand_class = Wi_integrand(self.Mstar, self.metallicity)
+	#Wi = Wi_integrand_class.compute()
 	
 	def compute_gauss_quad(self, Gyr_age, metallicity, yields_switch, AZ_Symb, llimit_lifetime, ulimit_lifetime, 
 					stellar_mass_idx = None, metallicity_idx = None, vel_idx = None):
@@ -297,7 +288,17 @@ class Wi:
 		SFR_SNIa = lambda M1: 1
 		integrand_SNIa, M1_min, M1_max = Wi_integrand_class.SNIa_FM1(M1)
 		return IN.A * quad(f_nu * IMF, M1_min, M1_max)
-		
+				
+	def Mass_i_infall(self):
+		Minfall_dt = infall(self.Gyr_age)
+		BBN_idx = c_class.R_M_i_idx(yield_BBN_class, AZ_sorted)
+		for i in range(len(BBN_idx)):
+			self.Mass_i_t[BBN_idx[i]] += yields_BBN_class.yields[i] * Minfall_dt
+			
+	def compute(self):
+		#self.Gi_infall
+		total = self.Mass_i_infall(self)
+		return total
 
 class Evolution:
 	'''

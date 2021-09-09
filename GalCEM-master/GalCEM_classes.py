@@ -180,6 +180,12 @@ class Initial_Mass_Function:
 	def IMF(self):
 		return lambda Mstar: self.IMF_select()(Mstar) * self.normalization()
 		#return lambda Mstar: self.integrand(Mstar) * self.normalization()
+	
+	def IMF_test(self):
+		'''
+		Returns the normalized integrand integral. If the IMF works, it should return 1.
+		'''
+		return self.normalization() * scipy.integrate.quad(self.integrand, self.Ml, self.Mu)[0]
 		
 		
 class Star_Formation_Rate:
@@ -337,7 +343,7 @@ class Concentrations:
 		'''
 		return [np.where(IN.periodic['elemZ'] == AZ_sorted[i,0])[0][0] for i in range(len(AZ_sorted))]
 		
-	def R_M_i_idx(self, yield_class, AZ_sorted, Mstar=None, metallicity=None, vel=None)
+	def R_M_i_idx(self, yield_class, AZ_sorted, Mstar=None, metallicity=None, vel=None):
 		'''
 		This function is able to associate the entry in isotope-wide tracked quantities
 		with the respective yield. e.g.:
