@@ -343,7 +343,7 @@ class Concentrations:
 		'''
 		return [np.where(IN.periodic['elemZ'] == AZ_sorted[i,0])[0][0] for i in range(len(AZ_sorted))]
 		
-	def R_M_i_idx(self, yield_class, AZ_sorted, Mstar=None, metallicity=None, vel=None):
+	def R_M_i_idx(self, yields_class, AZ_sorted, Mstar=None, metallicity=None, vel=None):
 		'''
 		This function is able to associate the entry in isotope-wide tracked quantities
 		with the respective yield. e.g.:

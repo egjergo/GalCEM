@@ -63,13 +63,16 @@ elemZ_for_metallicity = np.where(AZ_sorted[:,0]>2)[0][0] # metallicity starting 
 
 ''' Initialize tracked quantities '''
 Mtot = np.insert(np.cumsum((infall(time_uniform)[1:] + infall(time_uniform)[:-1]) * IN.iTimeStep / 2), 0, 0)
-Gi_v = np.zeros((len(AZ_sorted), len(time_uniform)))	# Gi Global
+Mgas_v = np.zeros(len(time_uniform))	# Global
+Mstar_v = np.zeros(len(time_uniform))	# Global
+Mass_i_v = np.zeros((len(AZ_sorted), len(time_uniform)))	# Global
+Xi_v = np.zeros((len(AZ_sorted), len(time_uniform)))	# Xi Global
 G_v = np.zeros(len(time_uniform)) # G Global
 S_v = np.zeros(len(time_uniform)) # S = 1 - G Global
 Z_v = np.zeros(len(time_uniform)) # Metallicity Global
 SFR_v =  np.zeros(len(time_uniform)) 
-Gi_v[:,0] = epsilon
-G_v[0] = epsilon
+Gi_v[:,0] = IN.epsilon
+G_v[0] = IN.epsilon
 
 class Tracked_quantities:
 	'''
@@ -121,6 +124,7 @@ def pick_yields(yields_switch, AZ_Symb, stellar_mass_idx = None, metallicity_idx
 #pick_yields('LIMS', 'Na', stellar_mass_idx=0, metallicity_idx=0)
 #pick_yields('Massive', 'Na', stellar_mass_idx=0, metallicity_idx=0, vel_idx=0)
 #pick_yields('SNIa', 'Na')
+
 
 
 class Convergence:
@@ -242,21 +246,22 @@ class Wi:
 	birthtime (t') 	is stellar birthtime
 	lifetime (tau)	is stellar lifetime
 	'''
-	def __init__(self, Gyr_age, metallicity, Mgas, Mstar, l_mass, u_mass):
-		self.metallicity = metallicity
-		self.lifetime = time_uniform # (1)
-		self.GasMass = Mgas
-		self.Mstar = Mstar
-		self.StarMass = lifetime_class.interp_stellar_masses(self.metallicity)(time_uniform)
-		self.l_mass = l_mass
-		self.u_mass = u_mass
-		self.Gyr_age = Gyr_age
+	def __init__(self):#, Gyr_age, metallicity, Mgas, Mstar, l_mass, u_mass):
+		#self.metallicity = metallicity
+		#self.lifetime = time_uniform # (1)
+		#self.GasMass = Mgas
+		#self.Mstar = Mstar
+		#self.StarMass = lifetime_class.interp_stellar_masses(self.metallicity)(time_uniform)
+		#self.l_mass = l_mass
+		#self.u_mass = u_mass
+		#self.Gyr_age = Gyr_age
+		return None
 
-	def birthtime(self): # (2)
+	def birthtime(self, Gyr_age, metallicity): # (2)
 		'''
 		Page 21, last sentence before Section 8.7	
 		'''
-		birthtime = self.Gyr_age - lifetime_class.interp_stellar_lifetimes(self.metallicity)(mass_uniform)
+		birthtime = Gyr_age - lifetime_class.interp_stellar_lifetimes(metallicity)(mass_uniform)
 		return birthtime#[np.where(birthtime > 0)]
 	
 	def pick_IMF(self):
@@ -289,15 +294,19 @@ class Wi:
 		integrand_SNIa, M1_min, M1_max = Wi_integrand_class.SNIa_FM1(M1)
 		return IN.A * quad(f_nu * IMF, M1_min, M1_max)
 				
-	def Mass_i_infall(self):
-		Minfall_dt = infall(self.Gyr_age)
-		BBN_idx = c_class.R_M_i_idx(yield_BBN_class, AZ_sorted)
+	def Mass_i_infall(self, j):
+		Minfall_dt = infall(time_uniform[j])
+		print('Infalling mass ', Minfall_dt, ' Msun at timestep idx: ', j)
+		BBN_idx = c_class.R_M_i_idx(yields_BBN_class, AZ_sorted)
 		for i in range(len(BBN_idx)):
-			self.Mass_i_t[BBN_idx[i]] += yields_BBN_class.yields[i] * Minfall_dt
+			Mass_i_v[BBN_idx[i],j] = Mass_i_v[BBN_idx[i],j-1] + yields_BBN_class.yields[i] * Minfall_dt * IN.iTimeStep
 			
-	def compute(self):
+	def compute(self, j):
+		'''
+		j timestep idx
+		'''
 		#self.Gi_infall
-		total = self.Mass_i_infall(self)
+		total = self.Mass_i_infall(j)
 		return total
 
 class Evolution:
@@ -317,13 +326,18 @@ class Evolution:
 		#Tracking_class.run(Gi_vector)
 		return None
 
-def main():
+def GCE_main():
 	tic.append(time.process_time())
-	Evolution_class = Evolution()
-	Evolution_class.evolve()
-	np.savetxt()
+	#Evolution_class = Evolution()
+	#Evolution_class.evolve()
+	#np.savetxt()
+	Wi_class = Wi()
+	for j in range(1, len(time_uniform)):
+		Wi_class.compute(j)
 	tic.append(time.process_time())
+	np.savetxt('output/Mass_i.dat', np.column_stack((AZ_sorted, Mass_i_v)), header = '# (0) elemZ,	(1) elemA,	(2) masses [Msun] of every isotope for every timestep')
 	print("Computation time = "+str((tic[-1] - tic[-2])/60.)+" minutes.")
+	return None
 
 tic.append(time.process_time())
 print('Package lodaded in '+str(1e0*(tic[-1]))+' seconds.')

@@ -5,7 +5,7 @@ import numpy as np
 age_Galaxy = 13.8 # [Gyr]
 morphology = 'spiral'
 r = 8 # Compute around the solar neighborhood [kpc]
-iTimeStep  = 0.002 # Picked to smooth the mapping between stellar masses and lifetimes
+iTimeStep  = 0.01#0.002 # Picked to smooth the mapping between stellar masses and lifetimes
 num_MassGrid = 200
 time_start = 0.00311 # Gyr (Calibrated on Portinari+98)
 time_end   = 79.2 # Gyr (Calibrated on Portinari+98) to ensure tau can be mapped to masses and vice versa
