@@ -71,7 +71,7 @@ Mgas_v = np.multiply(G_v, Mtot)
 S_v = np.zeros(len(time_uniform)) # S = 1 - G Global
 Z_v = np.zeros(len(time_uniform)) # Metallicity Global
 SFR_v =  np.zeros(len(time_uniform)) 
-Gi_v[:,0] = IN.epsilon
+Mass_i_v[:,0] = IN.epsilon
 G_v[0] = IN.epsilon
 
 class Tracked_quantities:
@@ -235,6 +235,24 @@ class Wi_integrand:
 		integrand_SNIa = quad(int_SNIa, nu_min, nu_max)[0]
 		return integrand_SNIa, M1_min, M1_max
 
+
+	def number_2(i):
+		numerator = (totdens_time[i] * deriv_gasdens[i] 
+							- gasdens_time[i] * deriv_totdens[i]) 
+		return np.divide(numerator, np.power(totdens(time[i]),2))
+		
+	def number_3(i, a = 1e-5):
+		return - a * SFR(time[i]) - number_2(i)
+	
+	def diff_Xi(Xi, rate, i, b = 1e5):
+		return (totdens_time[i] * (number_3(i) * Xi + rate[i])# + b * infall_time[i])  
+						/ gasdens_time[i])
+		
+	def find_X_r(rate):
+		X_r = np.zeros(len(time))
+		for i in range(len(time)-1):
+			X_r[i+1] = X_r[i] + 0.002 * diff_Xi(X_r[i], rate, i)
+		return X_r
 
 class Wi:
 	'''
