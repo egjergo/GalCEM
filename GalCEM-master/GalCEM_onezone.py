@@ -60,14 +60,14 @@ AZ_sorted = c_class.AZ_sorted(AZ_all) # 321 isotopes with 'km20', 198 w/ 'i99' #
 AZ_Symb_list = IN.periodic['elemSymb'][c_class.AZ_Symb(AZ_sorted)]
 elemZ_for_metallicity = np.where(AZ_sorted[:,0]>2)[0][0] # metallicity starting index selection
 
-
 ''' Initialize tracked quantities '''
 Mtot = np.insert(np.cumsum((infall(time_uniform)[1:] + infall(time_uniform)[:-1]) * IN.iTimeStep / 2), 0, 0)
-Mgas_v = np.zeros(len(time_uniform))	# Global
+#Mgas_v = np.zeros(len(time_uniform))	# Global
 Mstar_v = np.zeros(len(time_uniform))	# Global
 Mass_i_v = np.zeros((len(AZ_sorted), len(time_uniform)))	# Global
 Xi_v = np.zeros((len(AZ_sorted), len(time_uniform)))	# Xi Global
 G_v = np.zeros(len(time_uniform)) # G Global
+Mgas_v = np.multiply(G_v, Mtot)
 S_v = np.zeros(len(time_uniform)) # S = 1 - G Global
 Z_v = np.zeros(len(time_uniform)) # Metallicity Global
 SFR_v =  np.zeros(len(time_uniform)) 
@@ -192,11 +192,11 @@ class Wi_integrand:
 		self.Gyr_age = Gyr_age
 		self.Mass_i_t = np.zeros(len(AZ_sorted))
 
-	def SFR_component(self, Mgas):
-		return None
+	def SFR_component(self):
+		return SFR(self.Mgas_tot)
 	
 	def IMF_component(self):
-		return None
+		return IMF(self.Mass_i_t)
 			
 	def yield_component(self):
 		'''
@@ -264,11 +264,11 @@ class Wi:
 		birthtime = Gyr_age - lifetime_class.interp_stellar_lifetimes(metallicity)(mass_uniform)
 		return birthtime#[np.where(birthtime > 0)]
 	
-	def pick_IMF(self):
-		return None
+	#def pick_IMF(self):
+	#	return None
 
-	def mapping(self):
-		return None
+	#def mapping(self):
+	#	return None
 
 	#Wi_integrand_class = Wi_integrand(self.Mstar, self.metallicity)
 	#Wi = Wi_integrand_class.compute()
