@@ -18,6 +18,49 @@ LIST OF CLASSES:
 	__		Yields_SNIa
 '''
 
+class Auxiliary:
+	def varname( var, dir=locals()):
+  		return [ key for key, val in dir.items() if id( val) == id( var)][0]
+  
+	def is_monotonic(arr):
+		print ("for ", varname(arr)) 
+		if all(arr[i] <= arr[i + 1] for i in range(len(arr) - 1)): 
+			return "monotone increasing" 
+		elif all(arr[i] >= arr[i + 1] for i in range(len(arr) - 1)):
+			return "monotone decreasing"
+		return "not monotonic array"
+	
+	def find_nearest(array, value):
+		array = np.asarray(array)
+		idx = (np.abs(array - value)).argmin()
+		return idx
+
+	def age_from_z(zf, OmegaLambda0 = 0.7, Omegam0 = 0.3, Omegar0 = 1e-4):
+		'''
+		Finds the age (or lookback time) given a redshift (or scale factor).
+		Assumes flat LCDM. Std cosmology, zero curvature. z0 = 0, a0 = 1.
+		Omegam0 = 0.28 # 0.24 DM + 0.04 baryonic
+		
+		INPUT:	
+		(aem = Float. Scale factor.)
+		(OmegaLambda0 = 0.72, Omegam0 = 0.28)
+		zf  = redshift
+		
+		OUTPUT
+		lookback time.
+		'''
+		#zf = np.reciprocal(np.float(aem))-1
+		H0 = 100 * OmegaLambda0 * 3.24078e-20 * 3.15570e16 
+		# [ km s^-1 Mpc^-1 * Mpc km^-1 * s Gyr^-1 ]
+		#age0 = integrate.quad(lambda z: 1 / ( (z + 1) *np.sqrt(OmegaLambda0 
+		#						+ Omegam0 * (z+1)**3 + Omegar0 * (z+1)**4) ),
+		#						 0, np.inf)[0] / H0 # Since BB [Gyr]
+		age = integrate.quad(lambda z: 1 / ( (z + 1) *np.sqrt(OmegaLambda0 + 
+								Omegam0 * (z+1)**3 + Omegar0 * (z+1)**4) ), 
+								zf, np.inf)[0] / H0 # Since BB [Gyr]
+		return age #age0 - age # for the lookback time # end fatot()
+
+
 class Stellar_Lifetimes:
 	'''
 	Interpolation of Portinari+98 Table 14
@@ -526,44 +569,3 @@ class Yields_LIMS:
 			self.metallicityIni, self.metallicity_bins = self.is_unique('Zini', split_length)
 			self.stellarMassIni, self.stellarMass_bins = self.is_unique('Mini', split_length)
 
-class Auxiliary:
-	def varname( var, dir=locals()):
-  		return [ key for key, val in dir.items() if id( val) == id( var)][0]
-  
-	def is_monotonic(arr):
-		print ("for ", varname(arr)) 
-		if all(arr[i] <= arr[i + 1] for i in range(len(arr) - 1)): 
-			return "monotone increasing" 
-		elif all(arr[i] >= arr[i + 1] for i in range(len(arr) - 1)):
-			return "monotone decreasing"
-		return "not monotonic array"
-	
-	def find_nearest(array, value):
-		array = np.asarray(array)
-		idx = (np.abs(array - value)).argmin()
-		return idx
-
-	def age_from_z(zf, OmegaLambda0 = 0.7, Omegam0 = 0.3, Omegar0 = 1e-4):
-		'''
-		Finds the age (or lookback time) given a redshift (or scale factor).
-		Assumes flat LCDM. Std cosmology, zero curvature. z0 = 0, a0 = 1.
-		Omegam0 = 0.28 # 0.24 DM + 0.04 baryonic
-		
-		INPUT:	
-		(aem = Float. Scale factor.)
-		(OmegaLambda0 = 0.72, Omegam0 = 0.28)
-		zf  = redshift
-		
-		OUTPUT
-		lookback time.
-		'''
-		#zf = np.reciprocal(np.float(aem))-1
-		H0 = 100 * OmegaLambda0 * 3.24078e-20 * 3.15570e16 
-		# [ km s^-1 Mpc^-1 * Mpc km^-1 * s Gyr^-1 ]
-		#age0 = integrate.quad(lambda z: 1 / ( (z + 1) *np.sqrt(OmegaLambda0 
-		#						+ Omegam0 * (z+1)**3 + Omegar0 * (z+1)**4) ),
-		#						 0, np.inf)[0] / H0 # Since BB [Gyr]
-		age = integrate.quad(lambda z: 1 / ( (z + 1) *np.sqrt(OmegaLambda0 + 
-								Omegam0 * (z+1)**3 + Omegar0 * (z+1)**4) ), 
-								zf, np.inf)[0] / H0 # Since BB [Gyr]
-		return age #age0 - age # for the lookback time # end fatot()
