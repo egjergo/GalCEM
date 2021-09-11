@@ -9,10 +9,11 @@ from scipy.integrate import quad
 from scipy.misc import derivative
 
 import input_parameters as IN
-import GalCEM_classes as pc
+import classes.morphology as morph
+import classes.yields as Y
 
 ''' Setup '''
-lifetime_class = pc.Stellar_Lifetimes()
+lifetime_class = morph.Stellar_Lifetimes()
 Ml = lifetime_class.s_mass[1] # Lower limit stellar masses [Msun] 
 Mu = lifetime_class.s_mass[-2] # Upper limit stellar masses [Msun]
 
@@ -24,34 +25,34 @@ surf_density_Galaxy = IN.sd / np.exp(IN.r / IN.Reff[IN.morphology]) #sigma(t_G) 
 #lifetime_class.interp_stellar_lifetimes(metallicity)(mass_uniform) # lifetime func @ input metallicity
 #lifetime_class.interp_stellar_masses(metallicity)(time_uniform) # mass func @ input metallicity
 
-infall_class = pc.Infall(morphology=IN.morphology, time=time_uniform)
+infall_class = morph.Infall(morphology=IN.morphology, time=time_uniform)
 infall = infall_class.inf()
 
-SFR_class = pc.Star_Formation_Rate(IN.SFR_option, IN.custom_SFR)
+SFR_class = morph.Star_Formation_Rate(IN.SFR_option, IN.custom_SFR)
 SFR = SFR_class.SFR() # Function: SFR(Mgas)
 
-IMF_class = pc.Initial_Mass_Function(Ml, Mu, IN.IMF_option, IN.custom_IMF)
+IMF_class = morph.Initial_Mass_Function(Ml, Mu, IN.IMF_option, IN.custom_IMF)
 IMF = IMF_class.IMF() # Function @ input stellar mass
 
-isotopes = pc.Isotopes()
+isotopes = Y.Isotopes()
 
-yields_LIMS_class = pc.Yields_LIMS()
+yields_LIMS_class = Y.Yields_LIMS()
 yields_LIMS_class.import_yields()
 #yields_LIMS_class.yields[0][:,0] # yield tables with shape [FeH_ini][AZ_idx, mass_i]
 
-yields_Massive_class = pc.Yields_Massive()
+yields_Massive_class = Y.Yields_Massive()
 yields_Massive_class.import_yields()
 #yields_Massive_class.yields[0,0,:,0] # yield tables with shape [FeH_ini, vel, AZ_idx, mass_i]
 
-yields_SNIa_class = pc.Yields_SNIa()
+yields_SNIa_class = Y.Yields_SNIa()
 yields_SNIa_class.import_yields()
 #yields_SNIa_class.yields[:] # yield tables with shape [AZ_idx]
 
-yields_BBN_class = pc.Yields_BBN()
+yields_BBN_class = Y.Yields_BBN()
 yields_BBN_class.import_yields()
 #yields_BBN_class.yields[:] # yield tables with shape [AZ_idx]
 
-c_class = pc.Concentrations()
+c_class = Y.Concentrations()
 AZ_LIMS = c_class.extract_AZ_pairs_LIMS(yields_LIMS_class)
 AZ_SNIa = c_class.extract_AZ_pairs_SNIa(yields_SNIa_class)
 AZ_Massive = c_class.extract_AZ_pairs_Massive(yields_Massive_class)
