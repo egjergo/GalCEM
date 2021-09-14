@@ -81,9 +81,6 @@ def pick_yields(yields_switch, AZ_Symb, stellar_mass_idx = None, metallicity_idx
 	elif yields_switch == 'SNIa':
 		idx = isotopes.pick_by_Symb(yields_SNIa_class.elemZ, AZ_Symb)
 		return yields_SNIa_class.yields[idx]
-#pick_yields('LIMS', 'Na', stellar_mass_idx=0, metallicity_idx=0)
-#pick_yields('Massive', 'Na', stellar_mass_idx=0, metallicity_idx=0, vel_idx=0)
-#pick_yields('SNIa', 'Na')
 
 
 class Convergence:
@@ -213,6 +210,7 @@ class Wi_integrand:
 			X_r[i+1] = X_r[i] + 0.002 * diff_Xi(X_r[i], rate, i)
 		return X_r
 
+
 class Wi:
 	'''
 	Solves each integration item by integrating over birthtimes.
@@ -286,6 +284,7 @@ class Wi:
 		total = self.Mass_i_infall(j)
 		return total
 
+
 class Evolution:
 	'''
 	Main GCE one-zone class 
@@ -314,7 +313,13 @@ def main():
 	for j in range(1, len(time_uniform)):
 		Wi_class.compute(j)
 	tic.append(time.process_time())
-	np.savetxt('output/Mass_i.dat', np.column_stack((AZ_sorted, Mass_i_v)), header = '# (0) elemZ,	(1) elemA,	(2) masses [Msun] of every isotope for every timestep')
+	np.savetxt('output/phys.dat', np.column_stack((time_uniform, Mtot, Mgas_v,
+			   Mstar_v, SFR_v, Z_v, G_v, S_v)), 
+			   header = ' (0) time_uniform 	(1) Mtot 	(2) Mgas_v 	(3) Mstar_v 	(4) SFR_v 	(5) Z_v 	(6) G_v 	(7) S_v')
+	np.savetxt('output/Mass_i.dat', np.column_stack((AZ_sorted, Mass_i_v)), 
+			   header = ' (0) elemZ,	(1) elemA,	(2) masses [Msun] of every isotope for every timestep')
+	np.savetxt('output/X_i.dat', np.column_stack((AZ_sorted, Xi_v)), 
+			   header = ' (0) elemZ,	(1) elemA,	(2) abundance mass ratios of every isotope for every timestep (normalized to solar, Asplund et al., 2009)')
 	delta_computation_m = m.floor((tic[-1] - tic[-2])/60.)
 	delta_computation_s = ((tic[-1] - tic[-2])%60.)
 	print("Computation time = "+str(delta_computation_m)+" minutes and "+str(delta_computation_s)+" seconds.")
