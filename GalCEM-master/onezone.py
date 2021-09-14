@@ -1,5 +1,6 @@
 '''	applies to thick disk at 8 kpc '''
 import time
+import math as m
 tic = []
 tic.append(time.process_time())
 import numpy as np
@@ -345,7 +346,7 @@ class Evolution:
 		#Tracking_class.run(Gi_vector)
 		return None
 
-def GCE_main():
+def main():
 	tic.append(time.process_time())
 	#Evolution_class = Evolution()
 	#Evolution_class.evolve()
@@ -355,7 +356,9 @@ def GCE_main():
 		Wi_class.compute(j)
 	tic.append(time.process_time())
 	np.savetxt('output/Mass_i.dat', np.column_stack((AZ_sorted, Mass_i_v)), header = '# (0) elemZ,	(1) elemA,	(2) masses [Msun] of every isotope for every timestep')
-	print("Computation time = "+str((tic[-1] - tic[-2])/60.)+" minutes.")
+	delta_computation_m = m.floor((tic[-1] - tic[-2])/60.)
+	delta_computation_s = ((tic[-1] - tic[-2])%60.)
+	print("Computation time = "+str(delta_computation_m)+" minutes and "+str(delta_computation_s)+" seconds.")
 	return None
 
 tic.append(time.process_time())
