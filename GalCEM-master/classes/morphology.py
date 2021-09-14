@@ -1,28 +1,30 @@
 import numpy as np
 import scipy.integrate
 import scipy.interpolate as interp
-from pandas.core.common import flatten
 
 import input_parameters as IN
 
-'''
-LIST OF CLASSES:
-	__ 		Stellar_Lifetimes
-	__		Infall
-	__		Initial_Mass_Function
-	__		Star_Formation_Rate
-	__		Isotopes
-	__		Concentrations
-	__		Yields_LIMS
-	__		Yields_Massive
-	__		Yields_SNIa
-'''
+""""""""""""""""""""""""""""""""""""""""""""""""
+"                                              "
+"              MORPHOLOGY CLASSES              "
+"  Contains classes that shape the simulated   "
+"    galaxies, or otherwise integrates the     "
+"      contributions by individual yields      "
+"                                              "
+" LIST OF CLASSES:                             "
+"	__ 		Auxiliary                          "
+"	__ 		Stellar_Lifetimes                  "
+"	__		Infall                             "
+"	__		Initial_Mass_Function              "
+"	__		Star_Formation_Rate                "
+"                                              "
+""""""""""""""""""""""""""""""""""""""""""""""""
 
 class Auxiliary:
-	def varname( var, dir=locals()):
+	def varname(self, var, dir=locals()):
   		return [ key for key, val in dir.items() if id( val) == id( var)][0]
   
-	def is_monotonic(arr):
+	def is_monotonic(self, arr):
 		print ("for ", varname(arr)) 
 		if all(arr[i] <= arr[i + 1] for i in range(len(arr) - 1)): 
 			return "monotone increasing" 
@@ -30,12 +32,12 @@ class Auxiliary:
 			return "monotone decreasing"
 		return "not monotonic array"
 	
-	def find_nearest(array, value):
+	def find_nearest(self, array, value):
 		array = np.asarray(array)
 		idx = (np.abs(array - value)).argmin()
 		return idx
 
-	def age_from_z(zf, OmegaLambda0 = 0.7, Omegam0 = 0.3, Omegar0 = 1e-4):
+	def age_from_z(self, zf, h = 0.7, OmegaLambda0 = 0.7, Omegam0 = 0.3, Omegar0 = 1e-4, lookback_time = False):
 		'''
 		Finds the age (or lookback time) given a redshift (or scale factor).
 		Assumes flat LCDM. Std cosmology, zero curvature. z0 = 0, a0 = 1.
@@ -49,16 +51,18 @@ class Auxiliary:
 		OUTPUT
 		lookback time.
 		'''
+		H0 = 100 * h * 3.24078e-20 * 3.15570e16 # [ km s^-1 Mpc^-1 * Mpc km^-1 * s Gyr^-1 ]
 		#zf = np.reciprocal(np.float(aem))-1
-		H0 = 100 * OmegaLambda0 * 3.24078e-20 * 3.15570e16 
-		# [ km s^-1 Mpc^-1 * Mpc km^-1 * s Gyr^-1 ]
-		#age0 = integrate.quad(lambda z: 1 / ( (z + 1) *np.sqrt(OmegaLambda0 
-		#						+ Omegam0 * (z+1)**3 + Omegar0 * (z+1)**4) ),
-		#						 0, np.inf)[0] / H0 # Since BB [Gyr]
 		age = integrate.quad(lambda z: 1 / ( (z + 1) *np.sqrt(OmegaLambda0 + 
 								Omegam0 * (z+1)**3 + Omegar0 * (z+1)**4) ), 
 								zf, np.inf)[0] / H0 # Since BB [Gyr]
-		return age #age0 - age # for the lookback time # end fatot()
+		if not lookback_time:
+			return age
+		else:
+			age0 = integrate.quad(lambda z: 1 / ( (z + 1) *np.sqrt(OmegaLambda0 
+								+ Omegam0 * (z+1)**3 + Omegar0 * (z+1)**4) ),
+								 0, np.inf)[0] / H0 # present time [Gyr]
+			return age0 - age
 
 
 class Stellar_Lifetimes:
@@ -73,7 +77,7 @@ class Stellar_Lifetimes:
 	def __init__(self):
 		self.Z_names = ['Z0004', 'Z008', 'Z02', 'Z05']
 		self.Z_binned = [0.0004, 0.008, 0.02, 0.05]
-		self.Z_bins = [0.001789, 0.012649, 0.031623] # log-avg'd bins
+		self.Z_bins = [0.001789, 0.012649, 0.031623] # log-avg'd Z_binned
 		self.s_mass = IN.s_lifetimes_p98['M']
 	
 	def interp_tau(self, idx):

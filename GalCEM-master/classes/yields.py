@@ -1,6 +1,4 @@
 import numpy as np
-import scipy.integrate
-import scipy.interpolate as interp
 from pandas.core.common import flatten
 
 import input_parameters as IN
@@ -8,8 +6,16 @@ import input_parameters as IN
 """"""""""""""""""""""""""""""""""""""""""""""""
 "                                              "
 "                YIELDS CLASSES                "
+" Tracks the contribution by individual events "
 "       Suggested upgrade:  superclasses       "
 "         for the functions in common          "
+"                                              "
+" LIST OF CLASSES:                             "
+"	__		Isotopes                           "
+"	__		Concentrations                     "
+"	__		Yields_LIMS                        "
+"	__		Yields_Massive                     "
+"	__		Yields_SNIa                        "
 "                                              "
 """"""""""""""""""""""""""""""""""""""""""""""""
 
