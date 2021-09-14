@@ -1,8 +1,8 @@
 '''	applies to thick disk at 8 kpc '''
 import time
-import math as m
 tic = []
 tic.append(time.process_time())
+import math as m
 import numpy as np
 import scipy.integrate
 import scipy.interpolate as interp
@@ -17,41 +17,27 @@ import classes.yields as Y
 lifetime_class = morph.Stellar_Lifetimes()
 Ml = lifetime_class.s_mass[1] # Lower limit stellar masses [Msun] 
 Mu = lifetime_class.s_mass[-2] # Upper limit stellar masses [Msun]
-
 time_uniform = np.arange(IN.time_start, IN.time_end, IN.iTimeStep)
 mass_uniform = np.linspace(Ml, Mu, num = IN.num_MassGrid)
 # Surface density for the disk. The bulge goes as an inverse square law.
 surf_density_Galaxy = IN.sd / np.exp(IN.r / IN.Reff[IN.morphology]) #sigma(t_G) before eq(7)
 
-#lifetime_class.interp_stellar_lifetimes(metallicity)(mass_uniform) # lifetime func @ input metallicity
-#lifetime_class.interp_stellar_masses(metallicity)(time_uniform) # mass func @ input metallicity
-
 infall_class = morph.Infall(morphology=IN.morphology, time=time_uniform)
 infall = infall_class.inf()
-
 SFR_class = morph.Star_Formation_Rate(IN.SFR_option, IN.custom_SFR)
 SFR = SFR_class.SFR() # Function: SFR(Mgas)
-
 IMF_class = morph.Initial_Mass_Function(Ml, Mu, IN.IMF_option, IN.custom_IMF)
 IMF = IMF_class.IMF() # Function @ input stellar mass
 
 isotopes = Y.Isotopes()
-
 yields_LIMS_class = Y.Yields_LIMS()
 yields_LIMS_class.import_yields()
-#yields_LIMS_class.yields[0][:,0] # yield tables with shape [FeH_ini][AZ_idx, mass_i]
-
 yields_Massive_class = Y.Yields_Massive()
 yields_Massive_class.import_yields()
-#yields_Massive_class.yields[0,0,:,0] # yield tables with shape [FeH_ini, vel, AZ_idx, mass_i]
-
 yields_SNIa_class = Y.Yields_SNIa()
 yields_SNIa_class.import_yields()
-#yields_SNIa_class.yields[:] # yield tables with shape [AZ_idx]
-
 yields_BBN_class = Y.Yields_BBN()
 yields_BBN_class.import_yields()
-#yields_BBN_class.yields[:] # yield tables with shape [AZ_idx]
 
 c_class = Y.Concentrations()
 AZ_LIMS = c_class.extract_AZ_pairs_LIMS(yields_LIMS_class)
@@ -76,34 +62,6 @@ SFR_v =  np.zeros(len(time_uniform))
 Mass_i_v[:,0] = IN.epsilon
 G_v[0] = IN.epsilon
 
-class Tracked_quantities:
-	'''
-	Quantities to be saved in the output
-	'''
-	def __init__(self, Gi_t):
-		self.Gi_t = Gi_t
-		
-	def track_Gi(self):
-		return Gi.append(self.Gi_t)
-		
-	def track_Z(self):
-		return Z.append(np.sum(self.Gi_t[elemZ_for_metallicity:]))
-		
-	def track_G(self):
-		return G.append(np.sum(self.Gi_t))
-	
-	def track_S(self):
-		return S.append[1 - G[-1]]
-	
-	def track_Mtot(self):
-		return Mtot.append
-	
-	def run(self):
-		self.track_Gi()
-		self.track_Z()
-		self.track_G()
-		self.track_S()
-
 ''' GCE Classes and Functions'''
 def pick_yields(yields_switch, AZ_Symb, stellar_mass_idx = None, metallicity_idx = None, vel_idx = None):
 	'''
@@ -126,7 +84,6 @@ def pick_yields(yields_switch, AZ_Symb, stellar_mass_idx = None, metallicity_idx
 #pick_yields('LIMS', 'Na', stellar_mass_idx=0, metallicity_idx=0)
 #pick_yields('Massive', 'Na', stellar_mass_idx=0, metallicity_idx=0, vel_idx=0)
 #pick_yields('SNIa', 'Na')
-
 
 
 class Convergence:
@@ -184,6 +141,7 @@ class Convergence:
 		while delta_i >= IN.delta_max:
 			Gi_k1 *= (1 + delta_i)
 
+
 class Wi_integrand:
 	'''
 	lambda t': integrand
@@ -236,7 +194,6 @@ class Wi_integrand:
 		int_SNIa = lambda nu: f_nu(nu) * IMF(M1 / nu)
 		integrand_SNIa = quad(int_SNIa, nu_min, nu_max)[0]
 		return integrand_SNIa, M1_min, M1_max
-
 
 	def number_2(i):
 		numerator = (totdens_time[i] * deriv_gasdens[i] 
@@ -346,6 +303,8 @@ class Evolution:
 		#Tracking_class.run(Gi_vector)
 		return None
 
+
+''' One Zone evolution routine '''
 def main():
 	tic.append(time.process_time())
 	#Evolution_class = Evolution()
