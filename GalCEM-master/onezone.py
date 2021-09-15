@@ -50,7 +50,6 @@ elemZ_for_metallicity = np.where(AZ_sorted[:,0]>2)[0][0] # metallicity starting 
 
 ''' Initialize tracked quantities '''
 Mtot = np.insert(np.cumsum((infall(time_uniform)[1:] + infall(time_uniform)[:-1]) * IN.iTimeStep / 2), 0, 0)
-#Mgas_v = np.zeros(len(time_uniform))	# Global
 Mstar_v = np.zeros(len(time_uniform))	# Global
 Mass_i_v = np.zeros((len(AZ_sorted), len(time_uniform)))	# Global
 Xi_v = np.zeros((len(AZ_sorted), len(time_uniform)))	# Xi Global

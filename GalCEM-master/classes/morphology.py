@@ -143,8 +143,7 @@ class Infall:
 		if not self.option:
 			return self.infall_func_simple()
 		elif self.option == 'two-infall':
-			return self. two_infall()
-		
+			return self.two_infall()
 		return None
 	
 	def aInf(self):
@@ -226,8 +225,7 @@ class Initial_Mass_Function:
 	
 	def IMF(self):
 		return lambda Mstar: self.IMF_select()(Mstar) * self.normalization()
-		#return lambda Mstar: self.integrand(Mstar) * self.normalization()
-	
+		
 	def IMF_test(self):
 		'''
 		Returns the normalized integrand integral. If the IMF works, it should return 1.

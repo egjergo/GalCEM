@@ -1,14 +1,14 @@
 import numpy as np
-# Chiappini+10 uses Portinari's code, with Kroupa+03 and the two-infall model
+# Romano+10 uses Portinari's code, with Kroupa+03 and the two-infall model
 # So far, I'm using Salpeter+55 for the IMF. Also check the Schmidt power exponent
 
 age_Galaxy = 13.8 # [Gyr]
 morphology = 'spiral'
 r = 8 # Compute around the solar neighborhood [kpc]
-iTimeStep  = 0.01#0.002 # Picked to smooth the mapping between stellar masses and lifetimes
+iTimeStep = 0.01#0.002 # Picked to smooth the mapping between stellar masses and lifetimes
 num_MassGrid = 200
 time_start = 0.00311 # Gyr (Calibrated on Portinari+98)
-time_end   = 79.2 # Gyr (Calibrated on Portinari+98) to ensure tau can be mapped to masses and vice versa
+time_end = 79.2 # Gyr (Calibrated on Portinari+98) to ensure tau can be mapped to masses and vice versa
 sd = 530.96618 # surf density coefficient for the disk (normalized to the MW mass?) 
 k_SFR = 1
 # For SNIa
@@ -22,6 +22,7 @@ epsilon = 1e-8 # Avoid numerical errors - consistent with BBN
 custom_IMF = None
 custom_SFR = None
 custom_SNIaDTD = None
+
 inf_option = None # or 'two-infall'
 IMF_option = 'Salpeter55' # or 'Kroupa03'
 SFR_option = 'SFRgal' # or 'CSFR'
@@ -66,3 +67,4 @@ periodic = np.genfromtxt('input/physics/periodicinfo.dat',
 						 delimiter=',', dtype=[('elemZ', '<f8'), ('_', '<U5'), 
 						 ('elemName', '<U13'), ('-', '<U5'), ('elemSymb', '<U5'), 
 						 ('--', '<U5'), ('elemA','<f8')])
+						 

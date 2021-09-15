@@ -59,6 +59,7 @@ class Isotopes:
 		idx = np.where(self.elemSymb == elemSymb)
 		return np.where(ndarray_elemZ == self.elemZ[idx])
 
+
 class Concentrations:
 	'''
 	Computes the [X,Y] ratios
@@ -75,8 +76,6 @@ class Concentrations:
 		return np.log10(np.divide(IN.periodic['elemA'],
 				IN.periodic['elemA'][elemZ]))[:IN.asplund1['photospheric'].shape[0]]
 
-	#log10_avg_elem_vs_Fe = self.log10_avg_elem_vs_X(elemZ=26)
-	#log10_avg_elem_vs_H = self.log10_avg_elem_vs_X(elemZ=1)
 	solarA09_vs_H_bynumb = (IN.asplund1['photospheric'] - IN.asplund1['photospheric'][1])
 	solarA09_vs_Fe_bynumb = (IN.asplund1['photospheric'] - IN.asplund1['photospheric'][26])
 
@@ -127,6 +126,7 @@ class Concentrations:
 					& (AZ_sorted[:,1] == yieldchoice_AZ_list[i,1]))[0][0] 
 					for i in range(len(yieldchoice_AZ_list))]
 		return yieldchoice_idx
+		
 		
 class Yields_BBN:
 	'''
