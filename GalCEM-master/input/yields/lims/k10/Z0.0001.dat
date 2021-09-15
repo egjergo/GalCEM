@@ -1,4 +1,4 @@
-# Original file from the Supplementary data of Karakas+10 (MNRAS,403,1413) https://cdsarc.unistra.fr/viz-bin/cat/J/MNRAS/403/1413 Data manipulation by Eda Gjergo (eda.gjergo@gmail.com). I added the AtomicZ column
+# Original file from the Supplementary data of Karakas+10 (MNRAS,403,1413) https://cdsarc.unistra.fr/viz-bin/cat/J/MNRAS/403/1413 Submit Data manipulation bugs to GalacticCEM@gmail.com. I added the AtomicZ column
 # Data also available for download at  https://academic.oup.com/mnras/article/403/3/1413/1048800#supplementary-data
 # (1) Initial Mass M0	(2) Initial Metallicity Z0	(3) Final Mass M1	(4) Species i	(5) Atomic mass of the species i	
 # (6) net yield	(7) mass of species i lost in the wind	(8) mass of species i initially present in the wind	

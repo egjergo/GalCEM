@@ -1,4 +1,4 @@
-# Data from arXiv's LaTeX of Iwamoto et al. (1999) https://arxiv.org/abs/astro-ph/0002337 data manipulation by Eda Gjergo (eda.gjergo@gmail.com)
+# Data from arXiv's LaTeX of Iwamoto et al. (1999) https://arxiv.org/abs/astro-ph/0002337 submit data manipulation bugs to GalacticCEM@gmail.com
 
 # (0) Species 	(1) elemZ 	(2) elemA	(3) W7 	(4) W70 	(5) WDD1 	(6) WDD2 	(7) WDD3 	(8) CDD1 	(9) CDD2
 Na  	11 	  22 	 1.73E-08 	 1.08E-08 	 2.66E-08 	 1.33E-08 	 3.04E-08 	 1.68E-08 	 9.64E-09
