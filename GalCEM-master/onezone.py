@@ -1,3 +1,7 @@
+'''
+I only achieve simplicity with enormous effort (Clarice Lispector)
+'''
+
 '''	applies to thick disk at 8 kpc '''
 import time
 tic = []
@@ -301,8 +305,12 @@ class Evolution:
 		#Tracking_class.run(Gi_vector)
 		return None
 
+""""""""""""""""""""""""""""""""""""
+"                                  "
+"    One Zone evolution routine    "
+"                                  "
+""""""""""""""""""""""""""""""""""""
 
-''' One Zone evolution routine '''
 def main():
 	tic.append(time.process_time())
 	#Evolution_class = Evolution()
