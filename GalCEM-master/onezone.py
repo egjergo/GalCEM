@@ -224,26 +224,32 @@ class Wi:
 	birthtime (t') 	is stellar birthtime
 	lifetime (tau)	is stellar lifetime
 	'''
-	def __init__(self):#, Gyr_age, metallicity, Mgas, Mstar, l_mass, u_mass):
-		#self.metallicity = metallicity
+	def __init__(self, l_mass, u_mass, metallicity, age_idx):# Mgas, Mstar):
+		self.metallicity = metallicity
 		#self.lifetime = time_uniform # (1)
 		#self.GasMass = Mgas
 		#self.Mstar = Mstar
 		#self.StarMass = lifetime_class.interp_stellar_masses(self.metallicity)(time_uniform)
-		#self.l_mass = l_mass
-		#self.u_mass = u_mass
-		#self.Gyr_age = Gyr_age
+		self.l_mass = l_mass
+		self.u_mass = u_mass
+		self.age_idx = age_idx
+		self.mass_grid = np.linspace(l_mass, u_mass, num = IN.num_MassGrid)
 		return None
 
 	def birthtime(self, Gyr_age, metallicity): # (2)
 		'''
+		Returns the birthtime (the integration variable) computed across the mass grid
 		Page 21, last sentence before Section 8.7	
+		
+			t'[array] = t(i[int]) - tau(M[array])
 		'''
-		birthtime = Gyr_age - lifetime_class.interp_stellar_lifetimes(metallicity)(mass_uniform)
+		birthtime = (time_uniform[self.age_idx] 
+				  - lifetime_class.interp_stellar_lifetimes(self.metallicity)(self.mass_grid))
 		return birthtime#[np.where(birthtime > 0)]
 	
-	#def pick_IMF(self):
-	#	return None
+	def pick_IMF(self):
+		''' Returns the IMF vector computed at the mass grids'''
+		return IMF(self.mass_grid)
 
 	#def mapping(self):
 	#	return None
