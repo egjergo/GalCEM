@@ -13,9 +13,10 @@ import input_parameters as IN
 " LIST OF CLASSES:                             "
 "	__		Isotopes                           "
 "	__		Concentrations                     "
-"	__		Yields_LIMS                        "
-"	__		Yields_Massive                     "
+"	__		Yields_BBN                         "
 "	__		Yields_SNIa                        "
+"	__		Yields_Massive                     "
+"	__		Yields_LIMS                        "
 "                                              "
 """"""""""""""""""""""""""""""""""""""""""""""""
 
