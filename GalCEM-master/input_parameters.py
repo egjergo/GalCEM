@@ -34,22 +34,62 @@ yields_massive_option = 'lc18'
 yields_SNIa_option = 'i99' #'km20'
 yields_BBN_option = 'gp13'
 
-# Calibrations from Molero+21a
+# Calibrations from Molero+21a and b
 M_inf = {'elliptical': 5.0e11, # Final baryonic mass of the galaxy in [Msun]
          'spiral': 5.0e10,
-         'irregular': 5.5e8}
+         'irregular': 5.5e8,
+         'Fornax': 5.0e8,
+         'Sculptor': 1.0e8,
+         'ReticulumII': 1.0e5,
+         'BootesI': 1.1e7,
+         'Carina': 5.0e8,
+         'Sagittarius': 2.1e9,
+         'Sextan': 5.0e8,
+         'UrsaMinor': 5.0e8}
 Reff = {'elliptical': 7, # effective radius in [kpc]
 		'spiral': 3.5,
-		'irregular': 1}
+		'irregular': 1,
+        'Fornax': 1, # !!!!!!! Ask!!!!!!! not on the paper
+        'Sculptor': 1,
+        'ReticulumII': 1,
+        'BootesI': 1,
+        'Carina': 1,
+        'Sagittarius': 1,
+        'Sextan': 1,
+        'UrsaMinor': 1}
 tau_inf = {'elliptical': 0.2, # infall timescale [Gyr]
            'spiral': 7.,
-           'irregular': 7.}
+           'irregular': 7.
+           'Fornax': 3,
+           'Sculptor': 0.5,
+           'ReticulumII': 0.05,
+           'BootesI': 0.05,
+           'Carina': 0.5,
+           'Sagittarius': 0.5,
+           'Sextan': 0.5,
+           'UrsaMinor': 0.5}
 nu = {'elliptical': 17.,  # nu is the SF efficiency in [Gyr^-1]
 	  'spiral': 1., 
-	  'irregular': 0.1}
+	  'irregular': 0.1,
+      'Fornax': 0.1,
+      'Sculptor': 0.2,
+      'ReticulumII': 0.01,
+      'BootesI': 0.005,
+      'Carina': 0.15,
+      'Sagittarius': 1,
+      'Sextan': 0.005,
+      'UrsaMinor': 0.05}
 wind_efficiency = {'elliptical': 10, # ouflow parameter [dimensionless]
 				   'spiral': 0.2,
-				   'irregular': 0.5}
+				   'irregular': 0.5,
+        		   'Fornax': 1,
+        		   'Sculptor': 9,
+        		   'ReticulumII': 6,
+        		   'BootesI': 12,
+        		   'Carina': 5,
+        		   'Sagittarius': 9,
+        		   'Sextan': 11,
+        		   'UrsaMinor': 11}
 wind_efficiency = 0 # override: no overflow in this run
 
 s_lifetimes_p98 = np.genfromtxt('input/starlifetime/portinari98table14.dat', 
