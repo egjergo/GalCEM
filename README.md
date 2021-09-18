@@ -2,4 +2,4 @@
 ## Author
 Eda Gjergo (Wuhan University) <GalacticCEM@gmail.com>
 
-<embed src="/docs/GalCEMdiagram.pdf" type="application/pdf">
+<object data="/docs/GalCEMdiagram.pdf" type="application/pdf" width="100%"></object>
