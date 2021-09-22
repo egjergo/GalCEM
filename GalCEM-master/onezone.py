@@ -90,56 +90,59 @@ class Convergence:
 	'''
 	Computes eq. (27)
 	'''
-	def __init__(self):
+	def __init__(self, isotope_idx, timestep):
+		self.n = timestep
+		self.i = isotope_idx
+		self.Gi_n = Xi_v[]
 		return None
 
-	def mapping(self):
-		return None
+	Wi_class = Wi()
+	def W_i(self):
+		return Wi_class.compute(self.i)
 	
-	def eta_SFR(self):
-		return np.divide(SFR_v[-1], G_v[-1])
+	def eta_SFR_func(self):
+		'''
+		between eq. (24) and (25)
+		'''
+		return np.divide(SFR_v[self.i-1], G_v[self.i-1])
+	eta_SFR = self.eta_SFR()
 		
 	def ratio_Wi_eta(self, Wi):
-		return np.divide(Wi, self.eta_SFR())
-		
+		return np.divide(self.W_i(), self.eta_SFR())
 		return None
+			
+	def betai(self, t, partial_ratio=0.5): #partial_ratio = derlog (bi=) [!!!!!!!]
+		'''
+		Equation (30) 
+		'''
+		eta_deltat = eta_SFR_n * iTimeStep
+		exp_eta = np.exp(-eta_deltat) 
+		part1 = (exp_eta - 1) * self.ratio_Wi_eta()
+		part2 = eta_deltat * exp_eta * (Gi_n - ratio_Wi_eta)
+		return 0.5 * partial_ratio * (part1 - part2)
 		
 	def Ai(self, eta_SFR, Gi_n, ratio_Wi_eta):
 		'''
 		Equation (29)
 		'''
 		# while deltai_k
-		return (np.exp(-eta_SFR * iTimeStep) * (Gi_n - ratio_Wi_eta) 
-		        + ratio_Wi_eta)
-			
-	def betai(self, t, i, partial_ratio=0.5): #partial_ratio = derlog (bi=) [!!!!!!!]
-		'''
-		Equation (30) 
-		'''
-		eta_deltat = eta_SFR_n * iTimeStep
-		exp_eta = np.exp(-eta_deltat) 
-		part1 = (exp_eta - 1) * ratio_Wi_eta
-		part2 = eta_deltat * exp_eta * (Gi_n - ratio_Wi_eta)
-		return 0.5 * partial_ratio * (part1 - part2)
-		
+		return (np.exp(-self.eta_SFR() * IN.iTimeStep) * (Gi_n - ratio_Wi_eta) + ratio_Wi_eta)
+		        
 	def deltai_kplus1(self, Ai, betai, Gi_k):
 		'''
 		Equation (28)
 		'''
-		# while deltai_kplus1 >= delta_max: Gi_kplus1
-		return np.divide(Gi_k - Ai, betai - Gi) 
-	
-	def Gi_kplus1_convergence(self, Gi_k, deltai_kplus1):
+		return np.divide(Gi_k - Ai, betai - Gi_k) 
+
+	def Gi_kplus1(self, i, Ai, betai, Gi_k):
 		'''
 		Equation (27)
 		'''
-		return np.multiply(Gi_k, 1 + deltai_kplus1)
-
-	def Gi_kplus1(self, i):
 		Gi_k1 = Gi_k
 		delta_i = self.deltai_kplus1(self, Ai, betai, Gi_k)
 		while delta_i >= IN.delta_max:
 			Gi_k1 *= (1 + delta_i)
+		return Gi_k1
 
 
 class Wi_integrand:
@@ -285,12 +288,12 @@ class Wi:
 		for i in range(len(BBN_idx)):
 			Mass_i_v[BBN_idx[i],j] = Mass_i_v[BBN_idx[i],j-1] + yields_BBN_class.yields[i] * Minfall_dt * IN.iTimeStep
 			
-	def compute(self, j):
+	def compute(self, n):
 		'''
-		j timestep idx
+		n timestep idx
 		'''
 		#self.Gi_infall
-		total = self.Mass_i_infall(j)
+		total = self.Mass_i_infall(n)
 		return total
 
 
