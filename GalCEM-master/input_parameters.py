@@ -2,19 +2,27 @@ import numpy as np
 # Romano+10 uses Portinari's code, with Kroupa+03 and the two-infall model
 # So far, I'm using Salpeter+55 for the IMF. Also check the Schmidt power exponent
 
+'''	applies to thick disk at 8 kpc '''
 age_Galaxy = 13.8 # [Gyr]
 morphology = 'spiral'
 r = 8 # Compute around the solar neighborhood [kpc]
+k_SFR = 1
+# For SNIa
+Ml_SNIa = 3 # Lower limit for total binary mass for SNIae [Msun]
+Mu_SNIa = 12 # Upper limit for total binary mass for SNIae [Msun]
+A = 0.035 # Fraction of white dwarfs that underwent a SNIa
+
+Ml_LIMs = 0.6 # [Msun] !!!!!!! temporary. Import from yield tables
+Mu_LIMs = 9 # [Msun] !!!!!!! temporary. Import from yield tables
+Ml_Massive = 10 # [Msun] !!!!!!! temporary. Import from yield tables
+Mu_Massive = 120 # [Msun] !!!!!!! temporary. Import from yield tables
+
 iTimeStep = 0.01#0.002 # Picked to smooth the mapping between stellar masses and lifetimes
 num_MassGrid = 200
+
 time_start = 0.00311 # Gyr (Calibrated on Portinari+98)
 time_end = 79.2 # Gyr (Calibrated on Portinari+98) to ensure tau can be mapped to masses and vice versa
 sd = 530.96618 # surf density coefficient for the disk (normalized to the MW mass?) 
-k_SFR = 1
-# For SNIa
-MBl = 3 # Lower limit for total binary mass for SNIae [Msun]
-Mbu = 12 # Upper limit for total binary mass for SNIae [Msun]
-A = 0.035 # Fraction of white dwarfs that underwent a SNIa
 
 delta_max = 8e-2 # Convergence limit for (e. 28, Portinari+98)
 epsilon = 1e-8 # Avoid numerical errors - consistent with BBN
@@ -59,7 +67,7 @@ Reff = {'elliptical': 7, # effective radius in [kpc]
         'UrsaMinor': 1}
 tau_inf = {'elliptical': 0.2, # infall timescale [Gyr]
            'spiral': 7.,
-           'irregular': 7.
+           'irregular': 7.,
            'Fornax': 3,
            'Sculptor': 0.5,
            'ReticulumII': 0.05,

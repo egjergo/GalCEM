@@ -1,8 +1,4 @@
-'''
-I only achieve simplicity with enormous effort (Clarice Lispector)
-'''
-
-'''	applies to thick disk at 8 kpc '''
+''' I only achieve simplicity with enormous effort (Clarice Lispector) '''
 import time
 tic = []
 tic.append(time.process_time())
@@ -86,74 +82,100 @@ def pick_yields(yields_switch, AZ_Symb, stellar_mass_idx = None, metallicity_idx
 		return yields_SNIa_class.yields[idx]
 
 
-class Convergence:
+class Wi_grid:
 	'''
-	Computes eq. (27)
+	birthtime grid for Wi integral
 	'''
-	def __init__(self, isotope_idx, timestep):
-		self.n = timestep
-		self.i = isotope_idx
-		self.Gi_n = Xi_v[]
-		return None
-
-	Wi_class = Wi()
-	def W_i(self):
-		return Wi_class.compute(self.i)
-	
-	def eta_SFR_func(self):
-		'''
-		between eq. (24) and (25)
-		'''
-		return np.divide(SFR_v[self.i-1], G_v[self.i-1])
-	eta_SFR = self.eta_SFR()
-		
-	def ratio_Wi_eta(self, Wi):
-		return np.divide(self.W_i(), self.eta_SFR())
-		return None
-			
-	def betai(self, t, partial_ratio=0.5): #partial_ratio = derlog (bi=) [!!!!!!!]
-		'''
-		Equation (30) 
-		'''
-		eta_deltat = eta_SFR_n * iTimeStep
-		exp_eta = np.exp(-eta_deltat) 
-		part1 = (exp_eta - 1) * self.ratio_Wi_eta()
-		part2 = eta_deltat * exp_eta * (Gi_n - ratio_Wi_eta)
-		return 0.5 * partial_ratio * (part1 - part2)
-		
-	def Ai(self, eta_SFR, Gi_n, ratio_Wi_eta):
-		'''
-		Equation (29)
-		'''
-		# while deltai_k
-		return (np.exp(-self.eta_SFR() * IN.iTimeStep) * (Gi_n - ratio_Wi_eta) + ratio_Wi_eta)
-		        
-	def deltai_kplus1(self, Ai, betai, Gi_k):
-		'''
-		Equation (28)
-		'''
-		return np.divide(Gi_k - Ai, betai - Gi_k) 
-
-	def Gi_kplus1(self, i, Ai, betai, Gi_k):
-		'''
-		Equation (27)
-		'''
-		Gi_k1 = Gi_k
-		delta_i = self.deltai_kplus1(self, Ai, betai, Gi_k)
-		while delta_i >= IN.delta_max:
-			Gi_k1 *= (1 + delta_i)
-		return Gi_k1
-
-
-class Wi_integrand:
-	'''
-	lambda t': integrand
-	'''
-	def __init__(self, Mgas_tot, metallicity):
-		self.Mgas_tot = Mgas_tot
+	def __init__(self, metallicity, age_idx):
 		self.metallicity = metallicity
-		self.Gyr_age = Gyr_age
-		self.Mass_i_t = np.zeros(len(AZ_sorted))
+		self.age_idx = age_idx
+		return None
+		
+	def integr_lim(self, mass_lim):
+		''' 
+		birthtime integration lower and upper limit 
+		'''
+		tau_mass = lifetime_class.interp_stellar_lifetimes(self.metallicity)(mass_lim)
+		return time_uniform[self.age_idx] - tau_mass
+		
+	def integration_grid(self, l_lim, u_lim):
+		''' x array in Simpson's rule for the birthtime array '''
+		lower_lim = np.maximum(self.integr_lim(l_lim), IN.time_start)
+		upper_lim = np.maximum(self.integr_lim(u_lim), IN.time_start)
+		return np.linspace(lower_lim, upper_lim, num = IN.num_MassGrid)
+		
+	def grids(self, l_lim, u_lim):
+		birthtime_grid = self.integration_grid(l_lim, u_lim)
+		mass_grid = lifetime_class.interp_stellar_masses(self.metallicity)(birthtime_grid)
+		return birthtime_grid, mass_grid
+	
+
+class Wi:
+	'''
+	Solves each integration item by integrating over birthtimes.
+	
+	Input upper and lower mass limits (to be mapped onto birthtimes)
+	
+	Gyr_age	(t) 	is the Galactic age
+	birthtime (t') 	is the stellar birthtime
+	lifetime (tau)	is the stellar lifetime
+	'''
+	def __init__(self, metallicity, age_idx):
+		self.metallicity = metallicity
+		self.age_idx = age_idx
+		self.Wi_grid_class = Wi_grid(metallicity, age_idx)
+		self.LIMs_birthtime_grid, self.LIMs_mass_grid = self.Wi_grid_class.grids(IN.Ml_LIMs, IN.Mu_LIMs)
+		self.SNIa_birthtime_grid, self.SNIa_mass_grid = self.Wi_grid_class.grids(IN.Ml_SNIa, IN.Mu_SNIa)
+		self.Massive_birthtime_grid, self.Massive_mass_grid = self.Wi_grid_class.grids(IN.Ml_Massive, IN.Mu_Massive)
+		return None
+
+	
+	def pick_IMF(self):
+		''' Returns the IMF vector computed at the mass grids'''
+		return IMF(self.mass_grid)
+
+	#def mapping(self):
+	#	return None
+
+	#Wi_integrand_class = Wi_integrand(self.Mstar, self.metallicity)
+	#Wi = Wi_integrand_class.compute()
+	
+	def compute_gauss_quad(self, Gyr_age, metallicity, yields_switch, AZ_Symb, llimit_lifetime, ulimit_lifetime, 
+					stellar_mass_idx = None, metallicity_idx = None, vel_idx = None):
+		'''
+		Computes the Gaussian Quadrature of the integral elements of
+		eq. (34) Portinari+98 -- for alive stars
+		'''	
+		integrand = None
+		if (llimit_lifetime == IN.MBl and ulimit_lifetime == IN.MBu):
+			return (1 - IN.A) * quad(integrand, llimit_lifetime, ulimit_lifetime, args=all_args)[0]
+		else:
+			return quad(integrand, llimit_lifetime, ulimit_lifetime, args=all_args)[0]
+		
+	def compute_gauss_quad_delay(self, delay_func=None):
+		'''
+		Computes the Gaussian Quadrature of the integral elements of
+		eq. (34) Portinari+98 -- for delayed events (SNIa, NSNS)
+		'''
+		SFR_SNIa = lambda M1: 1
+		integrand_SNIa, M1_min, M1_max = Wi_integrand_class.SNIa_FM1(M1)
+		return IN.A * quad(f_nu * IMF, M1_min, M1_max)
+				
+	def Mass_i_infall(self, j):
+		Minfall_dt = infall(time_uniform[j])
+		print('Infalling mass ', Minfall_dt, ' Msun at timestep idx: ', j)
+		BBN_idx = c_class.R_M_i_idx(yields_BBN_class, AZ_sorted)
+		for i in range(len(BBN_idx)):
+			Mass_i_v[BBN_idx[i],j] = Mass_i_v[BBN_idx[i],j-1] + yields_BBN_class.yields[i] * Minfall_dt * IN.iTimeStep
+			
+	def compute(self, n):
+		'''
+		n timestep idx
+		'''
+		#self.Gi_infall
+		total = self.Mass_i_infall(n)
+		return total
+
 
 	def SFR_component(self):
 		return SFR(self.Mgas_tot)
@@ -215,88 +237,67 @@ class Wi_integrand:
 		for i in range(len(time)-1):
 			X_r[i+1] = X_r[i] + 0.002 * diff_Xi(X_r[i], rate, i)
 		return X_r
+		
 
-
-class Wi:
+class Convergence:
 	'''
-	Solves each integration item by integrating over birthtimes.
-	
-	Input upper and lower mass limits (to be mapped onto birthtimes)
-	
-	Gyr_age	(t) 	is Galactic age
-	birthtime (t') 	is stellar birthtime
-	lifetime (tau)	is stellar lifetime
+	Computes eq. (27)
 	'''
-	def __init__(self, l_mass, u_mass, metallicity, age_idx):# Mgas, Mstar):
-		self.metallicity = metallicity
-		#self.lifetime = time_uniform # (1)
-		#self.GasMass = Mgas
-		#self.Mstar = Mstar
-		#self.StarMass = lifetime_class.interp_stellar_masses(self.metallicity)(time_uniform)
-		self.l_mass = l_mass
-		self.u_mass = u_mass
-		self.age_idx = age_idx
-		self.mass_grid = np.linspace(l_mass, u_mass, num = IN.num_MassGrid)
+	def __init__(self, isotope_idx, timestep):
+		self.n = timestep
+		self.i = isotope_idx
+		#self.Gi_n = Xi_v[isotope_idx, timestep]
 		return None
 
-	def birthtime(self, Gyr_age, metallicity): # (2)
-		'''
-		Returns the birthtime (the integration variable) computed across the mass grid
-		Page 21, last sentence before Section 8.7	
-		
-			t'[array] = t(i[int]) - tau(M[array])
-		'''
-		birthtime = (time_uniform[self.age_idx] 
-				  - lifetime_class.interp_stellar_lifetimes(self.metallicity)(self.mass_grid))
-		return birthtime#[np.where(birthtime > 0)]
+	#Wi_class = Wi()
+	def W_i(self):
+		return Wi_class.compute(self.i)
 	
-	def pick_IMF(self):
-		''' Returns the IMF vector computed at the mass grids'''
-		return IMF(self.mass_grid)
-
-	#def mapping(self):
-	#	return None
-
-	#Wi_integrand_class = Wi_integrand(self.Mstar, self.metallicity)
-	#Wi = Wi_integrand_class.compute()
-	
-	def compute_gauss_quad(self, Gyr_age, metallicity, yields_switch, AZ_Symb, llimit_lifetime, ulimit_lifetime, 
-					stellar_mass_idx = None, metallicity_idx = None, vel_idx = None):
+	def eta_SFR_func(self):
 		'''
-		Computes the Gaussian Quadrature of the integral elements of
-		eq. (34) Portinari+98 -- for alive stars
-		'''	
-		integrand = None
-		if (llimit_lifetime == IN.MBl and ulimit_lifetime == IN.MBu):
-			return (1 - IN.A) * quad(integrand, llimit_lifetime, ulimit_lifetime, args=all_args)[0]
-		else:
-			return quad(integrand, llimit_lifetime, ulimit_lifetime, args=all_args)[0]
+		between eq. (24) and (25)
+		'''
+		return np.divide(SFR_v[self.i-1], G_v[self.i-1])
+	#eta_SFR = self.eta_SFR_func()
 		
-	def compute_gauss_quad_delay(self, delay_func=None):
-		'''
-		Computes the Gaussian Quadrature of the integral elements of
-		eq. (34) Portinari+98 -- for delayed events (SNIa, NSNS)
-		'''
-		SFR_SNIa = lambda M1: 1
-		integrand_SNIa, M1_min, M1_max = Wi_integrand_class.SNIa_FM1(M1)
-		return IN.A * quad(f_nu * IMF, M1_min, M1_max)
-				
-	def Mass_i_infall(self, j):
-		Minfall_dt = infall(time_uniform[j])
-		print('Infalling mass ', Minfall_dt, ' Msun at timestep idx: ', j)
-		BBN_idx = c_class.R_M_i_idx(yields_BBN_class, AZ_sorted)
-		for i in range(len(BBN_idx)):
-			Mass_i_v[BBN_idx[i],j] = Mass_i_v[BBN_idx[i],j-1] + yields_BBN_class.yields[i] * Minfall_dt * IN.iTimeStep
+	def ratio_Wi_eta(self, Wi):
+		return np.divide(self.W_i(), self.eta_SFR())
+		return None
 			
-	def compute(self, n):
+	def betai(self, t, partial_ratio=0.5): #partial_ratio = derlog (bi=) [!!!!!!!]
 		'''
-		n timestep idx
+		Equation (30) 
 		'''
-		#self.Gi_infall
-		total = self.Mass_i_infall(n)
-		return total
+		eta_deltat = eta_SFR_n * iTimeStep
+		exp_eta = np.exp(-eta_deltat) 
+		part1 = (exp_eta - 1) * self.ratio_Wi_eta()
+		part2 = eta_deltat * exp_eta * (Gi_n - ratio_Wi_eta)
+		return 0.5 * partial_ratio * (part1 - part2)
+		
+	def Ai(self, eta_SFR, Gi_n, ratio_Wi_eta):
+		'''
+		Equation (29)
+		'''
+		# while deltai_k
+		return (np.exp(-self.eta_SFR() * IN.iTimeStep) * (Gi_n - ratio_Wi_eta) + ratio_Wi_eta)
+		        
+	def deltai_kplus1(self, Ai, betai, Gi_k):
+		'''
+		Equation (28)
+		'''
+		return np.divide(Gi_k - Ai, betai - Gi_k) 
 
-
+	def Gi_kplus1(self, i, Ai, betai, Gi_k):
+		'''
+		Equation (27)
+		'''
+		Gi_k1 = Gi_k
+		delta_i = self.deltai_kplus1(self, Ai, betai, Gi_k)
+		while delta_i >= IN.delta_max:
+			Gi_k1 *= (1 + delta_i)
+		return Gi_k1
+		
+		
 class Evolution:
 	'''
 	Main GCE one-zone class 
