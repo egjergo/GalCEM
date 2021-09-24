@@ -25,7 +25,7 @@ time_end = 79.2 # Gyr (Calibrated on Portinari+98) to ensure tau can be mapped t
 sd = 530.96618 # surf density coefficient for the disk (normalized to the MW mass?) 
 
 delta_max = 8e-2 # Convergence limit for (e. 28, Portinari+98)
-epsilon = 1e-8 # Avoid numerical errors - consistent with BBN
+epsilon = 1e-32 # Avoid numerical errors - consistent with BBN
 
 custom_IMF = None
 custom_SFR = None

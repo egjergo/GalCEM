@@ -49,17 +49,16 @@ AZ_Symb_list = IN.periodic['elemSymb'][c_class.AZ_Symb(AZ_sorted)]
 elemZ_for_metallicity = np.where(AZ_sorted[:,0]>2)[0][0] # metallicity starting index selection
 
 ''' Initialize tracked quantities '''
-Mtot = np.insert(np.cumsum((infall(time_uniform)[1:] + infall(time_uniform)[:-1]) * IN.iTimeStep / 2), 0, 0)
-Mstar_v = np.zeros(len(time_uniform))	# Global
-Mass_i_v = np.zeros((len(AZ_sorted), len(time_uniform)))	# Global
-Xi_v = np.zeros((len(AZ_sorted), len(time_uniform)))	# Xi Global
-G_v = np.zeros(len(time_uniform)) # G Global
+Mtot = np.insert(np.cumsum((infall(time_uniform)[1:] + infall(time_uniform)[:-1]) * IN.iTimeStep / 2), 0, IN.epsilon)
+Mstar_v = IN.epsilon * np.ones(len(time_uniform))	# Global
+Mass_i_v = IN.epsilon * np.ones((len(AZ_sorted), len(time_uniform)))	# Global
+Xi_v = IN.epsilon * np.ones((len(AZ_sorted), len(time_uniform)))	# Xi Global
+SFR_v =  IN.epsilon * np.ones(len(time_uniform)) 
+Z_v = IN.epsilon * np.ones(len(time_uniform)) # Metallicity Global
+S_v = IN.epsilon * np.ones(len(time_uniform)) # S = 1 - G Global
+G_v = IN.epsilon * np.ones(len(time_uniform)) # G Global
 Mgas_v = np.multiply(G_v, Mtot)
-S_v = np.zeros(len(time_uniform)) # S = 1 - G Global
-Z_v = np.zeros(len(time_uniform)) # Metallicity Global
-SFR_v =  np.zeros(len(time_uniform)) 
-Mass_i_v[:,0] = IN.epsilon
-G_v[0] = IN.epsilon
+
 
 ''' GCE Classes and Functions'''
 def pick_yields(yields_switch, AZ_Symb, stellar_mass_idx = None, metallicity_idx = None, vel_idx = None):
@@ -107,8 +106,8 @@ class Wi_grid:
 	def grids(self, l_lim, u_lim):
 		birthtime_grid = self.integration_grid(l_lim, u_lim)
 		mass_grid = lifetime_class.interp_stellar_masses(self.metallicity)(birthtime_grid)
-		return birthtime_grid, mass_grid
-	
+		return birthtime_grid[1:], mass_grid[1:]
+
 
 class Wi:
 	'''
@@ -132,6 +131,12 @@ class Wi:
 	def SFR_component(self, birthtime_grid):
 		''' Returns the interpolated SFR vector computed at the birthtime grids'''
 		SFR_interp = interp.interp1d(SFR(Mgas_v), time_uniform)
+		print('SFR(Mgas_v)[0]:     ', SFR(Mgas_v)[0])
+		print('SFR(Mgas_v)[-1]:    ', SFR(Mgas_v)[-1])
+		print('time_uniform[0]:    ', time_uniform[0])
+		print('time_uniform[-1]:   ', time_uniform[-1])
+		print('birthtime_grid[0]:  ', birthtime_grid[0])
+		print('birthtime_grid[-1]: ', birthtime_grid[-1])
 		return SFR_interp(birthtime_grid)
 	
 	def IMF_component(self, mass_grid):
@@ -141,8 +146,8 @@ class Wi:
 	def dMdtauM_component(self, birthtime_grid, derlog = False):
 		''' computes the derivative of M(tauM) w.r.t. tauM '''
 		if derlog == False:
-			lifetime_inverse_func = lifetime_class.interp_stellar_masses(self.metallicity)
-			return derivative(lifetime_inverse_func)(birthtime_grid)
+			M_tauM = lifetime_class.interp_stellar_masses(self.metallicity)(birthtime_grid)
+			return interp.CubicHermiteSpline.derivative(M_tauM)
 		if derlog == True:
 			return 0.5	
 				
@@ -290,8 +295,8 @@ class Convergence:
 		while delta_i >= IN.delta_max:
 			Gi_k1 *= (1 + delta_i)
 		return Gi_k1
-		
-		
+
+
 class Evolution:
 	'''
 	Main GCE one-zone class 
