@@ -106,7 +106,7 @@ class Wi_grid:
 	def grids(self, l_lim, u_lim):
 		birthtime_grid = self.integration_grid(l_lim, u_lim)
 		mass_grid = lifetime_class.interp_stellar_masses(self.metallicity)(birthtime_grid)
-		return birthtime_grid[1:], mass_grid[1:]
+		return birthtime_grid[:], mass_grid[:]
 
 
 class Wi:
@@ -130,13 +130,7 @@ class Wi:
 	
 	def SFR_component(self, birthtime_grid):
 		''' Returns the interpolated SFR vector computed at the birthtime grids'''
-		SFR_interp = interp.interp1d(SFR(Mgas_v), time_uniform)
-		print('SFR(Mgas_v)[0]:     ', SFR(Mgas_v)[0])
-		print('SFR(Mgas_v)[-1]:    ', SFR(Mgas_v)[-1])
-		print('time_uniform[0]:    ', time_uniform[0])
-		print('time_uniform[-1]:   ', time_uniform[-1])
-		print('birthtime_grid[0]:  ', birthtime_grid[0])
-		print('birthtime_grid[-1]: ', birthtime_grid[-1])
+		SFR_interp = interp.interp1d(time_uniform, SFR(Mgas_v))
 		return SFR_interp(birthtime_grid)
 	
 	def IMF_component(self, mass_grid):
@@ -146,8 +140,8 @@ class Wi:
 	def dMdtauM_component(self, birthtime_grid, derlog = False):
 		''' computes the derivative of M(tauM) w.r.t. tauM '''
 		if derlog == False:
-			M_tauM = lifetime_class.interp_stellar_masses(self.metallicity)(birthtime_grid)
-			return interp.CubicHermiteSpline.derivative(M_tauM)
+			M_tauM = lifetime_class.interp_stellar_masses(self.metallicity)
+			return morph.Auxiliary.deriv(M_tauM, birthtime_grid)
 		if derlog == True:
 			return 0.5	
 				

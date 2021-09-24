@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.integrate
+from scipy.misc import derivative
 import scipy.interpolate as interp
 
 import input_parameters as IN
@@ -36,6 +37,10 @@ class Auxiliary:
 		array = np.asarray(array)
 		idx = (np.abs(array - value)).argmin()
 		return idx
+	
+	def deriv(func, x, n=1):
+		''' Returns the nth order derivative of a function '''
+		return derivative(func, x, n=n)
 
 	def age_from_z(self, zf, h = 0.7, OmegaLambda0 = 0.7, Omegam0 = 0.3, Omegar0 = 1e-4, lookback_time = False):
 		'''
@@ -44,7 +49,7 @@ class Auxiliary:
 		Omegam0 = 0.28 # 0.24 DM + 0.04 baryonic
 		
 		INPUT:	
-		(aem = Float. Scale factor.)
+		(Deprecated input aem = Float. Scale factor.) #zf = np.reciprocal(np.float(aem))-1
 		(OmegaLambda0 = 0.72, Omegam0 = 0.28)
 		zf  = redshift
 		
@@ -52,7 +57,6 @@ class Auxiliary:
 		lookback time.
 		'''
 		H0 = 100 * h * 3.24078e-20 * 3.15570e16 # [ km s^-1 Mpc^-1 * Mpc km^-1 * s Gyr^-1 ]
-		#zf = np.reciprocal(np.float(aem))-1
 		age = integrate.quad(lambda z: 1 / ( (z + 1) *np.sqrt(OmegaLambda0 + 
 								Omegam0 * (z+1)**3 + Omegar0 * (z+1)**4) ), 
 								zf, np.inf)[0] / H0 # Since BB [Gyr]
