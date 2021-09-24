@@ -128,18 +128,29 @@ class Wi:
 		self.SNIa_birthtime_grid, self.SNIa_mass_grid = self.Wi_grid_class.grids(IN.Ml_SNIa, IN.Mu_SNIa)
 		self.Massive_birthtime_grid, self.Massive_mass_grid = self.Wi_grid_class.grids(IN.Ml_Massive, IN.Mu_Massive)
 		return None
-
 	
-	def pick_IMF(self):
+	def SFR_component(self, birthtime_grid):
+		''' Returns the interpolated SFR vector computed at the birthtime grids'''
+		SFR_interp = interp.interp1d(SFR(Mgas_v), time_uniform)
+		return SFR_interp(birthtime_grid)
+	
+	def IMF_component(self, mass_grid):
 		''' Returns the IMF vector computed at the mass grids'''
-		return IMF(self.mass_grid)
-
-	#def mapping(self):
-	#	return None
-
-	#Wi_integrand_class = Wi_integrand(self.Mstar, self.metallicity)
-	#Wi = Wi_integrand_class.compute()
+		return IMF(mass_grid)
 	
+	def dMdtauM_component(self, birthtime_grid, derlog = False):
+		''' computes the derivative of M(tauM) w.r.t. tauM '''
+		if derlog == False:
+			lifetime_inverse_func = lifetime_class.interp_stellar_masses(self.metallicity)
+			return derivative(lifetime_inverse_func)(birthtime_grid)
+		if derlog == True:
+			return 0.5	
+				
+	def yield_component(self, yields_switch):
+		Yield_i_birthtime = pick_yields(yields_switch, AZ_Symb, stellar_mass_idx = stellar_mass_idx, 
+										metallicity_idx = metallicity_idx, vel_idx = vel_idx)
+
+
 	def compute_gauss_quad(self, Gyr_age, metallicity, yields_switch, AZ_Symb, llimit_lifetime, ulimit_lifetime, 
 					stellar_mass_idx = None, metallicity_idx = None, vel_idx = None):
 		'''
@@ -161,27 +172,20 @@ class Wi:
 		integrand_SNIa, M1_min, M1_max = Wi_integrand_class.SNIa_FM1(M1)
 		return IN.A * quad(f_nu * IMF, M1_min, M1_max)
 				
-	def Mass_i_infall(self, j):
-		Minfall_dt = infall(time_uniform[j])
-		print('Infalling mass ', Minfall_dt, ' Msun at timestep idx: ', j)
+	def Mass_i_infall(self, n):
+		Minfall_dt = infall(time_uniform[n])
+		print('Infalling mass ', Minfall_dt, ' Msun at timestep idx: ', n)
 		BBN_idx = c_class.R_M_i_idx(yields_BBN_class, AZ_sorted)
 		for i in range(len(BBN_idx)):
-			Mass_i_v[BBN_idx[i],j] = Mass_i_v[BBN_idx[i],j-1] + yields_BBN_class.yields[i] * Minfall_dt * IN.iTimeStep
+			Mass_i_v[BBN_idx[i],n] = Mass_i_v[BBN_idx[i],n-1] + yields_BBN_class.yields[i] * Minfall_dt * IN.iTimeStep
 			
 	def compute(self, n):
 		'''
-		n timestep idx
+		n timestep index
 		'''
 		#self.Gi_infall
 		total = self.Mass_i_infall(n)
 		return total
-
-
-	def SFR_component(self):
-		return SFR(self.Mgas_tot)
-	
-	def IMF_component(self):
-		return IMF(self.Mass_i_t)
 			
 	def yield_component(self):
 		'''
@@ -190,26 +194,16 @@ class Wi:
 		t_min_tprime = Gyr_age - time_uniform
 		t_min_tprime = t_min_tprime[np.where(t_min_tprime > 0.)]
 		if yields_switch == 'LIMS':
-			llimit_lifetime = lifetime_class.interp_stellar_lifetimes(metallicity)(Ml)	
+			llimit_lifetime = lifetime_class.interp_stellar_lifetimes(self.metallicity)(Ml_X)	
 			ulimit_lifetime = 10 # [Msun]
 		if yields_switch == 'Massive':
 			llimit_lifetime = 10 # [Msun]
-			ulimit_lifetime = lifetime_class.interp_stellar_lifetimes(metallicity)(Mu)
+			ulimit_lifetime = lifetime_class.interp_stellar_lifetimes(self.metallicity)(Mu_X)
 		Yield_i_birthtime = pick_yields(yields_switch, AZ_Symb, stellar_mass_idx = stellar_mass_idx, 
 										metallicity_idx = metallicity_idx, vel_idx = vel_idx)	
 		all_args = tuple()
 		return np.sum(Yield_i_birthtime) 
-	
-	def dM_vs_dtauM_component(self, derlog = False):
-		'''
-		computes the derivative of M(tauM) w.r.t. tauM
-		'''
-		if derlog == False:
-			lifetime_inverse_func = lifetime_class.interp_stellar_lifetimes_inverse()
-			return derivative(lifetime_inverse_func)
-		if derlog == True:
-			return 0.5	
-		
+
 	def SNIa_FM1(self, M1):
 		f_nu = lambda nu: 24 * (1 - nu)**2
 		M1_min = 0.5 * IN.MBl
@@ -237,7 +231,7 @@ class Wi:
 		for i in range(len(time)-1):
 			X_r[i+1] = X_r[i] + 0.002 * diff_Xi(X_r[i], rate, i)
 		return X_r
-		
+
 
 class Convergence:
 	'''
@@ -302,17 +296,10 @@ class Evolution:
 	'''
 	Main GCE one-zone class 
 	'''
-	#Tracking_class = Tracked_quantities(Gi_t)
-
-	def mapping(self):
-		return None
-
 	def evolve():
 		for t in time_uniform:
 			run_timesteps(t)
 		"..."
-		#"..."
-		#Tracking_class.run(Gi_vector)
 		return None
 
 """"""""""""""""""""""""""""""""""""

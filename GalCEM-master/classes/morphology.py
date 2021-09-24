@@ -72,7 +72,6 @@ class Stellar_Lifetimes:
 	The first column of s_lifetimes_p98 identifies the stellar mass
 	All the other columns indicate the respective lifetimes, 
 	evaluated at different metallicities.
-	
 	'''
 	def __init__(self):
 		self.Z_names = ['Z0004', 'Z008', 'Z02', 'Z05']
