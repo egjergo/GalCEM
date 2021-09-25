@@ -103,10 +103,11 @@ class Wi_grid:
 		upper_lim = np.maximum(self.integr_lim(u_lim), IN.time_start)
 		return np.linspace(lower_lim, upper_lim, num = IN.num_MassGrid)
 		
-	def grids(self, l_lim, u_lim):
+	def grids(self, l_lim, u_lim, age_idx):
 		birthtime_grid = self.integration_grid(l_lim, u_lim)
+		lifetime_grid = time_uniform[age_idx] - birthtime_grid
 		mass_grid = lifetime_class.interp_stellar_masses(self.metallicity)(birthtime_grid)
-		return birthtime_grid[:], mass_grid[:]
+		return birthtime_grid, lifetime_grid, mass_grid
 
 
 class Wi:
@@ -123,9 +124,9 @@ class Wi:
 		self.metallicity = metallicity
 		self.age_idx = age_idx
 		self.Wi_grid_class = Wi_grid(metallicity, age_idx)
-		self.LIMs_birthtime_grid, self.LIMs_mass_grid = self.Wi_grid_class.grids(IN.Ml_LIMs, IN.Mu_LIMs)
-		self.SNIa_birthtime_grid, self.SNIa_mass_grid = self.Wi_grid_class.grids(IN.Ml_SNIa, IN.Mu_SNIa)
-		self.Massive_birthtime_grid, self.Massive_mass_grid = self.Wi_grid_class.grids(IN.Ml_Massive, IN.Mu_Massive)
+		self.LIMs_birthtime_grid, self.LIMs_lifetime_grid, self.LIMs_mass_grid = self.Wi_grid_class.grids(IN.Ml_LIMs, IN.Mu_LIMs, age_idx)
+		self.SNIa_birthtime_grid, self.SNIa_lifetime_grid, self.SNIa_mass_grid = self.Wi_grid_class.grids(IN.Ml_SNIa, IN.Mu_SNIa, age_idx)
+		self.Massive_birthtime_grid, self.Massive_lifetime_grid, self.Massive_mass_grid = self.Wi_grid_class.grids(IN.Ml_Massive, IN.Mu_Massive, age_idx)
 		return None
 	
 	def SFR_component(self, birthtime_grid):
@@ -137,18 +138,16 @@ class Wi:
 		''' Returns the IMF vector computed at the mass grids'''
 		return IMF(mass_grid)
 	
-	def dMdtauM_component(self, birthtime_grid, derlog = False):
+	def dMdtauM_component(self, lifetime_grid, derlog = False):
 		''' computes the derivative of M(tauM) w.r.t. tauM '''
 		if derlog == False:
-			M_tauM = lifetime_class.interp_stellar_masses(self.metallicity)
-			return morph.Auxiliary.deriv(M_tauM, birthtime_grid)
+			return lifetime_class.dMdtauM(self.metallicity)(lifetime_grid)
 		if derlog == True:
 			return 0.5	
 				
 	def yield_component(self, yields_switch):
 		Yield_i_birthtime = pick_yields(yields_switch, AZ_Symb, stellar_mass_idx = stellar_mass_idx, 
 										metallicity_idx = metallicity_idx, vel_idx = vel_idx)
-
 
 	def compute_gauss_quad(self, Gyr_age, metallicity, yields_switch, AZ_Symb, llimit_lifetime, ulimit_lifetime, 
 					stellar_mass_idx = None, metallicity_idx = None, vel_idx = None):

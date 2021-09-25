@@ -20,8 +20,6 @@ Mu_Massive = 120 # [Msun] !!!!!!! temporary. Import from yield tables
 iTimeStep = 0.01#0.002 # Picked to smooth the mapping between stellar masses and lifetimes
 num_MassGrid = 200
 
-time_start = 0.00311 # Gyr (Calibrated on Portinari+98)
-time_end = 79.2 # Gyr (Calibrated on Portinari+98) to ensure tau can be mapped to masses and vice versa
 sd = 530.96618 # surf density coefficient for the disk (normalized to the MW mass?) 
 
 delta_max = 8e-2 # Convergence limit for (e. 28, Portinari+98)
@@ -103,6 +101,8 @@ wind_efficiency = 0 # override: no overflow in this run
 s_lifetimes_p98 = np.genfromtxt('input/starlifetime/portinari98table14.dat', 
                                 delimiter = ',', # padded to evaluate at boundary masses
                                 names = ['M','Z0004', 'Z008', 'Z02', 'Z05'])
+time_start = np.min([s_lifetimes_p98[Z] for Z in ['Z0004', 'Z008', 'Z02', 'Z05']]) / 1e9 # [Gyr]
+time_end = np.max([s_lifetimes_p98[Z] for Z in ['Z0004', 'Z008', 'Z02', 'Z05']]) / 1e9 # [Gyr]
 
 asplund1 = np.genfromtxt('input/physics/asplund09/table1.dat', 
 						 names=['elemZ','elemN','photospheric','perr','meteoric','merr'], 

@@ -96,19 +96,23 @@ class Stellar_Lifetimes:
 		return [self.interp_M(idx) for idx in range(4)]
 	
 	def interp_stellar_lifetimes(self, metallicity):
-		'''
-		Picks the tau(M) interpolation at the appropriate metallicity
-		'''
+		'''Picks the tau(M) interpolation at the appropriate metallicity'''
 		Z_idx = np.digitize(metallicity, self.Z_bins)
 		return self.stellar_lifetimes()[Z_idx]
 
 	def interp_stellar_masses(self, metallicity):
-		'''
-		Picks the M(tau) interpolation at the appropriate metallicity
-		'''
+		'''Picks the M(tau) interpolation at the appropriate metallicity'''
 		Z_idx = np.digitize(metallicity, self.Z_bins)
 		return self.stellar_masses()[Z_idx]
 
+	def dMdtauM(self, metallicity, n=1):
+		'''
+		Computes the first order derivative of the M(tau) function
+		with respect to dtau, but multiplied by dtau/dt' = -1
+		'''
+		Z_idx = np.digitize(metallicity, self.Z_bins)
+		tau = IN.s_lifetimes_p98[self.Z_names[Z_idx]] / 1e9
+		return - derivative(self.interp_M(Z_idx), tau, n=n)
 
 class Infall:
 	'''
