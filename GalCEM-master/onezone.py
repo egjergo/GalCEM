@@ -113,8 +113,30 @@ class Wi_grid:
 		lifetime_grid = time_uniform[age_idx] - birthtime_grid
 		mass_grid = lifetime_class.interp_stellar_masses(self.metallicity)(birthtime_grid)
 		return birthtime_grid, lifetime_grid, mass_grid
-
-
+	"""	
+	def integr_lim(self, mass_lim):
+		''' 
+		birthtime integration lower and upper limit 
+		'''
+		tau_mass = lifetime_class.interp_stellar_lifetimes(self.metallicity)(mass_lim)
+		return time_uniform[self.age_idx] - tau_mass
+		
+	def integration_grid(self, l_lim, u_lim):
+		''' x array in Simpson's rule for the birthtime array '''
+		lower_lim = np.maximum(self.integr_lim(l_lim), IN.time_start)
+		upper_lim = np.maximum(self.integr_lim(u_lim), IN.time_start)
+		return np.linspace(lower_lim, upper_lim, num = IN.num_MassGrid)
+		
+	def grids(self, Ml_lim, Mu_lim, age_idx):
+		'''
+		Ml_lim and Mu_lim are mass limits
+		They are converted to lifetimes by integr_lim() in integration_grid()
+		'''
+		mass_grid = self.integration_grid(Ml_lim, Mu_lim, age_idx)
+		lifetime_grid = lifetime_class.interp_stellar_lifetimes(self.metallicity)(mass_grid)
+		birthtime_grid = time_uniform[age_idx] - lifetime_grid
+		return birthtime_grid, lifetime_grid, mass_grid
+	"""
 			
 class Wi:
 	'''
