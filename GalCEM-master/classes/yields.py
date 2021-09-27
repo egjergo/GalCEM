@@ -16,7 +16,7 @@ import input_parameters as IN
 "	__		Yields_BBN                         "
 "	__		Yields_SNIa                        "
 "	__		Yields_Massive                     "
-"	__		Yields_LIMS                        "
+"	__		Yields_LIMs                        "
 "                                              "
 """"""""""""""""""""""""""""""""""""""""""""""""
 
@@ -93,7 +93,7 @@ class Concentrations:
 	def extract_AZ_pairs_Massive(self, yields):
 		return np.column_stack((yields.elemZ, yields.elemA))
 		
-	def extract_AZ_pairs_LIMS(self, yields):
+	def extract_AZ_pairs_LIMs(self, yields):
 		return np.column_stack((yields.elemZ_sorting[0][:,0], yields.elemA_sorting[0][:,0]))
 	
 	def AZ_sorted(self, AZ_all):
@@ -245,11 +245,11 @@ class Yields_Massive:
 			self.yields = self.tables[:,:,:,4:].astype('float')
 	
 	
-class Yields_LIMS:
+class Yields_LIMs:
 	'''
 	Karakas et al. (2010) by default
 	'''
-	def __init__(self, option = IN.yields_LIMS_option):
+	def __init__(self, option = IN.yields_LIMs_option):
 		self.option = option
 		self.metallicity_bins = None
 		self.stellarMass_bins = None

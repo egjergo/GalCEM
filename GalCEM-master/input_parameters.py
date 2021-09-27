@@ -35,7 +35,7 @@ SFR_option = 'SFRgal' # or 'CSFR'
 CSFR_option = None # e.g., 'md14'. 
 SNIaDTD_option = 'GreggioRenzini83' # 'RuizMannucci01'
 
-yields_LIMS_option = 'k10'
+yields_LIMs_option = 'k10'
 yields_massive_option = 'lc18'
 yields_SNIa_option = 'i99' #'km20'
 yields_BBN_option = 'gp13'

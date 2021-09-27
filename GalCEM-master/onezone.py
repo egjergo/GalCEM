@@ -14,6 +14,7 @@ import classes.morphology as morph
 import classes.yields as Y
 
 ''' Setup '''
+aux = morph.Auxiliary()
 lifetime_class = morph.Stellar_Lifetimes()
 Ml = lifetime_class.s_mass[1] # Lower limit stellar masses [Msun] 
 Mu = lifetime_class.s_mass[-2] # Upper limit stellar masses [Msun]
@@ -30,8 +31,8 @@ IMF_class = morph.Initial_Mass_Function(Ml, Mu, IN.IMF_option, IN.custom_IMF)
 IMF = IMF_class.IMF() # Function @ input stellar mass
 
 isotopes = Y.Isotopes()
-yields_LIMS_class = Y.Yields_LIMS()
-yields_LIMS_class.import_yields()
+yields_LIMs_class = Y.Yields_LIMs()
+yields_LIMs_class.import_yields()
 yields_Massive_class = Y.Yields_Massive()
 yields_Massive_class.import_yields()
 yields_SNIa_class = Y.Yields_SNIa()
@@ -40,10 +41,10 @@ yields_BBN_class = Y.Yields_BBN()
 yields_BBN_class.import_yields()
 
 c_class = Y.Concentrations()
-AZ_LIMS = c_class.extract_AZ_pairs_LIMS(yields_LIMS_class)
+AZ_LIMs = c_class.extract_AZ_pairs_LIMs(yields_LIMs_class)
 AZ_SNIa = c_class.extract_AZ_pairs_SNIa(yields_SNIa_class)
 AZ_Massive = c_class.extract_AZ_pairs_Massive(yields_Massive_class)
-AZ_all = np.vstack((AZ_LIMS, AZ_SNIa, AZ_Massive))
+AZ_all = np.vstack((AZ_LIMs, AZ_SNIa, AZ_Massive))
 AZ_sorted = c_class.AZ_sorted(AZ_all) # 321 isotopes with 'km20', 198 w/ 'i99' # will compute over 10 million integrals and recursions
 AZ_Symb_list = IN.periodic['elemSymb'][c_class.AZ_Symb(AZ_sorted)]
 elemZ_for_metallicity = np.where(AZ_sorted[:,0]>2)[0][0] # metallicity starting index selection
@@ -61,22 +62,22 @@ Mgas_v = np.multiply(G_v, Mtot)
 
 
 ''' GCE Classes and Functions'''
-def pick_yields(yields_switch, AZ_Symb, stellar_mass_idx = None, metallicity_idx = None, vel_idx = None):
+def pick_yields(channel_switch, AZ_Symb, stellar_mass_idx = None, metallicity_idx = None, vel_idx = None):
 	'''
-	yields_switch	[str] can be 'LIMS', 'Massive', or 'SNIa'
+	channel_switch	[str] can be 'LIMs', 'Massive', or 'SNIa'
 	AZ_Symb			[str] is the element symbol, e.g. 'Na'
 	
-	'LIMS' requires metallicity_idx and stellar mass_idx
+	'LIMs' requires metallicity_idx and stellar mass_idx
 	'Massive' requires metallicity_idx, stellar mass_idx, and vel_idx
 	'SNIa' requires None
 	'''
-	if yields_switch == 'LIMS':
-		idx = isotopes.pick_by_Symb(yields_LIMS_class.elemZ, AZ_Symb)
-		return yields_LIMS_class.yields[metallicity_idx][idx, stellar_mass_idx]
-	elif yields_switch == 'Massive':
+	if channel_switch == 'LIMs':
+		idx = isotopes.pick_by_Symb(yields_LIMs_class.elemZ, AZ_Symb)
+		return yields_LIMs_class.yields[metallicity_idx][idx, stellar_mass_idx]
+	elif channel_switch == 'Massive':
 		idx = isotopes.pick_by_Symb(yields_Massive_class.elemZ, AZ_Symb)
 		return yields_Massive_class.yields[metallicity_idx, vel_idx, idx, stellar_mass_idx]
-	elif yields_switch == 'SNIa':
+	elif channel_switch == 'SNIa':
 		idx = isotopes.pick_by_Symb(yields_SNIa_class.elemZ, AZ_Symb)
 		return yields_SNIa_class.yields[idx]
 
@@ -103,8 +104,12 @@ class Wi_grid:
 		upper_lim = np.maximum(self.integr_lim(u_lim), IN.time_start)
 		return np.linspace(lower_lim, upper_lim, num = IN.num_MassGrid)
 		
-	def grids(self, l_lim, u_lim, age_idx):
-		birthtime_grid = self.integration_grid(l_lim, u_lim)
+	def grids(self, Ml_lim, Mu_lim, age_idx):
+		'''
+		Ml_lim and Mu_lim are mass limits
+		They are converted to lifetimes by integr_lim() in integration_grid()
+		'''
+		birthtime_grid = self.integration_grid(Ml_lim, Mu_lim)
 		lifetime_grid = time_uniform[age_idx] - birthtime_grid
 		mass_grid = lifetime_class.interp_stellar_masses(self.metallicity)(birthtime_grid)
 		return birthtime_grid, lifetime_grid, mass_grid
@@ -128,6 +133,13 @@ class Wi:
 		self.SNIa_birthtime_grid, self.SNIa_lifetime_grid, self.SNIa_mass_grid = self.Wi_grid_class.grids(IN.Ml_SNIa, IN.Mu_SNIa, age_idx)
 		self.Massive_birthtime_grid, self.Massive_lifetime_grid, self.Massive_mass_grid = self.Wi_grid_class.grids(IN.Ml_Massive, IN.Mu_Massive, age_idx)
 		return None
+		
+	def grid_picker(self, channel_switch, grid_type):
+		'''
+		channel_switch:		e.g. 'LIMs', 'SNIa', 'Massive'
+		grid_type:			e.g. 'birthtime', 'lifetime', 'mass'
+		'''
+		return self.__dict__[channel_switch+'_'+grid_type+'_grid']
 	
 	def SFR_component(self, birthtime_grid):
 		''' Returns the interpolated SFR vector computed at the birthtime grids'''
@@ -145,21 +157,27 @@ class Wi:
 		if derlog == True:
 			return 0.5	
 				
-	def yield_component(self, yields_switch):
-		Yield_i_birthtime = pick_yields(yields_switch, AZ_Symb, stellar_mass_idx = stellar_mass_idx, 
+	def yield_component(self, channel_switch):
+		Yield_i_birthtime = pick_yields(channel_switch, AZ_Symb, stellar_mass_idx = stellar_mass_idx, 
 										metallicity_idx = metallicity_idx, vel_idx = vel_idx)
 
-	def compute_gauss_quad(self, Gyr_age, metallicity, yields_switch, AZ_Symb, llimit_lifetime, ulimit_lifetime, 
+	def mass_component(self, channel_switch):
+		''' page 22, last eq. first column '''
+		mass_grid = self.grid_picker(channel_switch, 'mass')
+		lifetime_grid = self.grid_picker(channel_switch, 'lifetime')
+		return self.IMF_component(self.grid_picker(channel_switch, 'mass')) #* self.dMdtauM_component(lifetime_grid) * yield_component(channel_switch)
+
+	def compute_simpson(self, channel_switch, AZ_Symb, llimit_lifetime, ulimit_lifetime, 
 					stellar_mass_idx = None, metallicity_idx = None, vel_idx = None):
 		'''
-		Computes the Gaussian Quadrature of the integral elements of
+		Computes, using the Simpson rule, the integral elements of
 		eq. (34) Portinari+98 -- for alive stars
 		'''	
-		integrand = None
-		if (llimit_lifetime == IN.MBl and ulimit_lifetime == IN.MBu):
-			return (1 - IN.A) * quad(integrand, llimit_lifetime, ulimit_lifetime, args=all_args)[0]
+		integrand = np.multiply(self.SFR_component(), self.mass_component(channel_switch))
+		if (llimit_lifetime == IN.Ml_SNIa and ulimit_lifetime == IN.Mu_SNIa):
+			return (1 - IN.A) * scipy.integrate.simpson(integrand) #(1 - IN.A) * quad(integrand, llimit_lifetime, ulimit_lifetime, args=all_args)[0]
 		else:
-			return quad(integrand, llimit_lifetime, ulimit_lifetime, args=all_args)[0]
+			return scipy.integrate.simpson(integrand) #quad(integrand, llimit_lifetime, ulimit_lifetime, args=all_args)[0]
 		
 	def compute_gauss_quad_delay(self, delay_func=None):
 		'''
@@ -191,13 +209,13 @@ class Wi:
 		'''
 		t_min_tprime = Gyr_age - time_uniform
 		t_min_tprime = t_min_tprime[np.where(t_min_tprime > 0.)]
-		if yields_switch == 'LIMS':
+		if channel_switch == 'LIMs':
 			llimit_lifetime = lifetime_class.interp_stellar_lifetimes(self.metallicity)(Ml_X)	
 			ulimit_lifetime = 10 # [Msun]
-		if yields_switch == 'Massive':
+		if channel_switch == 'Massive':
 			llimit_lifetime = 10 # [Msun]
 			ulimit_lifetime = lifetime_class.interp_stellar_lifetimes(self.metallicity)(Mu_X)
-		Yield_i_birthtime = pick_yields(yields_switch, AZ_Symb, stellar_mass_idx = stellar_mass_idx, 
+		Yield_i_birthtime = pick_yields(channel_switch, AZ_Symb, stellar_mass_idx = stellar_mass_idx, 
 										metallicity_idx = metallicity_idx, vel_idx = vel_idx)	
 		all_args = tuple()
 		return np.sum(Yield_i_birthtime) 

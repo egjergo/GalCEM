@@ -1,6 +1,6 @@
 import numpy as np
 import scipy.integrate
-from scipy.misc import derivative
+import scipy.misc as sm 
 import scipy.interpolate as interp
 
 import input_parameters as IN
@@ -38,9 +38,9 @@ class Auxiliary:
 		idx = (np.abs(array - value)).argmin()
 		return idx
 	
-	def deriv(func, x, n=1):
+	def deriv(self, func, x, n=1):
 		''' Returns the nth order derivative of a function '''
-		return derivative(func, x, n=n)
+		return sm.derivative(func, x)
 
 	def age_from_z(self, zf, h = 0.7, OmegaLambda0 = 0.7, Omegam0 = 0.3, Omegar0 = 1e-4, lookback_time = False):
 		'''
@@ -112,7 +112,7 @@ class Stellar_Lifetimes:
 		'''
 		Z_idx = np.digitize(metallicity, self.Z_bins)
 		tau = IN.s_lifetimes_p98[self.Z_names[Z_idx]] / 1e9
-		return - derivative(self.interp_M(Z_idx), tau, n=n)
+		return - sm.derivative(self.interp_M(Z_idx), tau, n=n)
 
 class Infall:
 	'''
