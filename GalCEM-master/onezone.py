@@ -90,7 +90,7 @@ class Wi_grid:
 		self.metallicity = metallicity
 		self.age_idx = age_idx
 		return None
-		
+
 	def integr_lim(self, mass_lim):
 		''' 
 		birthtime integration lower and upper limit 
@@ -115,6 +115,7 @@ class Wi_grid:
 		return birthtime_grid, lifetime_grid, mass_grid
 
 
+			
 class Wi:
 	'''
 	Solves each integration item by integrating over birthtimes.
@@ -136,8 +137,10 @@ class Wi:
 		
 	def grid_picker(self, channel_switch, grid_type):
 		'''
-		channel_switch:		e.g. 'LIMs', 'SNIa', 'Massive'
-		grid_type:			e.g. 'birthtime', 'lifetime', 'mass'
+		Selects e.g. "self.LIMs_birthtime_grid"
+		
+		channel_switch:		can be 'LIMs', 'SNIa', 'Massive'
+		grid_type:			can be 'birthtime', 'lifetime', 'mass'
 		'''
 		return self.__dict__[channel_switch+'_'+grid_type+'_grid']
 	
@@ -167,17 +170,13 @@ class Wi:
 		lifetime_grid = self.grid_picker(channel_switch, 'lifetime')
 		return self.IMF_component(self.grid_picker(channel_switch, 'mass')) #* self.dMdtauM_component(lifetime_grid) * yield_component(channel_switch)
 
-	def compute_simpson(self, channel_switch, AZ_Symb, llimit_lifetime, ulimit_lifetime, 
-					stellar_mass_idx = None, metallicity_idx = None, vel_idx = None):
-		'''
-		Computes, using the Simpson rule, the integral elements of
-		eq. (34) Portinari+98 -- for alive stars
-		'''	
+	def compute_simpson(self, channel_switch, AZ_Symb, stellar_mass_idx = None, metallicity_idx = None, vel_idx = None):
+		'''Computes, using the Simpson rule, the integral elements of eq. (34) Portinari+98 -- for alive stars'''	
 		integrand = np.multiply(self.SFR_component(), self.mass_component(channel_switch))
-		if (llimit_lifetime == IN.Ml_SNIa and ulimit_lifetime == IN.Mu_SNIa):
-			return (1 - IN.A) * scipy.integrate.simpson(integrand) #(1 - IN.A) * quad(integrand, llimit_lifetime, ulimit_lifetime, args=all_args)[0]
-		else:
-			return scipy.integrate.simpson(integrand) #quad(integrand, llimit_lifetime, ulimit_lifetime, args=all_args)[0]
+		#if channel_switch == 'SNIa':
+		#	return (1 - IN.A) * scipy.integrate.simpson(integrand) 
+		#else:
+		return scipy.integrate.simpson(integrand) 
 		
 	def compute_gauss_quad_delay(self, delay_func=None):
 		'''
