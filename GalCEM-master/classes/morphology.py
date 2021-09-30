@@ -34,6 +34,7 @@ class Auxiliary:
 		return "not monotonic array"
 	
 	def find_nearest(self, array, value):
+		'''Returns the index in array s.t. array[idx] is closest to value(float)'''
 		array = np.asarray(array)
 		idx = (np.abs(array - value)).argmin()
 		return idx

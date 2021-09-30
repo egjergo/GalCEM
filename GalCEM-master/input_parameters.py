@@ -17,7 +17,8 @@ Mu_LIMs = 9 # [Msun] !!!!!!! temporary. Import from yield tables
 Ml_Massive = 10 # [Msun] !!!!!!! temporary. Import from yield tables
 Mu_Massive = 120 # [Msun] !!!!!!! temporary. Import from yield tables
 
-iTimeStep = 0.01#0.002 # Picked to smooth the mapping between stellar masses and lifetimes
+iTimeStep = 0.001#0.002 # Picked to smooth the mapping between stellar masses and lifetimes
+numTimeStep = 2000 # Like FM
 num_MassGrid = 200
 
 sd = 530.96618 # surf density coefficient for the disk (normalized to the MW mass?) 
@@ -37,6 +38,7 @@ SNIaDTD_option = 'GreggioRenzini83' # 'RuizMannucci01'
 
 yields_LIMs_option = 'k10'
 yields_massive_option = 'lc18'
+LC18_vel_idx = 0
 yields_SNIa_option = 'i99' #'km20'
 yields_BBN_option = 'gp13'
 

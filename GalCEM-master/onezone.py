@@ -18,12 +18,14 @@ aux = morph.Auxiliary()
 lifetime_class = morph.Stellar_Lifetimes()
 Ml = lifetime_class.s_mass[1] # Lower limit stellar masses [Msun] 
 Mu = lifetime_class.s_mass[-2] # Upper limit stellar masses [Msun]
-time_uniform = np.arange(IN.time_start, IN.time_end, IN.iTimeStep)
 mass_uniform = np.linspace(Ml, Mu, num = IN.num_MassGrid)
+time_uniform = np.arange(IN.time_start, IN.time_end, IN.iTimeStep)
+time_logspace = np.logspace(np.log10(IN.time_start), np.log10(IN.time_end), num=IN.numTimeStep)
+time_chosen = time_uniform
 # Surface density for the disk. The bulge goes as an inverse square law.
 surf_density_Galaxy = IN.sd / np.exp(IN.r / IN.Reff[IN.morphology]) #sigma(t_G) before eq(7)
 
-infall_class = morph.Infall(morphology=IN.morphology, time=time_uniform)
+infall_class = morph.Infall(morphology=IN.morphology, time=time_chosen)
 infall = infall_class.inf()
 SFR_class = morph.Star_Formation_Rate(IN.SFR_option, IN.custom_SFR)
 SFR = SFR_class.SFR() # Function: SFR(Mgas)
@@ -50,19 +52,19 @@ AZ_Symb_list = IN.periodic['elemSymb'][c_class.AZ_Symb(AZ_sorted)]
 elemZ_for_metallicity = np.where(AZ_sorted[:,0]>2)[0][0] # metallicity starting index selection
 
 ''' Initialize tracked quantities '''
-Mtot = np.insert(np.cumsum((infall(time_uniform)[1:] + infall(time_uniform)[:-1]) * IN.iTimeStep / 2), 0, IN.epsilon)
-Mstar_v = IN.epsilon * np.ones(len(time_uniform))	# Global
-Mass_i_v = IN.epsilon * np.ones((len(AZ_sorted), len(time_uniform)))	# Global
-Xi_v = IN.epsilon * np.ones((len(AZ_sorted), len(time_uniform)))	# Xi Global
-SFR_v =  IN.epsilon * np.ones(len(time_uniform)) 
-Z_v = IN.epsilon * np.ones(len(time_uniform)) # Metallicity Global
-S_v = IN.epsilon * np.ones(len(time_uniform)) # S = 1 - G Global
-G_v = IN.epsilon * np.ones(len(time_uniform)) # G Global
+Mtot = np.insert(np.cumsum((infall(time_chosen)[1:] + infall(time_chosen)[:-1]) * IN.iTimeStep / 2), 0, IN.epsilon)
+Mstar_v = IN.epsilon * np.ones(len(time_chosen))	# Global
+Mass_i_v = IN.epsilon * np.ones((len(AZ_sorted), len(time_chosen)))	# Global
+Xi_v = IN.epsilon * np.ones((len(AZ_sorted), len(time_chosen)))	# Xi Global
+SFR_v =  IN.epsilon * np.ones(len(time_chosen)) 
+Z_v = IN.epsilon * np.ones(len(time_chosen)) # Metallicity Global
+S_v = IN.epsilon * np.ones(len(time_chosen)) # S = 1 - G Global
+G_v = IN.epsilon * np.ones(len(time_chosen)) # G Global
 Mgas_v = np.multiply(G_v, Mtot)
 
 
 ''' GCE Classes and Functions'''
-def pick_yields(channel_switch, AZ_Symb, stellar_mass_idx = None, metallicity_idx = None, vel_idx = None):
+def pick_yields(channel_switch, AZ_Symb, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None):
 	'''
 	channel_switch	[str] can be 'LIMs', 'Massive', or 'SNIa'
 	AZ_Symb			[str] is the element symbol, e.g. 'Na'
@@ -72,9 +74,15 @@ def pick_yields(channel_switch, AZ_Symb, stellar_mass_idx = None, metallicity_id
 	'SNIa' requires None
 	'''
 	if channel_switch == 'LIMs':
+		if stellar_mass_idx == None:
+			raise Exception('You must import the mass grid')
 		idx = isotopes.pick_by_Symb(yields_LIMs_class.elemZ, AZ_Symb)
 		return yields_LIMs_class.yields[metallicity_idx][idx, stellar_mass_idx]
 	elif channel_switch == 'Massive':
+		if stellar_mass_idx == None:
+			raise Exception('You must import the mass grid')
+		metallicity_idx = np.digitize(self.metallicity, self.Z_bins)
+		vel_idx = IN.LC18_vel_idx
 		idx = isotopes.pick_by_Symb(yields_Massive_class.elemZ, AZ_Symb)
 		return yields_Massive_class.yields[metallicity_idx, vel_idx, idx, stellar_mass_idx]
 	elif channel_switch == 'SNIa':
@@ -96,7 +104,7 @@ class Wi_grid:
 		birthtime integration lower and upper limit 
 		'''
 		tau_mass = lifetime_class.interp_stellar_lifetimes(self.metallicity)(mass_lim)
-		return time_uniform[self.age_idx] - tau_mass
+		return time_chosen[self.age_idx] - tau_mass
 		
 	def integration_grid(self, l_lim, u_lim):
 		''' x array in Simpson's rule for the birthtime array '''
@@ -110,34 +118,28 @@ class Wi_grid:
 		They are converted to lifetimes by integr_lim() in integration_grid()
 		'''
 		birthtime_grid = self.integration_grid(Ml_lim, Mu_lim)
-		lifetime_grid = time_uniform[age_idx] - birthtime_grid
+		lifetime_grid = time_chosen[age_idx] - birthtime_grid
 		mass_grid = lifetime_class.interp_stellar_masses(self.metallicity)(birthtime_grid)
 		return birthtime_grid, lifetime_grid, mass_grid
-	"""	
-	def integr_lim(self, age_idx):
-		''' 
-		birthtime integration lower and upper limit 
-		'''
-		tau_mass = lifetime_class.interp_stellar_lifetimes(self.metallicity)(mass_lim)
-		return time_uniform[self.age_idx] - tau_mass
+	"""
+	def integration_grid(self, l_lim, u_lim, mass_from_age):
+		''' x mass array in Simpson's integration '''
+		star_mass_lower_lim = np.maximum(l_lim, mass_from_age)
+		star_mass_upper_lim = np.minimum(u_lim, mass_from_age)
+		if star_mass_lower_lim >= star_mass_upper_lim:
+			raise Exception('Upper mass bound is smaller than lower mass bound')
+		return np.logspace(star_mass_lower_lim, star_mass_upper_lim, num=IN.num_MassGrid)
 		
-	def integration_grid(self, l_lim, u_lim, age_idx):
-		''' x array in Simpson's rule for the birthtime array '''
-		t_lim = self.integr_lim(age_idx)
-		lower_lim = np.maximum(l_lim, t_lim)
-		upper_lim = np.maximum(u_lim, t_lim)
-		return np.linspace(lower_lim, upper_lim, num = IN.num_MassGrid)
-		
-	def grids(self, Ml_lim, Mu_lim, age_idx):
+	def grids(self, Ml_lim, Mu_lim, age_idx, mass_from_age):
 		'''
 		Ml_lim and Mu_lim are mass limits
 		They are converted to lifetimes by integr_lim() in integration_grid()
 		'''
-		mass_grid = self.integration_grid(Ml_lim, Mu_lim, age_idx)
+		mass_grid = self.integration_grid(Ml_lim, Mu_lim, mass_from_age)
 		lifetime_grid = lifetime_class.interp_stellar_lifetimes(self.metallicity)(mass_grid)
-		birthtime_grid = time_uniform[age_idx] - lifetime_grid
+		birthtime_grid = time_chosen[age_idx] - lifetime_grid
 		return birthtime_grid, lifetime_grid, mass_grid
-		
+
 			
 class Wi:
 	'''
@@ -153,9 +155,13 @@ class Wi:
 		self.metallicity = metallicity
 		self.age_idx = age_idx
 		self.Wi_grid_class = Wi_grid(metallicity, age_idx)
-		self.LIMs_birthtime_grid, self.LIMs_lifetime_grid, self.LIMs_mass_grid = self.Wi_grid_class.grids(IN.Ml_LIMs, IN.Mu_LIMs, age_idx)
-		self.SNIa_birthtime_grid, self.SNIa_lifetime_grid, self.SNIa_mass_grid = self.Wi_grid_class.grids(IN.Ml_SNIa, IN.Mu_SNIa, age_idx)
-		self.Massive_birthtime_grid, self.Massive_lifetime_grid, self.Massive_mass_grid = self.Wi_grid_class.grids(IN.Ml_Massive, IN.Mu_Massive, age_idx)
+		self.mass_from_age = lifetime_class.interp_stellar_masses(metallicity)(time_chosen[age_idx])
+		self.LIMs_birthtime_grid, self.LIMs_lifetime_grid, self.LIMs_mass_grid = (
+		self.Wi_grid_class.grids(IN.Ml_LIMs, IN.Mu_LIMs, age_idx, self.mass_from_age))
+		self.SNIa_birthtime_grid, self.SNIa_lifetime_grid, self.SNIa_mass_grid = (
+		self.Wi_grid_class.grids(IN.Ml_SNIa, IN.Mu_SNIa, age_idx, self.mass_from_age))
+		self.Massive_birthtime_grid, self.Massive_lifetime_grid, self.Massive_mass_grid = (
+		self.Wi_grid_class.grids(IN.Ml_Massive, IN.Mu_Massive, age_idx, self.mass_from_age))
 		return None
 		
 	def grid_picker(self, channel_switch, grid_type):
@@ -169,38 +175,42 @@ class Wi:
 	
 	def SFR_component(self, birthtime_grid):
 		''' Returns the interpolated SFR vector computed at the birthtime grids'''
-		SFR_interp = interp.interp1d(time_uniform, SFR(Mgas_v))
+		SFR_interp = interp.interp1d(time_chosen, SFR(Mgas_v))
 		return SFR_interp(birthtime_grid)
 	
 	def IMF_component(self, mass_grid):
 		''' Returns the IMF vector computed at the mass grids'''
 		return IMF(mass_grid)
 	
-	def dMdtauM_component(self, lifetime_grid, derlog = False):
+	def dMdtauM_component(self, lifetime_grid, derlog = True):
 		''' computes the derivative of M(tauM) w.r.t. tauM '''
 		if derlog == False:
 			return lifetime_class.dMdtauM(self.metallicity)(lifetime_grid)
 		if derlog == True:
 			return 0.5	
 				
-	def yield_component(self, channel_switch):
-		Yield_i_birthtime = pick_yields(channel_switch, AZ_Symb, stellar_mass_idx = stellar_mass_idx, 
-										metallicity_idx = metallicity_idx, vel_idx = vel_idx)
+	def yield_component(self, channel_switch, AZ_Symb, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None):
+		Yield_i_birthtime = pick_yields(channel_switch, AZ_Symb, stellar_mass_idx=stellar_mass_idx, 
+										metallicity_idx=metallicity_idx, vel_idx=vel_idx)
+		return Yield_i_birthtime
 
-	def mass_component(self, channel_switch):
+	def mass_component(self, channel_switch, AZ_Symb, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None):
 		''' page 22, last eq. first column '''
 		mass_grid = self.grid_picker(channel_switch, 'mass')
 		lifetime_grid = self.grid_picker(channel_switch, 'lifetime')
-		return self.IMF_component(self.grid_picker(channel_switch, 'mass')) #* self.dMdtauM_component(lifetime_grid) * yield_component(channel_switch)
+		return self.IMF_component(mass_grid) * self.yield_component(channel_switch, AZ_Symb) #* self.dMdtauM_component(lifetime_grid) 
 
-	def compute_simpson(self, channel_switch, AZ_Symb, stellar_mass_idx = None, metallicity_idx = None, vel_idx = None):
+	def compute_simpson(self, channel_switch, AZ_Symb, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None):
 		'''Computes, using the Simpson rule, the integral elements of eq. (34) Portinari+98 -- for alive stars'''	
-		integrand = np.multiply(self.SFR_component(), self.mass_component(channel_switch))
+		birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
+		mass_comp = self.mass_component(channel_switch, AZ_Symb, 
+					stellar_mass_idx=stellar_mass_idx, metallicity_idx=metallicity_idx, vel_idx=vel_idx)
+		integrand = np.multiply(self.SFR_component(birthtime_grid), mass_comp)
 		#if channel_switch == 'SNIa':
 		#	return (1 - IN.A) * scipy.integrate.simpson(integrand) 
 		#else:
-		return scipy.integrate.simpson(integrand) 
-		
+		return scipy.integrate.simps(integrand, x=birthtime_grid) 
+	"""
 	def compute_gauss_quad_delay(self, delay_func=None):
 		'''
 		Computes the Gaussian Quadrature of the integral elements of
@@ -209,9 +219,9 @@ class Wi:
 		SFR_SNIa = lambda M1: 1
 		integrand_SNIa, M1_min, M1_max = Wi_integrand_class.SNIa_FM1(M1)
 		return IN.A * quad(f_nu * IMF, M1_min, M1_max)
-				
+	"""		
 	def Mass_i_infall(self, n):
-		Minfall_dt = infall(time_uniform[n])
+		Minfall_dt = infall(time_chosen[n])
 		print('Infalling mass ', Minfall_dt, ' Msun at timestep idx: ', n)
 		BBN_idx = c_class.R_M_i_idx(yields_BBN_class, AZ_sorted)
 		for i in range(len(BBN_idx)):
@@ -224,12 +234,12 @@ class Wi:
 		#self.Gi_infall
 		total = self.Mass_i_infall(n)
 		return total
-			
+	"""	
 	def yield_component(self):
 		'''
 		Returns the sparse vector of all elements simultaneously.
 		'''
-		t_min_tprime = Gyr_age - time_uniform
+		t_min_tprime = Gyr_age - time_chosen
 		t_min_tprime = t_min_tprime[np.where(t_min_tprime > 0.)]
 		if channel_switch == 'LIMs':
 			llimit_lifetime = lifetime_class.interp_stellar_lifetimes(self.metallicity)(Ml_X)	
@@ -241,7 +251,7 @@ class Wi:
 										metallicity_idx = metallicity_idx, vel_idx = vel_idx)	
 		all_args = tuple()
 		return np.sum(Yield_i_birthtime) 
-
+	"""
 	def SNIa_FM1(self, M1):
 		f_nu = lambda nu: 24 * (1 - nu)**2
 		M1_min = 0.5 * IN.MBl
@@ -335,7 +345,7 @@ class Evolution:
 	Main GCE one-zone class 
 	'''
 	def evolve():
-		for t in time_uniform:
+		for t in time_chosen:
 			run_timesteps(t)
 		"..."
 		return None
@@ -352,12 +362,12 @@ def main():
 	#Evolution_class.evolve()
 	#np.savetxt()
 	Wi_class = Wi()
-	for j in range(1, len(time_uniform)):
+	for j in range(1, len(time_chosen)):
 		Wi_class.compute(j)
 	tic.append(time.process_time())
-	np.savetxt('output/phys.dat', np.column_stack((time_uniform, Mtot, Mgas_v,
+	np.savetxt('output/phys.dat', np.column_stack((time_chosen, Mtot, Mgas_v,
 			   Mstar_v, SFR_v, Z_v, G_v, S_v)), 
-			   header = ' (0) time_uniform 	(1) Mtot 	(2) Mgas_v 	(3) Mstar_v 	(4) SFR_v 	(5) Z_v 	(6) G_v 	(7) S_v')
+			   header = ' (0) time_chosen 	(1) Mtot 	(2) Mgas_v 	(3) Mstar_v 	(4) SFR_v 	(5) Z_v 	(6) G_v 	(7) S_v')
 	np.savetxt('output/Mass_i.dat', np.column_stack((AZ_sorted, Mass_i_v)), 
 			   header = ' (0) elemZ,	(1) elemA,	(2) masses [Msun] of every isotope for every timestep')
 	np.savetxt('output/X_i.dat', np.column_stack((AZ_sorted, Xi_v)), 

@@ -1,7 +1,7 @@
 import matplotlib.pylab as plt
 import numpy as np
 import input_parameters as IN
-from portinari98_unified import *
+from onezone import *
 
 Zcol = ['Z0004', 'Z008', 'Z02', 'Z05']
 

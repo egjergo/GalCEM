@@ -187,7 +187,7 @@ class Yields_SNIa:
 						 ('elemZ', '<i8'), ('Y_W7','<f8'), ('Y_W70','<f8'), 
 						 ('Y_WDD1','<f8'), ('Y_WDD2','<f8'), ('Y_WDD3','<f8'), 
 						 ('Y_CDD1','<f8'), ('Y_CDD2','<f8')])
-			self.yields = self.tables['Y_CDD1']
+			self.yields = self.tables['Y_CDD1'] *1e-6
 			self.elemA = self.tables['elemA']
 			self.elemZ = self.tables['elemZ']
 
@@ -242,7 +242,7 @@ class Yields_Massive:
 			self.elemZ = self.tables[0,0,:,1].astype('int')
 			self.elemA = self.tables[0,0,:,2].astype('int')
 			self.stellarMassIni = self.tables[:,:,:,3].astype('float')
-			self.yields = self.tables[:,:,:,4:].astype('float')
+			self.yields = self.tables[:,:,:,4:].astype('float') *1e-6
 	
 	
 class Yields_LIMs:
@@ -292,7 +292,7 @@ class Yields_LIMs:
 				('Xi_ini', '<f8'), ('ProdFact', '<f8')])
 				for Z in self.metallicity_bins], dtype=object)
 				
-			self.yields = self.is_unique('Yield', split_length)
+			self.yields = self.is_unique('Yield', split_length) *1e-6
 			self.elemA_sorting, self.elemA = self.is_unique('elemA', split_length)
 			self.elemZ_sorting, self.elemZ = self.is_unique('elemZ', split_length)
 			self.metallicityIni, self.metallicity_bins = self.is_unique('Zini', split_length)
