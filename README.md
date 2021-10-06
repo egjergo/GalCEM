@@ -2,4 +2,4 @@
 ## Author
 Eda Gjergo (Wuhan University) <GalacticCEM@gmail.com>
 
-![GalCEM diagram](/docs/GalCEMdiagram.jpg "GalCEM diagram")
+![GalCEM diagram](/docs/GalCEM_flowchart.png "GalCEM diagram")
