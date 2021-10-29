@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.integrate
 import scipy.misc as sm 
+import scipy.stats as ss
 import scipy.interpolate as interp
 
 import input_parameters as IN
@@ -106,14 +107,15 @@ class Stellar_Lifetimes:
 		Z_idx = np.digitize(metallicity, self.Z_bins)
 		return self.stellar_masses()[Z_idx]
 
-	def dMdtauM(self, metallicity, n=1):
+	def dMdtauM(self, metallicity, time_chosen, n=1):
 		'''
 		Computes the first order derivative of the M(tau) function
 		with respect to dtau, but multiplied by dtau/dt' = -1
 		'''
 		Z_idx = np.digitize(metallicity, self.Z_bins)
-		tau = IN.s_lifetimes_p98[self.Z_names[Z_idx]] / 1e9
-		return - sm.derivative(self.interp_M(Z_idx), tau, n=n)
+		dMdtau_deriv = - sm.derivative(self.interp_stellar_masses(metallicity), time_chosen[1001:-1000], n=n) #time_chosen[501:-500], n=n)
+		return ss.mode(dMdtau_deriv)[0][0]
+		
 
 class Infall:
 	'''
@@ -228,11 +230,11 @@ class Initial_Mass_Function:
 	def integrand(self, Mstar):
 		return Mstar * self.IMF_select()(Mstar)
 		
-	def normalization(self):
+	def normalization(self): 
 		return np.reciprocal(scipy.integrate.quad(self.integrand, self.Ml, self.Mu)[0])
-	
-	def IMF(self):
-		return lambda Mstar: self.IMF_select()(Mstar) * self.normalization()
+
+	def IMF(self): #!!!!!!!! might not be efficient with the IGIMF
+		return lambda Mstar: self.integrand(Mstar) * self.normalization()
 		
 	def IMF_test(self):
 		'''
@@ -251,13 +253,21 @@ class Star_Formation_Rate:
 	'''
 	def __init__(self, option=IN.SFR_option, custom=IN.custom_SFR, 
 				 option_CSFR=IN.CSFR_option, morphology=IN.morphology):
+		#(self, Mtot, timestep_i, option=IN.SFR_option, custom=IN.custom_SFR, 
+		#		 option_CSFR=IN.CSFR_option, morphology=IN.morphology):
 		self.option = option
 		self.custom = custom
+		#self.Mtot = Mtot
+		#self.i = timestep_i
 		self.option_CSFR = option_CSFR
 		self.morphology = morphology
 
-	def SFRgal(self, morphology, k=IN.k_SFR):
-		return lambda Mgas: IN.nu[morphology] * Mgas**(-k)	
+	def SFRgal(self, k=IN.k_SFR, Mgas=[], Mtot=[], timestep_i=0): 
+		''' Talbot & Arnett (1975)'''
+		return np.divide(IN.nu[self.morphology] / IN.M_inf[self.morphology] 
+		         * (Mgas[timestep_i])**(k) / (Mtot[timestep_i])**(k-1), 1)# IN.SFR_normalization) # !!!!!!! isn't defined yet
+		#return (lambda Mgas: #IN.nu[self.morphology] / IN.M_inf[self.morphology] *
+					 #np.power(Mgas, -k))# / self.Mtot[self.i]**(-(k-1))) 
 	
 	def CSFR(self):
 		'''
@@ -277,16 +287,17 @@ class Star_Formation_Rate:
 						 / (14.0 / 15) - 0.6 + 0.6 * np.exp((14. / 15) * (z - 5.4))))}
 		return CSFR.get(self.option_CSFR, "Invalid CSFR option")
 		
-	def SFR(self):
+	def SFR(self, Mgas=None, Mtot=None, timestep_i=0):
 		if not self.custom:
 			if self.option == 'SFRgal':
-					return self.SFRgal(self.morphology)
+					return self.SFRgal(Mgas=Mgas, Mtot=Mtot, timestep_i=timestep_i)
 			elif self.option == 'CSFR':
 				if self.option_CSFR:
 					return CSFR(self.option_CSFR)
 				else:
 					print('Please define the CSFR option "option_CSFR"')
 		if self.custom:
+			print('Using custom SFR')
 			return self.custom
 			
 	def outflow(self, Mgas, morphology, SFR=SFRgal, wind_eff=IN.wind_efficiency, k=1):

@@ -257,6 +257,7 @@ class Yields_LIMs:
 		self.yields = None
 		self.elemA = None
 		self.elemZ = None
+		self.Returned_stellar_mass = None
 		self.AZ_pairs = None
 		self.elemA_sorting = None
 		self.elemZ_sorting = None
@@ -297,3 +298,5 @@ class Yields_LIMs:
 			self.elemZ_sorting, self.elemZ = self.is_unique('elemZ', split_length)
 			self.metallicityIni, self.metallicity_bins = self.is_unique('Zini', split_length)
 			self.stellarMassIni, self.stellarMass_bins = self.is_unique('Mini', split_length)
+			#self.Returned_stellar_mass =
+			

@@ -1,4 +1,4 @@
-''' I only achieve simplicity with enormous effort (Clarice Lispector) '''
+""" I only achieve simplicity with enormous effort (Clarice Lispector) """
 import time
 tic = []
 tic.append(time.process_time())
@@ -13,7 +13,7 @@ import input_parameters as IN
 import classes.morphology as morph
 import classes.yields as Y
 
-''' Setup '''
+""" Setup """
 aux = morph.Auxiliary()
 lifetime_class = morph.Stellar_Lifetimes()
 Ml = lifetime_class.s_mass[1] # Lower limit stellar masses [Msun] 
@@ -22,13 +22,13 @@ mass_uniform = np.linspace(Ml, Mu, num = IN.num_MassGrid)
 time_uniform = np.arange(IN.time_start, IN.time_end, IN.iTimeStep)
 time_logspace = np.logspace(np.log10(IN.time_start), np.log10(IN.time_end), num=IN.numTimeStep)
 time_chosen = time_uniform
-# Surface density for the disk. The bulge goes as an inverse square law.
+'''Surface density for the disk. The bulge goes as an inverse square law.'''
 surf_density_Galaxy = IN.sd / np.exp(IN.r / IN.Reff[IN.morphology]) #sigma(t_G) before eq(7)
 
 infall_class = morph.Infall(morphology=IN.morphology, time=time_chosen)
 infall = infall_class.inf()
 SFR_class = morph.Star_Formation_Rate(IN.SFR_option, IN.custom_SFR)
-SFR = SFR_class.SFR() # Function: SFR(Mgas)
+
 IMF_class = morph.Initial_Mass_Function(Ml, Mu, IN.IMF_option, IN.custom_IMF)
 IMF = IMF_class.IMF() # Function @ input stellar mass
 
@@ -47,21 +47,29 @@ AZ_LIMs = c_class.extract_AZ_pairs_LIMs(yields_LIMs_class)
 AZ_SNIa = c_class.extract_AZ_pairs_SNIa(yields_SNIa_class)
 AZ_Massive = c_class.extract_AZ_pairs_Massive(yields_Massive_class)
 AZ_all = np.vstack((AZ_LIMs, AZ_SNIa, AZ_Massive))
-AZ_sorted = c_class.AZ_sorted(AZ_all) # 321 isotopes with 'km20', 198 w/ 'i99' # will compute over 10 million integrals and recursions
+""" Used quantities """
+AZ_sorted = c_class.AZ_sorted(AZ_all) # 321 isotopes with yields_SNIa_option = 'km20', 198 isotopes for 'i99' 
 AZ_Symb_list = IN.periodic['elemSymb'][c_class.AZ_Symb(AZ_sorted)]
-elemZ_for_metallicity = np.where(AZ_sorted[:,0]>2)[0][0] # metallicity starting index selection
+elemZ_for_metallicity = np.where(AZ_sorted[:,0]>2)[0][0] #  starting idx (int) that excludes H and He for the metallicity selection
 
-''' Initialize tracked quantities '''
+""" Initialize tracked quantities """ 
 Mtot = np.insert(np.cumsum((infall(time_chosen)[1:] + infall(time_chosen)[:-1]) * IN.iTimeStep / 2), 0, IN.epsilon)
-Mstar_v = IN.epsilon * np.ones(len(time_chosen))	# Global
+Mstar_v = IN.epsilon * np.ones(len(time_chosen)) # Global
 Mass_i_v = IN.epsilon * np.ones((len(AZ_sorted), len(time_chosen)))	# Global
 Xi_v = IN.epsilon * np.ones((len(AZ_sorted), len(time_chosen)))	# Xi Global
-SFR_v =  IN.epsilon * np.ones(len(time_chosen)) 
+SFR_v = IN.epsilon * np.ones(len(time_chosen)) 
 Z_v = IN.epsilon * np.ones(len(time_chosen)) # Metallicity Global
 S_v = IN.epsilon * np.ones(len(time_chosen)) # S = 1 - G Global
 G_v = IN.epsilon * np.ones(len(time_chosen)) # G Global
 Mgas_v = np.multiply(G_v, Mtot)
 
+def SFR(timestep_i):
+	''' 
+	Actual SFR employed within the integro-differential equation
+	
+	Feed it every timestep appropriately.s
+	'''
+	return SFR_class.SFR(Mgas=Mgas_v, Mtot=Mtot, timestep_i=timestep_i) # Function: SFR(Mgas)
 
 ''' GCE Classes and Functions'''
 def pick_yields(channel_switch, AZ_Symb, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None):
@@ -98,47 +106,17 @@ class Wi_grid:
 		self.metallicity = metallicity
 		self.age_idx = age_idx
 		return None
-	"""
-	def integr_lim(self, mass_lim):
-		''' 
-		birthtime integration lower and upper limit 
-		'''
-		tau_mass = lifetime_class.interp_stellar_lifetimes(self.metallicity)(mass_lim)
-		return time_chosen[self.age_idx] - tau_mass
-		
-	def integration_grid(self, l_lim, u_lim):
-		''' x array in Simpson's rule for the birthtime array '''
-		lower_lim = np.maximum(self.integr_lim(l_lim), IN.time_start)
-		upper_lim = np.maximum(self.integr_lim(u_lim), IN.time_start)
-		return np.linspace(lower_lim, upper_lim, num = IN.num_MassGrid)
-		
-	def grids(self, Ml_lim, Mu_lim, age_idx):
+
+	def grids(self, Ml_lim, Mu_lim):
 		'''
 		Ml_lim and Mu_lim are mass limits
 		They are converted to lifetimes by integr_lim() in integration_grid()
 		'''
-		birthtime_grid = self.integration_grid(Ml_lim, Mu_lim)
-		lifetime_grid = time_chosen[age_idx] - birthtime_grid
-		mass_grid = lifetime_class.interp_stellar_masses(self.metallicity)(birthtime_grid)
-		return birthtime_grid, lifetime_grid, mass_grid
-	"""
-	def integration_grid(self, l_lim, u_lim, mass_from_age):
-		''' x mass array in Simpson's integration '''
-		star_mass_lower_lim = np.maximum(l_lim, mass_from_age)
-		star_mass_upper_lim = np.minimum(u_lim, mass_from_age)
-		if star_mass_lower_lim >= star_mass_upper_lim:
-			raise Exception('Upper mass bound is smaller than lower mass bound')
-		return np.logspace(star_mass_lower_lim, star_mass_upper_lim, num=IN.num_MassGrid)
-		
-	def grids(self, Ml_lim, Mu_lim, age_idx, mass_from_age):
-		'''
-		Ml_lim and Mu_lim are mass limits
-		They are converted to lifetimes by integr_lim() in integration_grid()
-		'''
-		mass_grid = self.integration_grid(Ml_lim, Mu_lim, mass_from_age)
+		mass_grid = np.geomspace(Ml_lim, Mu_lim, num = IN.num_MassGrid)
 		lifetime_grid = lifetime_class.interp_stellar_lifetimes(self.metallicity)(mass_grid)
-		birthtime_grid = time_chosen[age_idx] - lifetime_grid
-		return birthtime_grid, lifetime_grid, mass_grid
+		birthtime_grid = time_chosen[self.age_idx] - lifetime_grid 
+		positive_idx = np.where(birthtime_grid > 0.)
+		return birthtime_grid[positive_idx], lifetime_grid[positive_idx], mass_grid[positive_idx]
 
 			
 class Wi:
@@ -154,14 +132,16 @@ class Wi:
 	def __init__(self, metallicity, age_idx):
 		self.metallicity = metallicity
 		self.age_idx = age_idx
+		#self.SFR_class = morph.Star_Formation_Rate(Mtot, age_idx, IN.SFR_option, IN.custom_SFR)
+		#self.SFR = self.SFR_class.SFR() # Function: SFR()(Mtot)(Mgas)
+		#self.mass_from_age = lifetime_class.interp_stellar_masses(metallicity)(time_chosen[age_idx])
 		self.Wi_grid_class = Wi_grid(metallicity, age_idx)
-		self.mass_from_age = lifetime_class.interp_stellar_masses(metallicity)(time_chosen[age_idx])
-		self.LIMs_birthtime_grid, self.LIMs_lifetime_grid, self.LIMs_mass_grid = (
-		self.Wi_grid_class.grids(IN.Ml_LIMs, IN.Mu_LIMs, age_idx, self.mass_from_age))
-		self.SNIa_birthtime_grid, self.SNIa_lifetime_grid, self.SNIa_mass_grid = (
-		self.Wi_grid_class.grids(IN.Ml_SNIa, IN.Mu_SNIa, age_idx, self.mass_from_age))
 		self.Massive_birthtime_grid, self.Massive_lifetime_grid, self.Massive_mass_grid = (
-		self.Wi_grid_class.grids(IN.Ml_Massive, IN.Mu_Massive, age_idx, self.mass_from_age))
+				self.Wi_grid_class.grids(IN.Ml_Massive, IN.Mu_Massive))
+		self.LIMs_birthtime_grid, self.LIMs_lifetime_grid, self.LIMs_mass_grid = (
+				self.Wi_grid_class.grids(IN.Ml_LIMs, IN.Mu_LIMs))
+		self.SNIa_birthtime_grid, self.SNIa_lifetime_grid, self.SNIa_mass_grid = (
+				self.Wi_grid_class.grids(IN.Ml_SNIa, IN.Mu_SNIa))
 		return None
 		
 	def grid_picker(self, channel_switch, grid_type):
@@ -182,10 +162,10 @@ class Wi:
 		''' Returns the IMF vector computed at the mass grids'''
 		return IMF(mass_grid)
 	
-	def dMdtauM_component(self, lifetime_grid, derlog = True):
+	def dMdtauM_component(self, lifetime_grid, derlog = False): #!!!!!!!
 		''' computes the derivative of M(tauM) w.r.t. tauM '''
 		if derlog == False:
-			return lifetime_class.dMdtauM(self.metallicity)(lifetime_grid)
+			return lifetime_class.dMdtauM(self.metallicity, time_chosen)#(lifetime_grid)
 		if derlog == True:
 			return 0.5	
 				
@@ -198,7 +178,7 @@ class Wi:
 		''' page 22, last eq. first column '''
 		mass_grid = self.grid_picker(channel_switch, 'mass')
 		lifetime_grid = self.grid_picker(channel_switch, 'lifetime')
-		return self.IMF_component(mass_grid) * self.yield_component(channel_switch, AZ_Symb) #* self.dMdtauM_component(lifetime_grid) 
+		return self.dMdtauM_component(lifetime_grid) * self.IMF_component(mass_grid) #* self.yield_component(channel_switch, AZ_Symb) 
 
 	def compute_simpson(self, channel_switch, AZ_Symb, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None):
 		'''Computes, using the Simpson rule, the integral elements of eq. (34) Portinari+98 -- for alive stars'''	
@@ -231,7 +211,6 @@ class Wi:
 		'''
 		n timestep index
 		'''
-		#self.Gi_infall
 		total = self.Mass_i_infall(n)
 		return total
 	"""	
@@ -345,9 +324,9 @@ class Evolution:
 	Main GCE one-zone class 
 	'''
 	def evolve():
-		for t in time_chosen:
-			run_timesteps(t)
-		"..."
+		for n in range(1, len(time_chosen)):
+			Wi_class = Wi(Z_v[n-1], t)
+			Wi_class.compute(t)
 		return None
 
 """"""""""""""""""""""""""""""""""""
@@ -358,23 +337,23 @@ class Evolution:
 
 def main():
 	tic.append(time.process_time())
-	#Evolution_class = Evolution()
-	#Evolution_class.evolve()
-	#np.savetxt()
-	Wi_class = Wi()
-	for j in range(1, len(time_chosen)):
-		Wi_class.compute(j)
+	Evolution_class = Evolution()
+	Evolution_class.evolve()
+	#for j in range(1, len(time_chosen)):
+	#s	Wi_class.compute(j)
 	tic.append(time.process_time())
-	np.savetxt('output/phys.dat', np.column_stack((time_chosen, Mtot, Mgas_v,
-			   Mstar_v, SFR_v, Z_v, G_v, S_v)), 
-			   header = ' (0) time_chosen 	(1) Mtot 	(2) Mgas_v 	(3) Mstar_v 	(4) SFR_v 	(5) Z_v 	(6) G_v 	(7) S_v')
-	np.savetxt('output/Mass_i.dat', np.column_stack((AZ_sorted, Mass_i_v)), 
-			   header = ' (0) elemZ,	(1) elemA,	(2) masses [Msun] of every isotope for every timestep')
-	np.savetxt('output/X_i.dat', np.column_stack((AZ_sorted, Xi_v)), 
-			   header = ' (0) elemZ,	(1) elemA,	(2) abundance mass ratios of every isotope for every timestep (normalized to solar, Asplund et al., 2009)')
 	delta_computation_m = m.floor((tic[-1] - tic[-2])/60.)
 	delta_computation_s = ((tic[-1] - tic[-2])%60.)
 	print("Computation time = "+str(delta_computation_m)+" minutes and "+str(delta_computation_s)+" seconds.")
+	print("Saving the output...")
+	np.savetxt('output/phys.dat', np.column_stack((time_chosen, Mtot, Mgas_v,
+			   Mstar_v, SFR_v, Z_v, G_v, S_v)), 
+			   header = ' (0) time_chosen 	(1) Mtot 	(2) Mgas_v 	(3) Mstar_v 	(4) SFR_v 	(5) Z_v 	(6) G_v 	(7) S_v')
+	#np.savetxt('output/Mass_i.dat', np.column_stack((AZ_sorted, Mass_i_v)), 
+	#		   header = ' (0) elemZ,	(1) elemA,	(2) masses [Msun] of every isotope for every timestep')
+	np.savetxt('output/X_i.dat', np.column_stack((AZ_sorted, Xi_v)), 
+			   header = ' (0) elemZ,	(1) elemA,	(2) abundance mass ratios of every isotope for every timestep (normalized to solar, Asplund et al., 2009)')
+	print("Your output has been saved.")
 	return None
 
 tic.append(time.process_time())
