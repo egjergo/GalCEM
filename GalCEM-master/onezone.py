@@ -70,6 +70,7 @@ def SFR(timestep_i):
 	Feed it every timestep appropriately.s
 	'''
 	return SFR_class.SFR(Mgas=Mgas_v, Mtot=Mtot, timestep_i=timestep_i) # Function: SFR(Mgas)
+	
 
 ''' GCE Classes and Functions'''
 def pick_yields(channel_switch, AZ_Symb, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None):

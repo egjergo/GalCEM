@@ -139,20 +139,28 @@ class Yields_BBN:
 		self.yields = None
 		self.elemA = None
 		self.elemZ = None
+		self.mass = None
+		self.massCol = None
+		self.numberFrac = None
+		self.totMass = None
 		
 	def import_yields(self):
 		if self.option == 'gp13':
 			yd = 'input/yields/bbn/'
 			
 			self.tables = np.genfromtxt(yd + 'galli13.dat', 
-						 names=['elemZ','elemA', 'Yield'], 
+						 names=['elemZ','elemA', 'numbFrac', 'mass'], 
 						 
 						 dtype=[('elemZ', '<i8'), 
-						 ('elemA', '<i8'), ('Yield','<f8')])
+						 ('elemA', '<i8'), ('numbFrac','<f8'), ('mass','<f8')])
 						 
-			self.yields = self.tables['Yield']
+			self.numberFrac = self.tables['numbFrac'] # fraction by number
 			self.elemA = self.tables['elemA']
 			self.elemZ = self.tables['elemZ']
+			self.mass = self.tables['mass']
+			self.massCol = np.multiply(self.numberFrac, self.mass)
+			self.totMass = np.sum(self.massCol)
+			self.yields = np.divide(self.massCol, self.totMass) # fraction by mass 
 
 
 class Yields_SNIa:
