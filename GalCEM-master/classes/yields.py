@@ -93,15 +93,14 @@ class Concentrations:
 	def abund_percentage(self, asplund3_pd, AZ_sorted):
 		percentages = []
 		for AZ_idx in AZ_sorted:
-			#print('* AZ_idx:	', AZ_idx)
 			Z_select = asplund3_pd.loc[asplund3_pd['elemZ'] == AZ_idx[0]]
-			#print('    * Z_select: ')
-			#print('        ', Z_select)
 			AZ_select = Z_select.loc[Z_select['elemA'] == AZ_idx[1]]
-			#print('    * AZ_select: ')
-			#print('        ', AZ_select)
-			percentages.append(AZ_select.get(['percentage']))
-		return np.array(percentages) # array of pandas rows. ok but ugly. cleanup!!!!!!!
+			percentages.append(AZ_select.get(['percentage']).to_numpy(dtype=np.float16, na_value=0.).flatten())
+		percentages_pd = np.array(percentages, dtype='object')
+		for i in range(len(percentages_pd)):
+			if percentages_pd[i].size <= 0:
+				percentages_pd[i] = np.array([0.])
+		return np.array(percentages_pd, dtype=np.float16)
 
 	def extract_AZ_pairs_SNIa(self, yields):
 		return np.column_stack((yields.elemZ, yields.elemA))

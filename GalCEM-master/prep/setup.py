@@ -51,6 +51,7 @@ Infall_rate = infall(time_chosen)
 AZ_sorted = c_class.AZ_sorted(AZ_all) # 321 isotopes with yields_SNIa_option = 'km20', 192 isotopes for 'i99' 
 Z_sorted = c_class.AZ_Symb(AZ_sorted)
 AZ_Symb_list = IN.periodic['elemSymb'][Z_sorted] # name of elements for all isotopes
+asplund3_percent = c_class.abund_percentage(c_class.asplund3_pd, AZ_sorted)
 #AZ_Symb_iso_list = np.asarray([ str(A) for A in IN.periodic['elemA'][AZ_sorted]])  # name of elements for all isotopes
 elemZ_for_metallicity = np.where(AZ_sorted[:,0]>2)[0][0] #  starting idx (int) that excludes H and He for the metallicity selection
 Mtot = np.insert(np.cumsum((Infall_rate[1:] + Infall_rate[:-1]) * IN.iTimeStep / 2), 0, IN.epsilon) # The total baryonic mass (i.e. the infall mass) is computed right away
