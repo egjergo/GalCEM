@@ -22,9 +22,9 @@ numTimeStep = 2000 # Like FM
 num_MassGrid = 200
 
 sd = 530.96618 # surf density coefficient for the disk (normalized to the MW mass?) 
-MW_SFR = 1.9 #+-0.4 [Msun/yr] from Chomiuk & Povich (2011) Galactic value (z=0)
+MW_SFR = 1.9 #+-0.4 [Msun/yr] from Chomiuk & Povich (2011) Galactic SFR (z=0)
 
-delta_max = 8e-2 # Convergence limit for (e. 28, Portinari+98)
+delta_max = 8e-2 # Convergence limit for eq. 28, Portinari+98
 epsilon = 1e-32 # Avoid numerical errors - consistent with BBN
 SFR_rescaling = 1e+10 # !!!!!!! Constrained by observations at z=0 of the galaxy of interest
 

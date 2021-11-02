@@ -73,22 +73,23 @@ class Auxiliary:
 
 	def RK4(self, f, t, y, i, h):
 		'''
-		Classic Runge-Kutta 4th order
+		Classic Runge-Kutta 4th order for solving:	 dy/dt = f(t,y,i)
 		
 		INPUT
 			f	explicit function
 			t	independent variable
 			y	dependent variable
-			h	timestep
+			i	timestep index
+			h	timestep width (delta t)
 		
 		RETURN
 			next timestep
 		'''
 		k1 = f(t, y, i)
-		k2 = f(t + 0.5 * h, y + 0.5 * h * k1, i)
-		k3 = f(t + 0.5 * h, y + 0.5 * h * k2, i)
-		k4 = f(t + h, y + h * k3, i)
-		return y + h * (k1 + 2 * k2 + 2 * k3 + k4) / 6
+		k2 = f(t+0.5*h, y+0.5*h*k1, i)
+		k3 = f(t+0.5*h, y+0.5*h*k2, i)
+		k4 = f(t+h, y+h*k3, i)
+		return y + h * (k1 + 2*k2 + 2*k3 + k4) / 6
 
 class Stellar_Lifetimes:
 	'''

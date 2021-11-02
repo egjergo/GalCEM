@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from pandas.core.common import flatten
 
 import prep.inputs as IN
@@ -86,6 +87,21 @@ class Concentrations:
 	solarA09_vs_Fe_bymass = (IN.asplund1['photospheric'] - IN.asplund1['photospheric'][26] + 
 							 np.log10(np.divide(IN.periodic['elemA'],
 							 IN.periodic['elemA'][26]))[:IN.asplund1['photospheric'].shape[0]])
+	
+	asplund3_pd = pd.DataFrame(IN.asplund3, columns=['elemN','elemZ','elemA','percentage'])
+	
+	def abund_percentage(self, asplund3_pd, AZ_sorted):
+		percentages = []
+		for AZ_idx in AZ_sorted:
+			#print('* AZ_idx:	', AZ_idx)
+			Z_select = asplund3_pd.loc[asplund3_pd['elemZ'] == AZ_idx[0]]
+			#print('    * Z_select: ')
+			#print('        ', Z_select)
+			AZ_select = Z_select.loc[Z_select['elemA'] == AZ_idx[1]]
+			#print('    * AZ_select: ')
+			#print('        ', AZ_select)
+			percentages.append(AZ_select.get(['percentage']))
+		return np.array(percentages) # array of pandas rows. ok but ugly. cleanup!!!!!!!
 
 	def extract_AZ_pairs_SNIa(self, yields):
 		return np.column_stack((yields.elemZ, yields.elemA))

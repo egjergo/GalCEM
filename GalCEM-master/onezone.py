@@ -13,7 +13,7 @@ import prep.inputs as IN
 import classes.morphology as morph
 import classes.yields as Y
 from prep.setup import *
-
+#'''
 import matplotlib.pylab as plt
 import matplotlib.gridspec as gridspec
 import matplotlib.colors as colors
@@ -24,7 +24,7 @@ plt.rcParams['xtick.major.width'], plt.rcParams['ytick.major.width'] = 2, 2
 plt.rcParams['xtick.minor.width'], plt.rcParams['ytick.minor.width'] = 1, 1
 plt.rcParams['xtick.labelsize'], plt.rcParams['ytick.labelsize'] = 15, 15
 plt.rcParams['axes.linewidth'] = 2
-
+#'''
 
 def SFR(timestep_i):
 	''' 
