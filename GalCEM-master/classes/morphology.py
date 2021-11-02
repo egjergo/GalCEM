@@ -71,6 +71,25 @@ class Auxiliary:
 			return age0 - age
 
 
+	def RK4(self, f, t, y, i, h):
+		'''
+		Classic Runge-Kutta 4th order
+		
+		INPUT
+			f	explicit function
+			t	independent variable
+			y	dependent variable
+			h	timestep
+		
+		RETURN
+			next timestep
+		'''
+		k1 = f(t, y, i)
+		k2 = f(t + 0.5 * h, y + 0.5 * h * k1, i)
+		k3 = f(t + 0.5 * h, y + 0.5 * h * k2, i)
+		k4 = f(t + h, y + h * k3, i)
+		return y + h * (k1 + 2 * k2 + 2 * k3 + k4) / 6
+
 class Stellar_Lifetimes:
 	'''
 	Interpolation of Portinari+98 Table 14
@@ -165,7 +184,8 @@ class Infall:
 	    """
 	    return np.divide(IN.M_inf[self.morphology], 
 	    				 scipy.integrate.quad(self.infall_func(),
-	                     self.time[0], self.time[-1])[0])
+	                     #self.time[0], self.time[-1])[0])
+						 self.time[0], IN.age_Galaxy)[0])
 
 	def inf(self):
 	    '''
@@ -264,8 +284,8 @@ class Star_Formation_Rate:
 
 	def SFRgal(self, k=IN.k_SFR, Mgas=[], Mtot=[], timestep_i=0): 
 		''' Talbot & Arnett (1975)'''
-		return np.divide(IN.nu[self.morphology] / IN.M_inf[self.morphology] 
-		         * (Mgas[timestep_i])**(k) / (Mtot[timestep_i])**(k-1), 1)# IN.SFR_normalization) # !!!!!!! isn't defined yet
+		return np.multiply(IN.nu[self.morphology]  * (Mgas[timestep_i])**(k) 
+		    / (Mtot[timestep_i])**(k-1), IN.SFR_rescaling / IN.M_inf[self.morphology]) # !!!!!!! isn't defined yet
 		#return (lambda Mgas: #IN.nu[self.morphology] / IN.M_inf[self.morphology] *
 					 #np.power(Mgas, -k))# / self.Mtot[self.i]**(-(k-1))) 
 	

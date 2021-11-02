@@ -13,6 +13,14 @@ import input_parameters as IN
 import classes.morphology as morph
 import classes.yields as Y
 
+import matplotlib.pylab as plt
+plt.rcParams['xtick.major.size'], plt.rcParams['ytick.major.size'] = 10, 10
+plt.rcParams['xtick.minor.size'], plt.rcParams['ytick.minor.size'] = 7, 7
+plt.rcParams['xtick.major.width'], plt.rcParams['ytick.major.width'] = 2, 2
+plt.rcParams['xtick.minor.width'], plt.rcParams['ytick.minor.width'] = 1, 1
+plt.rcParams['xtick.labelsize'], plt.rcParams['ytick.labelsize'] = 15, 15
+plt.rcParams['axes.linewidth'] = 2
+
 """ Setup """
 aux = morph.Auxiliary()
 lifetime_class = morph.Stellar_Lifetimes()
@@ -23,12 +31,12 @@ time_uniform = np.arange(IN.time_start, IN.time_end, IN.iTimeStep)
 time_logspace = np.logspace(np.log10(IN.time_start), np.log10(IN.time_end), num=IN.numTimeStep)
 time_chosen = time_uniform
 '''Surface density for the disk. The bulge goes as an inverse square law.'''
-surf_density_Galaxy = IN.sd / np.exp(IN.r / IN.Reff[IN.morphology]) #sigma(t_G) before eq(7)
+surf_density_Galaxy = IN.sd / np.exp(IN.r / IN.Reff[IN.morphology]) #sigma(t_G) before eq(7) not used so far !!!!!!!
 
 infall_class = morph.Infall(morphology=IN.morphology, time=time_chosen)
 infall = infall_class.inf()
-SFR_class = morph.Star_Formation_Rate(IN.SFR_option, IN.custom_SFR)
 
+SFR_class = morph.Star_Formation_Rate(IN.SFR_option, IN.custom_SFR)
 IMF_class = morph.Initial_Mass_Function(Ml, Mu, IN.IMF_option, IN.custom_IMF)
 IMF = IMF_class.IMF() # Function @ input stellar mass
 
@@ -51,26 +59,43 @@ AZ_all = np.vstack((AZ_LIMs, AZ_SNIa, AZ_Massive))
 AZ_sorted = c_class.AZ_sorted(AZ_all) # 321 isotopes with yields_SNIa_option = 'km20', 198 isotopes for 'i99' 
 AZ_Symb_list = IN.periodic['elemSymb'][c_class.AZ_Symb(AZ_sorted)]
 elemZ_for_metallicity = np.where(AZ_sorted[:,0]>2)[0][0] #  starting idx (int) that excludes H and He for the metallicity selection
-
-""" Initialize tracked quantities """ 
-Mtot = np.insert(np.cumsum((infall(time_chosen)[1:] + infall(time_chosen)[:-1]) * IN.iTimeStep / 2), 0, IN.epsilon)
+""" Initialize Global tracked quantities """ 
+Infall_rate = infall(time_chosen)
+Mtot = np.insert(np.cumsum((Infall_rate[1:] + Infall_rate[:-1]) * IN.iTimeStep / 2), 0, IN.epsilon) # The total baryonic mass (i.e. the infall mass) is computed right away
+#Mtot_quad = [quad(infall, time_chosen[0], i)[0] for i in range(1,len(time_chosen)-1)] # slow loop, deprecate!!!!!!!
 Mstar_v = IN.epsilon * np.ones(len(time_chosen)) # Global
-Mass_i_v = IN.epsilon * np.ones((len(AZ_sorted), len(time_chosen)))	# Global
-Xi_v = IN.epsilon * np.ones((len(AZ_sorted), len(time_chosen)))	# Xi Global
-SFR_v = IN.epsilon * np.ones(len(time_chosen)) 
-Z_v = IN.epsilon * np.ones(len(time_chosen)) # Metallicity Global
-S_v = IN.epsilon * np.ones(len(time_chosen)) # S = 1 - G Global
-G_v = IN.epsilon * np.ones(len(time_chosen)) # G Global
-Mgas_v = np.multiply(G_v, Mtot)
+Mstar_test = IN.epsilon * np.ones(len(time_chosen)) # Global
+Mgas_v = IN.epsilon * np.ones(len(time_chosen)) # Global
+SFR_v = IN.epsilon * np.ones(len(time_chosen)) #
+Mass_i_v = IN.epsilon * np.ones((len(AZ_sorted), len(time_chosen)))	# Gass mass (i,j) where the i rows are the isotopes and j are the timesteps
+Xi_v = IN.epsilon * np.ones((len(AZ_sorted), len(time_chosen)))	# Xi 
+Z_v = IN.epsilon * np.ones(len(time_chosen)) # Metallicity 
+G_v = IN.epsilon * np.ones(len(time_chosen)) # G 
+S_v = IN.epsilon * np.ones(len(time_chosen)) # S = 1 - G 
 
 def SFR(timestep_i):
 	''' 
 	Actual SFR employed within the integro-differential equation
 	
-	Feed it every timestep appropriately.s
+	Feed it every timestep appropriately
 	'''
 	return SFR_class.SFR(Mgas=Mgas_v, Mtot=Mtot, timestep_i=timestep_i) # Function: SFR(Mgas)
-	
+		
+
+def f_RK4(t_i, y_i, i):
+	'''
+	Explicit general diff eq GCE function
+	'''
+	return Infall_rate[i] - SFR(i)
+
+
+def no_integral():
+	for i in range(len(time_chosen)-1):	
+		SFR_v[i+1] = SFR(i)
+		Mstar_v[i+1] = Mstar_v[i] + SFR(i) * IN.iTimeStep
+		Mstar_test[i+1] = Mtot[i-1] - Mgas_v[i]
+		Mgas_v[i+1] = aux.RK4(f_RK4, time_chosen[i], Mgas_v[i], i, IN.iTimeStep)		
+
 
 ''' GCE Classes and Functions'''
 def pick_yields(channel_switch, AZ_Symb, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None):
@@ -320,6 +345,7 @@ class Convergence:
 		return Gi_k1
 
 
+
 class Evolution:
 	'''
 	Main GCE one-zone class 
@@ -359,3 +385,37 @@ def main():
 
 tic.append(time.process_time())
 print('Package lodaded in '+str(1e0*(tic[-1]))+' seconds.')
+
+
+def no_integral_plot():
+	fig = plt.figure(figsize =(7, 5))
+	ax = fig.add_subplot(111)
+	ax2 = ax.twinx()
+	ax.hlines(IN.M_inf[IN.morphology], 0, IN.age_Galaxy, label=r'$M_{gal,f}$', linewidth = 1, linestyle = '-.')
+	ax.semilogy(time_chosen, Mtot, label=r'$M_{tot}$', linewidth=2)
+	ax.semilogy(time_chosen, Mgas_v, label= r'$M_{gas}$', linewidth=2)
+	ax.semilogy(time_chosen, Mstar_v, label= r'$M_{star}$', linewidth=2)
+	ax.semilogy(time_chosen, Mstar_v + Mgas_v, label= r'$M_g + M_s$', linestyle = '--')
+	ax.semilogy(time_chosen, Mstar_test, label= r'$M_{star,t}$', linewidth=2, linestyle = ':')
+	ax2.semilogy(time_chosen, Infall_rate, label= r'Infall', color = 'cyan', linestyle=':', linewidth=3)
+	ax2.semilogy(time_chosen, SFR_v, label= r'SFR', color = 'gray', linestyle=':', linewidth=3)
+	ax.set_xlim(0,13.8)
+	ax.set_ylim(1e5, 1e11)
+	#ax2.set_ylim(1e5, 1e11)
+	ax2.set_ylim(1e8, 1e11)
+	ax.set_xlabel(r'Age [Gyr]', fontsize = 15)
+	ax.set_ylabel(r'Masses [$M_{\odot}$]', fontsize = 15)
+	ax2.set_ylabel(r'Rates [$M_{\odot}/yr$]', fontsize = 15)
+	#ax.set_title(r'$\alpha_{SFR} = $ %.1E' % (IN.SFR_rescaling), fontsize = 15)
+	ax.set_title(r'$f_{SFR} = $ %.2f' % (IN.SFR_rescaling / IN.M_inf[IN.morphology]), fontsize=15)
+	ax.legend(fontsize=15, loc='lower left', frameon=False)
+	ax2.legend(fontsize=15, loc='lower right', frameon=False)
+	plt.tight_layout()
+	plt.show(block=False)
+	plt.savefig('./figures/total_physical.pdf')
+	
+	
+def run():
+	no_integral()
+	no_integral_plot()
+#run()
