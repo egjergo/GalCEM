@@ -4,7 +4,7 @@ import scipy.misc as sm
 import scipy.stats as ss
 import scipy.interpolate as interp
 
-import input_parameters as IN
+import prep.inputs as IN
 
 """"""""""""""""""""""""""""""""""""""""""""""""
 "                                              "

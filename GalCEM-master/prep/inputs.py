@@ -114,6 +114,11 @@ asplund1 = np.genfromtxt('input/physics/asplund09/table1.dat',
 						 ('photospheric','<f8'), ('perr', '<f8'), ('meteoric', '<f8'),
 						  ('merr', '<f8')])                     
 
+asplund3 = np.genfromtxt('input/physics/asplund09/table3.dat', 
+						 names=['elemN','elemZ','elemA','percentage'], 
+						 dtype=[('elemN', '<U2'), ('elemZ', '<i8'), ('elemA', '<i8'),
+						  ('percentage', 'float')], delimiter=',')
+
 periodic = np.genfromtxt('input/physics/periodicinfo.dat', 
 						 names=['elemZ','_','elemName','-','elemSymb','--','elemA'], 
 						 delimiter=',', dtype=[('elemZ', '<f8'), ('_', '<U5'), 
