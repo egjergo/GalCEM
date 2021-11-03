@@ -14,10 +14,12 @@ import classes.morphology as morph
 import classes.yields as Y
 from prep.setup import *
 #'''
+from matplotlib import cm
 import matplotlib.pylab as plt
 import matplotlib.gridspec as gridspec
 import matplotlib.colors as colors
 import matplotlib.ticker as ticker
+#cmap_plasma = cm.get_cmap('plasma', 100)
 plt.rcParams['xtick.major.size'], plt.rcParams['ytick.major.size'] = 10, 10
 plt.rcParams['xtick.minor.size'], plt.rcParams['ytick.minor.size'] = 7, 7
 plt.rcParams['xtick.major.width'], plt.rcParams['ytick.major.width'] = 2, 2
@@ -370,9 +372,10 @@ def no_integral_plot():
 def AZ_sorted_plot():
 	fig = plt.figure(figsize =(5, 7))
 	ax = fig.add_subplot(111)
+	percent_colors = [cmap_plasma.colors[aux.find_nearest(np.linspace(0,100), asplund3_percent[c])] for c in range(len(AZ_sorted))]
 	ax.grid(True, which='major', linestyle='--', linewidth=1, color='grey', alpha=0.5)
 	ax.grid(True, which='minor', linestyle=':', linewidth=1, color='grey', alpha=0.5)
-	ax.scatter(AZ_sorted[:,1]- AZ_sorted[:,0], AZ_sorted[:,0], marker='o', alpha=0.2, color='r', s=20)
+	ax.scatter(AZ_sorted[:,1]- AZ_sorted[:,0], AZ_sorted[:,0], marker='o', alpha=0.5, color=percent_colors, s=20)
 	ax.set_ylabel(r'Proton (Atomic) Number Z', fontsize = 15)
 	ax.set_xlabel(r'Neutron Number N', fontsize = 15)
 	ax.set_title(r'Tracked elements', fontsize=15)
