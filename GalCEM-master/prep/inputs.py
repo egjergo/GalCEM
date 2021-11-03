@@ -17,7 +17,7 @@ Mu_LIMs = 9 # [Msun] !!!!!!! temporary. Import from yield tables
 Ml_Massive = 10 # [Msun] !!!!!!! temporary. Import from yield tables
 Mu_Massive = 120 # [Msun] !!!!!!! temporary. Import from yield tables
 
-iTimeStep = 0.002#0.001 # Picked to smooth the mapping between stellar masses and lifetimes
+nTimeStep = 0.002#0.001 # Picked to smooth the mapping between stellar masses and lifetimes
 numTimeStep = 2000 # Like FM
 num_MassGrid = 200
 

@@ -1,13 +1,6 @@
 """ I only achieve simplicity with enormous effort (Clarice Lispector) """
 import time
-tic = []
-tic.append(time.process_time())
-import math as m
 import numpy as np
-import scipy.integrate
-import scipy.interpolate as interp
-from scipy.integrate import quad
-from scipy.misc import derivative
 
 import prep.inputs as IN
 import classes.morphology as morph
@@ -37,6 +30,9 @@ supported_cmap = ['Accent', 'Accent_r', 'Blues', 'Blues_r', 'BrBG', 'BrBG_r', 'B
 
 
 def no_integral_plot():
+	'''
+	Requires running "no_integral()" in onezone.py beforehand.
+	'''
 	fig = plt.figure(figsize =(7, 5))
 	ax = fig.add_subplot(111)
 	ax2 = ax.twinx()
@@ -49,33 +45,28 @@ def no_integral_plot():
 	ax2.semilogy(time_chosen, Infall_rate, label= r'Infall', color = 'cyan', linestyle=':', linewidth=3)
 	ax2.semilogy(time_chosen, SFR_v, label= r'SFR', color = 'gray', linestyle=':', linewidth=3)
 	ax.set_xlim(0,13.8)
-	ax.set_ylim(1e5, 1e11)
-	#ax2.set_ylim(1e5, 1e11)
-	ax2.set_ylim(1e8, 1e11)
+	ax.set_ylim(1e6, 1e11)
+	ax2.set_ylim(1e7, 1e11)
 	ax.set_xlabel(r'Age [Gyr]', fontsize = 15)
 	ax.set_ylabel(r'Masses [$M_{\odot}$]', fontsize = 15)
 	ax2.set_ylabel(r'Rates [$M_{\odot}/yr$]', fontsize = 15)
-	#ax.set_title(r'$\alpha_{SFR} = $ %.1E' % (IN.SFR_rescaling), fontsize = 15)
 	ax.set_title(r'$f_{SFR} = $ %.2f' % (IN.SFR_rescaling / IN.M_inf[IN.morphology]), fontsize=15)
-	ax.legend(fontsize=15, loc='lower left', frameon=False)
+	ax.legend(fontsize=15, loc='lower left', ncol=2, frameon=False)
 	ax2.legend(fontsize=15, loc='lower right', frameon=False)
 	plt.tight_layout()
 	plt.show(block=False)
 	plt.savefig('./figures/total_physical.pdf')
+	return None
 	
 
-def AZ_sorted_plot(cmap_name='twilight', cbins=10):
+def AZ_sorted_plot(cmap_name='magma_r', cbins=10):
 	x = AZ_sorted[:,1]#- AZ_sorted[:,0]
 	y = AZ_sorted[:,0]
 	z = asplund3_percent
 	cmap_ = cm.get_cmap(cmap_name, cbins)
 	binning = np.digitize(z, np.linspace(0,9.*100/cbins,num=cbins-1))
 	percent_colors = [cmap_.colors[c] for c in binning]
-	#fig = plt.figure(figsize =(11,5))
 	fig, ax = plt.subplots(figsize =(11,5))
-	#ax = fig.add_subplot(111)	
-	#divider = make_axes_locatable(ax)
-	#cax = divider.append_axes("right", size="5%", pad=0.05)
 	ax.grid(True, which='major', linestyle='--', linewidth=0.5, color='purple', alpha=0.5)
 	ax.grid(True, which='minor', linestyle=':', linewidth=0.5, color='purple', alpha=0.5)
 	ax.set_axisbelow(True)
@@ -98,4 +89,4 @@ def AZ_sorted_plot(cmap_name='twilight', cbins=10):
 	plt.tight_layout()
 	plt.show(block=False)
 	plt.savefig('./figures/test/tracked_elements.pdf')
-	return smap
+	return None

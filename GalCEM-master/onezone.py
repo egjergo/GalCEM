@@ -12,34 +12,48 @@ from scipy.misc import derivative
 import prep.inputs as IN
 import classes.morphology as morph
 import classes.yields as Y
+import plots as plts
 from prep.setup import *
 
+''' GCE Classes and Functions'''
 
-def SFR(timestep_i):
+def SFR(timestep_n):
 	''' 
 	Actual SFR employed within the integro-differential equation
 	
 	Feed it every timestep appropriately
 	'''
-	return SFR_class.SFR(Mgas=Mgas_v, Mtot=Mtot, timestep_i=timestep_i) # Function: SFR(Mgas)
+	return SFR_class.SFR(Mgas=Mgas_v, Mtot=Mtot, timestep_n=timestep_n) # Function: SFR(Mgas)
 		
 
-def f_RK4(t_i, y_i, i):
+def f_RK4(t_n, y_n, n):
 	'''
 	Explicit general diff eq GCE function
 	'''
-	return Infall_rate[i] - SFR(i)
+	return Infall_rate[n] - SFR(n)
 
 
 def no_integral():
-	for i in range(len(time_chosen)-1):	
-		SFR_v[i+1] = SFR(i)
-		Mstar_v[i+1] = Mstar_v[i] + SFR(i) * IN.iTimeStep
-		Mstar_test[i+1] = Mtot[i-1] - Mgas_v[i]
-		Mgas_v[i+1] = aux.RK4(f_RK4, time_chosen[i], Mgas_v[i], i, IN.iTimeStep)		
+	for n in range(len(time_chosen)-1):	
+		SFR_v[n+1] = SFR(n)
+		Mstar_v[n+1] = Mstar_v[n] + SFR(n) * IN.nTimeStep
+		Mstar_test[n+1] = Mtot[n-1] - Mgas_v[n]
+		Mgas_v[n+1] = aux.RK4(f_RK4, time_chosen[n], Mgas_v[n], n, IN.nTimeStep)		
 
+def f_RK4_Mi(t_n, y_n, n, AZ_Symb):
+	'''
+	Explicit general diff eq GCE function
+	'''
+	return Infall_rate[n] - SFR(n)
 
-''' GCE Classes and Functions'''
+def no_integral_Mi():
+	for n in range(len(time_chosen)-1):	
+		SFR_v[n+1] = SFR(n)
+		Mstar_vni+1] = Mstar_v[n] + SFR(n) * IN.nTimeStep
+		Mstar_test[n+1] = Mtot[n-1] - Mgas_v[n]
+		Mgas_v[n+1] = aux.RK4(f_RK4, time_chosen[n], Mgas_v[n], n, IN.nTimeStep)
+		
+		
 def pick_yields(channel_switch, AZ_Symb, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None):
 	'''
 	channel_switch	[str] can be 'LIMs', 'Massive', or 'SNIa'
@@ -173,7 +187,7 @@ class Wi:
 		print('Infalling mass ', Minfall_dt, ' Msun at timestep idx: ', n)
 		BBN_idx = c_class.R_M_i_idx(yields_BBN_class, AZ_sorted)
 		for i in range(len(BBN_idx)):
-			Mass_i_v[BBN_idx[i],n] = Mass_i_v[BBN_idx[i],n-1] + yields_BBN_class.yields[i] * Minfall_dt * IN.iTimeStep
+			Mass_i_v[BBN_idx[i],n] = Mass_i_v[BBN_idx[i],n-1] + yields_BBN_class.yields[i] * Minfall_dt * IN.nTimeStep
 			
 	def compute(self, n):
 		'''
@@ -268,7 +282,7 @@ class Convergence:
 		Equation (29)
 		'''
 		# while deltai_k
-		return (np.exp(-self.eta_SFR() * IN.iTimeStep) * (Gi_n - ratio_Wi_eta) + ratio_Wi_eta)
+		return (np.exp(-self.eta_SFR() * IN.nTimeStep) * (Gi_n - ratio_Wi_eta) + ratio_Wi_eta)
 		        
 	def deltai_kplus1(self, Ai, betai, Gi_k):
 		'''
@@ -331,5 +345,5 @@ print('Package lodaded in '+str(1e0*(tic[-1]))+' seconds.')
 	
 def run():
 	no_integral()
-	no_integral_plot()
+	plts.no_integral_plot()
 #run()

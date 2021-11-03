@@ -18,7 +18,7 @@ lifetime_class = morph.Stellar_Lifetimes()
 Ml = lifetime_class.s_mass[1] # Lower limit stellar masses [Msun] 
 Mu = lifetime_class.s_mass[-2] # Upper limit stellar masses [Msun]
 mass_uniform = np.linspace(Ml, Mu, num = IN.num_MassGrid)
-time_uniform = np.arange(IN.time_start, IN.time_end, IN.iTimeStep)
+time_uniform = np.arange(IN.time_start, IN.time_end, IN.nTimeStep)
 time_logspace = np.logspace(np.log10(IN.time_start), np.log10(IN.time_end), num=IN.numTimeStep)
 time_chosen = time_uniform
 '''Surface density for the disk. The bulge goes as an inverse square law.'''
@@ -54,7 +54,7 @@ AZ_Symb_list = IN.periodic['elemSymb'][Z_sorted] # name of elements for all isot
 asplund3_percent = c_class.abund_percentage(c_class.asplund3_pd, AZ_sorted)
 #AZ_Symb_iso_list = np.asarray([ str(A) for A in IN.periodic['elemA'][AZ_sorted]])  # name of elements for all isotopes
 elemZ_for_metallicity = np.where(AZ_sorted[:,0]>2)[0][0] #  starting idx (int) that excludes H and He for the metallicity selection
-Mtot = np.insert(np.cumsum((Infall_rate[1:] + Infall_rate[:-1]) * IN.iTimeStep / 2), 0, IN.epsilon) # The total baryonic mass (i.e. the infall mass) is computed right away
+Mtot = np.insert(np.cumsum((Infall_rate[1:] + Infall_rate[:-1]) * IN.nTimeStep / 2), 0, IN.epsilon) # The total baryonic mass (i.e. the infall mass) is computed right away
 #Mtot_quad = [quad(infall, time_chosen[0], i)[0] for i in range(1,len(time_chosen)-1)] # slow loop, deprecate!!!!!!!
 Mstar_v = IN.epsilon * np.ones(len(time_chosen)) # Global
 Mstar_test = IN.epsilon * np.ones(len(time_chosen)) # Global

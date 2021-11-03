@@ -283,10 +283,10 @@ class Star_Formation_Rate:
 		self.option_CSFR = option_CSFR
 		self.morphology = morphology
 
-	def SFRgal(self, k=IN.k_SFR, Mgas=[], Mtot=[], timestep_i=0): 
+	def SFRgal(self, k=IN.k_SFR, Mgas=[], Mtot=[], timestep_n=0): 
 		''' Talbot & Arnett (1975)'''
-		return np.multiply(IN.nu[self.morphology]  * (Mgas[timestep_i])**(k) 
-		    / (Mtot[timestep_i])**(k-1), IN.SFR_rescaling / IN.M_inf[self.morphology]) # !!!!!!! isn't defined yet
+		return np.multiply(IN.nu[self.morphology]  * (Mgas[timestep_n])**(k) 
+		    / (Mtot[timestep_n])**(k-1), IN.SFR_rescaling / IN.M_inf[self.morphology]) # !!!!!!! isn't defined yet
 		#return (lambda Mgas: #IN.nu[self.morphology] / IN.M_inf[self.morphology] *
 					 #np.power(Mgas, -k))# / self.Mtot[self.i]**(-(k-1))) 
 	
@@ -308,10 +308,10 @@ class Star_Formation_Rate:
 						 / (14.0 / 15) - 0.6 + 0.6 * np.exp((14. / 15) * (z - 5.4))))}
 		return CSFR.get(self.option_CSFR, "Invalid CSFR option")
 		
-	def SFR(self, Mgas=None, Mtot=None, timestep_i=0):
+	def SFR(self, Mgas=None, Mtot=None, timestep_n=0):
 		if not self.custom:
 			if self.option == 'SFRgal':
-					return self.SFRgal(Mgas=Mgas, Mtot=Mtot, timestep_i=timestep_i)
+					return self.SFRgal(Mgas=Mgas, Mtot=Mtot, timestep_n=timestep_n)
 			elif self.option == 'CSFR':
 				if self.option_CSFR:
 					return CSFR(self.option_CSFR)
