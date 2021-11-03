@@ -99,7 +99,7 @@ class Concentrations:
 		percentages_pd = np.array(percentages, dtype='object')
 		for i in range(len(percentages_pd)):
 			if percentages_pd[i].size <= 0:
-				percentages_pd[i] = np.array([0.])
+				percentages_pd[i] = np.array([1e-5])
 		return np.array(percentages_pd, dtype=np.float16)
 
 	def extract_AZ_pairs_SNIa(self, yields):
