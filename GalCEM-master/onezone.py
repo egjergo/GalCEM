@@ -41,7 +41,7 @@ def no_integral():
 		Mgas_v[n+1] = aux.RK4(f_RK4, time_chosen[n], Mgas_v[n], n, IN.nTimeStep)		
 
 
-def f_RK4_Mi(t_n, y_n, n, AZ_Symb):
+def f_RK4_Mi(t_n, y_n, n, ZA_Symb):
 	'''
 	Explicit general diff eq GCE function
 	'''
@@ -56,30 +56,29 @@ def no_integral_Mi():
 		Mgas_v[n+1] = aux.RK4(f_RK4_Mi, time_chosen[n], Mgas_v[n], n, IN.nTimeStep)
 		#Mass_i_v[n+1] = 
 		
-		
-def pick_yields(channel_switch, AZ_Symb, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None):
-	'''
+def pick_yields(channel_switch, ZA_Symb, n, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None):
+	''' !!!!!!! this function must be edited if you import yields from other authors
 	channel_switch	[str] can be 'LIMs', 'Massive', or 'SNIa'
-	AZ_Symb			[str] is the element symbol, e.g. 'Na'
+	ZA_Symb			[str] is the element symbol, e.g. 'Na'
 	
 	'LIMs' requires metallicity_idx and stellar mass_idx
 	'Massive' requires metallicity_idx, stellar mass_idx, and vel_idx
-	'SNIa' requires None
+	'SNIa' and 'BBN' require None
 	'''
 	if channel_switch == 'LIMs':
-		if stellar_mass_idx == None:
-			raise Exception('You must import the mass grid')
-		idx = isotopes.pick_by_Symb(yields_LIMs_class.elemZ, AZ_Symb)
+		if (stellar_mass_idx == None or metallicity_idx == None):
+			raise Exception('You must import the stellar mass and metallicity grids')
+		idx = isotope_class.pick_by_Symb(yields_LIMs_class.elemZ, ZA_Symb)
 		return yields_LIMs_class.yields[metallicity_idx][idx, stellar_mass_idx]
 	elif channel_switch == 'Massive':
-		if stellar_mass_idx == None:
-			raise Exception('You must import the mass grid')
-		metallicity_idx = np.digitize(self.metallicity, self.Z_bins)
+		if (stellar_mass_idx == None or metallicity_idx == None or vel_idx == None):
+			raise Exception('You must import the stellar mass, metallicity, and velocity grids')
+		metallicity_idx = np.digitize(Z_v[n], yields_Massive_class.metallicity_bins)
 		vel_idx = IN.LC18_vel_idx
-		idx = isotopes.pick_by_Symb(yields_Massive_class.elemZ, AZ_Symb)
-		return yields_Massive_class.yields[metallicity_idx, vel_idx, idx, stellar_mass_idx]
+		idx = isotope_class.pick_by_Symb(yields_Massive_class.elemZ, ZA_Symb)
+		return idx#yields_Massive_class.yields[metallicity_idx, vel_idx, idx, stellar_mass_idx]
 	elif channel_switch == 'SNIa':
-		idx = isotopes.pick_by_Symb(yields_SNIa_class.elemZ, AZ_Symb)
+		idx = isotope_class.pick_by_Symb(yields_SNIa_class.elemZ, ZA_Symb)
 		return yields_SNIa_class.yields[idx]
 
 
@@ -154,21 +153,21 @@ class Wi:
 		if derlog == True:
 			return 0.5	
 				
-	def yield_component(self, channel_switch, AZ_Symb, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None):
-		Yield_i_birthtime = pick_yields(channel_switch, AZ_Symb, stellar_mass_idx=stellar_mass_idx, 
+	def yield_component(self, channel_switch, ZA_Symb, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None):
+		Yield_i_birthtime = pick_yields(channel_switch, ZA_Symb, stellar_mass_idx=stellar_mass_idx, 
 										metallicity_idx=metallicity_idx, vel_idx=vel_idx)
 		return Yield_i_birthtime
 
-	def mass_component(self, channel_switch, AZ_Symb, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None):
+	def mass_component(self, channel_switch, ZA_Symb, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None):
 		''' page 22, last eq. first column '''
 		mass_grid = self.grid_picker(channel_switch, 'mass')
 		lifetime_grid = self.grid_picker(channel_switch, 'lifetime')
-		return self.dMdtauM_component(lifetime_grid) * self.IMF_component(mass_grid) #* self.yield_component(channel_switch, AZ_Symb) 
+		return self.dMdtauM_component(lifetime_grid) * self.IMF_component(mass_grid) #* self.yield_component(channel_switch, ZA_Symb) 
 
-	def compute_simpson(self, channel_switch, AZ_Symb, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None):
+	def compute_simpson(self, channel_switch, ZA_Symb, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None):
 		'''Computes, using the Simpson rule, the integral elements of eq. (34) Portinari+98 -- for alive stars'''	
 		birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
-		mass_comp = self.mass_component(channel_switch, AZ_Symb, 
+		mass_comp = self.mass_component(channel_switch, ZA_Symb, 
 					stellar_mass_idx=stellar_mass_idx, metallicity_idx=metallicity_idx, vel_idx=vel_idx)
 		integrand = np.multiply(self.SFR_component(birthtime_grid), mass_comp)
 		#if channel_switch == 'SNIa':
@@ -188,7 +187,7 @@ class Wi:
 	def Mass_i_infall(self, n):
 		Minfall_dt = infall(time_chosen[n])
 		print('Infalling mass ', Minfall_dt, ' Msun at timestep idx: ', n)
-		BBN_idx = c_class.R_M_i_idx(yields_BBN_class, AZ_sorted)
+		BBN_idx = c_class.R_M_i_idx(yields_BBN_class, ZA_sorted)
 		for i in range(len(BBN_idx)):
 			Mass_i_v[BBN_idx[i],n] = Mass_i_v[BBN_idx[i],n-1] + yields_BBN_class.yields[i] * Minfall_dt * IN.nTimeStep
 			
@@ -211,7 +210,7 @@ class Wi:
 		if channel_switch == 'Massive':
 			llimit_lifetime = 10 # [Msun]
 			ulimit_lifetime = lifetime_class.interp_stellar_lifetimes(self.metallicity)(Mu_X)
-		Yield_i_birthtime = pick_yields(channel_switch, AZ_Symb, stellar_mass_idx = stellar_mass_idx, 
+		Yield_i_birthtime = pick_yields(channel_switch, ZA_Symb, stellar_mass_idx = stellar_mass_idx, 
 										metallicity_idx = metallicity_idx, vel_idx = vel_idx)	
 		all_args = tuple()
 		return np.sum(Yield_i_birthtime) 
@@ -337,14 +336,12 @@ def main():
 	np.savetxt('output/phys.dat', np.column_stack((time_chosen, Mtot, Mgas_v,
 			   Mstar_v, SFR_v, Z_v, G_v, S_v)), 
 			   header = ' (0) time_chosen 	(1) Mtot 	(2) Mgas_v 	(3) Mstar_v 	(4) SFR_v 	(5) Z_v 	(6) G_v 	(7) S_v')
-	#np.savetxt('output/Mass_i.dat', np.column_stack((AZ_sorted, Mass_i_v)), 
-	#		   header = ' (0) elemZ,	(1) elemA,	(2) masses [Msun] of every isotope for every timestep')
-	np.savetxt('output/X_i.dat', np.column_stack((AZ_sorted, Xi_v)), 
+	np.savetxt('output/Mass_i.dat', np.column_stack((ZA_sorted, Mass_i_v)), 
+			   header = ' (0) elemZ,	(1) elemA,	(2) masses [Msun] of every isotope for every timestep')
+	np.savetxt('output/X_i.dat', np.column_stack((ZA_sorted, Xi_v)), 
 			   header = ' (0) elemZ,	(1) elemA,	(2) abundance mass ratios of every isotope for every timestep (normalized to solar, Asplund et al., 2009)')
 	print("Your output has been saved.")
 	return None
-
-
 	
 def run():
 	no_integral()

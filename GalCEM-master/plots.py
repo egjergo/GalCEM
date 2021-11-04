@@ -59,9 +59,9 @@ def no_integral_plot():
 	return None
 	
 
-def AZ_sorted_plot(cmap_name='magma_r', cbins=10):
-	x = AZ_sorted[:,1]#- AZ_sorted[:,0]
-	y = AZ_sorted[:,0]
+def ZA_sorted_plot(cmap_name='magma_r', cbins=10): # angle = 2 * np.pi / np.arctan(0.4) !!!!!!!
+	x = ZA_sorted[:,1]#- ZA_sorted[:,0]
+	y = ZA_sorted[:,0]
 	z = asplund3_percent
 	cmap_ = cm.get_cmap(cmap_name, cbins)
 	binning = np.digitize(z, np.linspace(0,9.*100/cbins,num=cbins-1))

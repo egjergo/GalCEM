@@ -47,9 +47,9 @@ class Isotopes:
 		idx = np.where(self.elemSymb == elemSymb)
 		return np.where(ndarray_elemZ == self.elemZ[idx])
 		
-	def pick_by_AZ_sort(self, AZ_sorted, ndarray_elemZ, elemSymb):
+	def pick_by_ZA_sort(self, ZA_sorted, ndarray_elemZ, elemSymb):
 		'''
-		Finds the indices 
+		Finds the indices for class_instance.yields
 		
 		Input:
 			ndarray_elemZ:	the elemZ instance variable in yield classes
@@ -91,46 +91,46 @@ class Concentrations:
 	
 	asplund3_pd = pd.DataFrame(IN.asplund3, columns=['elemN','elemZ','elemA','percentage'])
 	
-	def abund_percentage(self, asplund3_pd, AZ_sorted):
+	def abund_percentage(self, asplund3_pd, ZA_sorted):
 		percentages = []
-		for AZ_idx in AZ_sorted:
-			Z_select = asplund3_pd.loc[asplund3_pd['elemZ'] == AZ_idx[0]]
-			AZ_select = Z_select.loc[Z_select['elemA'] == AZ_idx[1]]
-			percentages.append(AZ_select.get(['percentage']).to_numpy(dtype=np.float16, na_value=0.).flatten())
+		for ZA_idx in ZA_sorted:
+			Z_select = asplund3_pd.loc[asplund3_pd['elemZ'] == ZA_idx[0]]
+			ZA_select = Z_select.loc[Z_select['elemA'] == ZA_idx[1]]
+			percentages.append(ZA_select.get(['percentage']).to_numpy(dtype=np.float16, na_value=0.).flatten())
 		percentages_pd = np.array(percentages, dtype='object')
 		for i in range(len(percentages_pd)):
 			if percentages_pd[i].size <= 0:
 				percentages_pd[i] = np.array([1e-5])
 		return np.array(percentages_pd, dtype=np.float16)
 
-	def extract_AZ_pairs_SNIa(self, yields):
+	def extract_ZA_pairs_SNIa(self, yields):
 		return np.column_stack((yields.elemZ, yields.elemA))
 	
-	def extract_AZ_pairs_Massive(self, yields):
+	def extract_ZA_pairs_Massive(self, yields):
 		return np.column_stack((yields.elemZ, yields.elemA))
 		
-	def extract_AZ_pairs_LIMs(self, yields):
+	def extract_ZA_pairs_LIMs(self, yields):
 		return np.column_stack((yields.elemZ_sorting[0][:,0], yields.elemA_sorting[0][:,0]))
 	
-	def AZ_sorted(self, AZ_all):
-		Z_sorted = AZ_all[AZ_all[:,0].argsort()]
+	def ZA_sorted(self, ZA_all):
+		Z_sorted = ZA_all[ZA_all[:,0].argsort()]
 		sorting_A = [] # isolating A indices with same Z
 		A_sorted = [] # sorted indices for sorting_A
 		for i in range(Z_sorted[:,0].max()+1):
 			sorting_A.append(np.where(Z_sorted[:,0] == i)[0])
 		for i in range(Z_sorted[:,0].max()+1):
 			A_sorted.append(sorting_A[i][sorting_A[i].argsort()])
-		AZ_sorted = Z_sorted[list(flatten(A_sorted))]
-		return np.unique(AZ_sorted, axis=0)
+		ZA_sorted = Z_sorted[list(flatten(A_sorted))]
+		return np.unique(ZA_sorted, axis=0)
 	
-	def AZ_Symb(self, AZ_sorted):
+	def ZA_Symb(self, ZA_sorted):
 		'''
 		Returns a complete list of the element symbol associated 
-		with each entry in AZ_sorted
+		with each entry in ZA_sorted
 		'''
-		return [np.where(IN.periodic['elemZ'] == AZ_sorted[i,0])[0][0] for i in range(len(AZ_sorted))]
+		return [np.where(IN.periodic['elemZ'] == ZA_sorted[i,0])[0][0] for i in range(len(ZA_sorted))]
 		
-	def R_M_i_idx(self, yields_class, AZ_sorted, Mstar=None, metallicity=None, vel=None):
+	def R_M_i_idx(self, yields_class, ZA_sorted, Mstar=None, metallicity=None, vel=None):
 		'''
 		This function is able to associate the entry in isotope-wide tracked quantities
 		with the respective yield. e.g.:
@@ -138,10 +138,10 @@ class Concentrations:
 			for i in range(len(BBN_idx)):
 				self.Mass_i_t[BBN_idx[i]] += yields_BBN_class.yields[i] * Minfall_dt
 		'''
-		yieldchoice_AZ_list = np.array(list(zip(yields_class.elemZ, yields_class.elemA)))
-		yieldchoice_idx = [np.where((AZ_sorted[:,0] == yieldchoice_AZ_list[i,0]) 
-					& (AZ_sorted[:,1] == yieldchoice_AZ_list[i,1]))[0][0] 
-					for i in range(len(yieldchoice_AZ_list))]
+		yieldchoice_ZA_list = np.array(list(zip(yields_class.elemZ, yields_class.elemA)))
+		yieldchoice_idx = [np.where((ZA_sorted[:,0] == yieldchoice_ZA_list[i,0]) 
+					& (ZA_sorted[:,1] == yieldchoice_ZA_list[i,1]))[0][0] 
+					for i in range(len(yieldchoice_ZA_list))]
 		return yieldchoice_idx
 		
 class Yields:
@@ -151,7 +151,7 @@ class Yields:
 		self.elemZ = None # Atomic number
 		self.elemA = None # Mass number
 		self.tables = None # variable onto which the input is saved 
-		self.AZ_pairs = None # bridge variable to extract AZ_sorting (n.b. not all yields have it!)
+		self.ZA_pairs = None # bridge variable to extract ZA_sorting (n.b. not all yields have it!)
 		self.elemZ_sorting = None # Atomic number indexed by yield (n.b. not all yields have it!)
 		self.elemA_sorting = None # Mass number indexed by yield (n.b. not all yields have it!)
 		self.metallicity_bins = None # array of initial metallicity bins for the given authors (n.b. not all yields have it!)  
@@ -297,5 +297,4 @@ class Yields_LIMs(Yields):
 			self.elemZ_sorting, self.elemZ = self.is_unique('elemZ', split_length)
 			self.metallicityIni, self.metallicity_bins = self.is_unique('Zini', split_length)
 			self.stellarMassIni, self.stellarMass_bins = self.is_unique('Mini', split_length)
-			self.Returned_stellar_mass = self.is_unique('Mfin', split_length)
-			
+			self.Returned_stellar_mass = self.is_unique('Mfin', split_length)	

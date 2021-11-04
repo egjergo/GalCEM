@@ -40,7 +40,7 @@ SNIaDTD_option = 'GreggioRenzini83' # 'RuizMannucci01'
 
 yields_LIMs_option = 'k10'
 yields_massive_option = 'lc18'
-LC18_vel_idx = 0
+LC18_vel_idx = 0 # !!!!!!! eventually you should write a function about this
 yields_SNIa_option = 'i99' #'km20'
 yields_BBN_option = 'gp13'
 

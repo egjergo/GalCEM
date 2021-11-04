@@ -70,7 +70,6 @@ class Auxiliary:
 								 0, np.inf)[0] / H0 # present time [Gyr]
 			return age0 - age
 
-
 	def RK4(self, f, t, y, i, h):
 		'''
 		Classic Runge-Kutta 4th order for solving:	 dy/dt = f(t,y,i)
@@ -133,7 +132,7 @@ class Stellar_Lifetimes:
 		with respect to dtau, but multiplied by dtau/dt' = -1
 		'''
 		Z_idx = np.digitize(metallicity, self.Z_bins)
-		dMdtau_deriv = - sm.derivative(self.interp_stellar_masses(metallicity), time_chosen[1001:-1000], n=n) #time_chosen[501:-500], n=n)
+		dMdtau_deriv = - sm.derivative(self.interp_stellar_masses(metallicity), time_chosen[1001:-1000], n=n) #time_chosen[501:-500], n=n) !!!!!!!
 		return ss.mode(dMdtau_deriv)[0][0]
 		
 
@@ -163,7 +162,7 @@ class Infall:
 		'''
 		My version of Chiappini+01
 		'''
-		# After radial dependence upgrade
+		# After a radial dependence upgrade
 		return None
 	
 	def infall_func(self):
@@ -183,9 +182,7 @@ class Infall:
 	    USED IN:
 	    	inf() and SFR()
 	    """
-	    return np.divide(IN.M_inf[self.morphology], 
-	    				 scipy.integrate.quad(self.infall_func(),
-	                     #self.time[0], self.time[-1])[0])
+	    return np.divide(IN.M_inf[self.morphology], scipy.integrate.quad(self.infall_func(),
 						 self.time[0], IN.age_Galaxy)[0])
 
 	def inf(self):
@@ -273,22 +270,16 @@ class Star_Formation_Rate:
 	Defaults options are 'SFRgal', 'CSFR', [...]
 	'''
 	def __init__(self, option=IN.SFR_option, custom=IN.custom_SFR, 
-				 option_CSFR=IN.CSFR_option, morphology=IN.morphology):
-		#(self, Mtot, timestep_i, option=IN.SFR_option, custom=IN.custom_SFR, 
-		#		 option_CSFR=IN.CSFR_option, morphology=IN.morphology):
+				 option_CSFR=IN.CSFR_option, morphology=IN.morphology)::
 		self.option = option
 		self.custom = custom
-		#self.Mtot = Mtot
-		#self.i = timestep_i
 		self.option_CSFR = option_CSFR
 		self.morphology = morphology
 
 	def SFRgal(self, k=IN.k_SFR, Mgas=[], Mtot=[], timestep_n=0): 
 		''' Talbot & Arnett (1975)'''
 		return np.multiply(IN.nu[self.morphology]  * (Mgas[timestep_n])**(k) 
-		    / (Mtot[timestep_n])**(k-1), IN.SFR_rescaling / IN.M_inf[self.morphology]) # !!!!!!! isn't defined yet
-		#return (lambda Mgas: #IN.nu[self.morphology] / IN.M_inf[self.morphology] *
-					 #np.power(Mgas, -k))# / self.Mtot[self.i]**(-(k-1))) 
+		    / (Mtot[timestep_n])**(k-1), IN.SFR_rescaling / IN.M_inf[self.morphology]) 
 	
 	def CSFR(self):
 		'''
