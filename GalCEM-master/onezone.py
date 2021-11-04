@@ -40,18 +40,21 @@ def no_integral():
 		Mstar_test[n+1] = Mtot[n-1] - Mgas_v[n]
 		Mgas_v[n+1] = aux.RK4(f_RK4, time_chosen[n], Mgas_v[n], n, IN.nTimeStep)		
 
+
 def f_RK4_Mi(t_n, y_n, n, AZ_Symb):
 	'''
 	Explicit general diff eq GCE function
 	'''
-	return Infall_rate[n] - SFR(n)
+	return Infall_rate[n] * X_i_inf  - SFR(n) * Mass_i_v[n]
+
 
 def no_integral_Mi():
 	for n in range(len(time_chosen)-1):	
 		SFR_v[n+1] = SFR(n)
-		Mstar_vni+1] = Mstar_v[n] + SFR(n) * IN.nTimeStep
+		Mstar_v[n+1] = Mstar_v[n] + SFR(n) * IN.nTimeStep
 		Mstar_test[n+1] = Mtot[n-1] - Mgas_v[n]
-		Mgas_v[n+1] = aux.RK4(f_RK4, time_chosen[n], Mgas_v[n], n, IN.nTimeStep)
+		Mgas_v[n+1] = aux.RK4(f_RK4_Mi, time_chosen[n], Mgas_v[n], n, IN.nTimeStep)
+		#Mass_i_v[n+1] = 
 		
 		
 def pick_yields(channel_switch, AZ_Symb, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None):
@@ -301,7 +304,6 @@ class Convergence:
 		return Gi_k1
 
 
-
 class Evolution:
 	'''
 	Main GCE one-zone class 
@@ -311,6 +313,9 @@ class Evolution:
 			Wi_class = Wi(Z_v[n-1], t)
 			Wi_class.compute(t)
 		return None
+
+tic.append(time.process_time())
+print('Package lodaded in '+str(1e0*(tic[-1]))+' seconds.')
 
 """"""""""""""""""""""""""""""""""""
 "                                  "
@@ -339,8 +344,6 @@ def main():
 	print("Your output has been saved.")
 	return None
 
-tic.append(time.process_time())
-print('Package lodaded in '+str(1e0*(tic[-1]))+' seconds.')
 
 	
 def run():

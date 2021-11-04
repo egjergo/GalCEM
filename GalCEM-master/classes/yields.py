@@ -14,10 +14,11 @@ import prep.inputs as IN
 " LIST OF CLASSES:                             "
 "	__		Isotopes                           "
 "	__		Concentrations                     "
-"	__		Yields_BBN                         "
-"	__		Yields_SNIa                        "
-"	__		Yields_Massive                     "
-"	__		Yields_LIMs                        "
+"   __      Yields                             "
+"	    __		Yields_BBN                     "
+"	    __		Yields_SNIa                    "
+"	    __		Yields_Massive                 "
+"	    __		Yields_LIMs                    "
 "                                              "
 """"""""""""""""""""""""""""""""""""""""""""""""
 
@@ -143,60 +144,54 @@ class Concentrations:
 					for i in range(len(yieldchoice_AZ_list))]
 		return yieldchoice_idx
 		
+class Yields:
+	''' Parent class for all yields '''
+	def __init__(self):
+		self.yields = None # mass fraction of a given isotope for a given set of properties
+		self.elemZ = None # Atomic number
+		self.elemA = None # Mass number
+		self.tables = None # variable onto which the input is saved 
+		self.AZ_pairs = None # bridge variable to extract AZ_sorting (n.b. not all yields have it!)
+		self.elemZ_sorting = None # Atomic number indexed by yield (n.b. not all yields have it!)
+		self.elemA_sorting = None # Mass number indexed by yield (n.b. not all yields have it!)
+		self.metallicity_bins = None # array of initial metallicity bins for the given authors (n.b. not all yields have it!)  
+		self.stellarMass_bins = None # array of initial stellar mass bins for the given authors (n.b. not all yields have it!)
+		self.metallicityIni = None # Initial stellar metallicity (n.b. not all yields have it!)
+		self.stellarMassIni = None # Initial stellar mass (n.b. not all yields have it!)
 		
-class Yields_BBN:
+		
+class Yields_BBN(Yields):
 	'''
-	Big Bang Nucleosynthesis yields from Galli & Palla (2013)
+	Yields by Big Bang Nucleosynthesis, from Galli & Palla (2013) by default.
 	'''
-	def __init__(self, option = IN.yields_BBN_option):
+	def __init__(self, option=IN.yields_BBN_option):
 		self.option = option
-		self.tables = None
-		self.yields = None
-		self.elemA = None
-		self.elemZ = None
-		self.mass = None
 		self.massCol = None
-		self.numberFrac = None
-		self.totMass = None
 		
 	def import_yields(self):
 		if self.option == 'gp13':
 			yd = 'input/yields/bbn/'
 			
-			self.tables = np.genfromtxt(yd + 'galli13.dat', 
-						 names=['elemZ','elemA', 'numbFrac', 'mass'], 
-						 
-						 dtype=[('elemZ', '<i8'), 
-						 ('elemA', '<i8'), ('numbFrac','<f8'), ('mass','<f8')])
-						 
-			self.numberFrac = self.tables['numbFrac'] # fraction by number
+			self.tables = np.genfromtxt(yd + 'galli13.dat', names=['elemZ','elemA', 'numbFrac', 'mass'], 
+						 dtype=[('elemZ', '<i8'), ('elemA', '<i8'), ('numbFrac','<f8'), ('mass','<f8')])
 			self.elemA = self.tables['elemA']
 			self.elemZ = self.tables['elemZ']
-			self.mass = self.tables['mass']
-			self.massCol = np.multiply(self.numberFrac, self.mass)
-			self.totMass = np.sum(self.massCol)
-			self.yields = np.divide(self.massCol, self.totMass) # fraction by mass 
+			self.massCol = np.multiply(self.tables['numbFrac'], self.tables['mass'])
+			self.yields = np.divide(self.massCol, np.sum(self.massCol)) # fraction by mass 
 
 
-class Yields_SNIa:
+class Yields_SNIa(Yields):
 	'''
-	Kusakabe's yields
+	Yields by Type Ia Supernova, from Iwamoto+99 by default.
 	'''
-	def __init__(self, option = IN.yields_SNIa_option):
+	def __init__(self, option=IN.yields_SNIa_option):
 		self.option = option
-		self.tables = None
-		self.yields = None
-		self.elemA = None
-		self.elemZ = None
-		self.AZ_pairs = None
 		
 	def import_yields(self):
 		if self.option == 'km20':
 			yd = 'input/yields/snia/km20/'
-			self.tables = np.genfromtxt(yd + 'yield_nucl.d', 
-						 names=['elemName','elemA','elemZ','Yield'], 
-						 dtype=[('elemName', '<U5'), ('elemA', '<i8'), 
-						 ('elemZ', '<i8'), ('Yield','<f8')])
+			self.tables = np.genfromtxt(yd + 'yield_nucl.d', names=['elemName','elemA','elemZ','Yield'], 
+						 dtype=[('elemName', '<U5'), ('elemA', '<i8'), ('elemZ', '<i8'), ('Yield','<f8')])
 			self.yields = self.tables['Yield']
 			self.elemA = self.tables['elemA']
 			self.elemZ = self.tables['elemZ']
@@ -215,27 +210,17 @@ class Yields_SNIa:
 			self.elemZ = self.tables['elemZ']
 
 				
-class Yields_Massive:
+class Yields_Massive(Yields):
 	'''
-	Limongi & Chieffi (2018) by default
+	Yields by massive stars, from Limongi & Chieffi (2018) by default.
 	'''
-	def __init__(self, option = IN.yields_massive_option):
+	def __init__(self, option=IN.yields_massive_option):
 		self.option = option
-		self.metallicity_bins = None
-		self.stellarMass_bins = None
 		self.rotationalVelocity_bins = None
-		self.tables = None
-		self.yields = None
-		self.elemA = None
-		self.elemZ = None
-		self.AZ_pairs = None
-		self.metallicityIni = None
-		self.stellarMassIni = None
-		self.allHeaders = None # All columns in self.tables
 		
 	def import_yields(self):
 		if self.option == 'lc18':
-			self.metallicityIni = [0., -1., -2., -3.]
+			self.metallicity_bins = np.power(10, [0., -1., -2., -3.])
 			self.rotationalVelocity_bins = [0., 150., 300.]
 			yd = 'input/yields/snii/lc18/tab_R/'
 			yieldsT = []
@@ -259,31 +244,20 @@ class Yields_Massive:
 				
 			yieldsT = np.array(yieldsTable)	
 			self.tables = np.reshape(yieldsT, (4,3,142,13)) 
-			self.allHeaders = np.array(headers[0][4:], dtype='<U3').astype('float')
+			self.stellarMass_bins = np.array(headers[0][4:], dtype='<U3').astype('float')
 			self.elemZ = self.tables[0,0,:,1].astype('int')
 			self.elemA = self.tables[0,0,:,2].astype('int')
 			self.stellarMassIni = self.tables[:,:,:,3].astype('float')
 			self.yields = self.tables[:,:,:,4:].astype('float') 
 	
 	
-class Yields_LIMs:
+class Yields_LIMs(Yields):
 	'''
-	Karakas et al. (2010) by default
+	Yields by LIMs, from Karakas et al. (2010) by default.
 	'''
-	def __init__(self, option = IN.yields_LIMs_option):
+	def __init__(self, option=IN.yields_LIMs_option):
 		self.option = option
-		self.metallicity_bins = None
-		self.stellarMass_bins = None
-		self.tables = None
-		self.yields = None
-		self.elemA = None
-		self.elemZ = None
 		self.Returned_stellar_mass = None
-		self.AZ_pairs = None
-		self.elemA_sorting = None
-		self.elemZ_sorting = None
-		self.metallicityIni = None
-		self.stellarMassIni = None
 		
 	def is_unique(self, val, split_length):
 		it_is = [t[val] for t in self.tables]
@@ -293,21 +267,25 @@ class Yields_LIMs:
 		it_is_T = [np.array(ii).T for ii in it_is]
 		if (val == 'elemA' or val == 'elemZ'):
 			return it_is_T, unique[0]
-		elif val == 'Yield':
+		elif (val == 'Yield' or val == 'Mfin'):
 			return it_is_T
 		else:
-			return it_is_T, unique
+			return it_is_T, unique.T[0]
 		
 	def import_yields(self):
+		'''
+		for option == 'k10': 
+			lists of 4 [(77,15)*3, (77,16)]:	yields, *Ini, *_sorting
+			arrays:								elemA, elemZ, *_bins
+		'''
 		if self.option == 'k10':
 			self.metallicity_bins = [0.0001, 0.008, 0.004, 0.02]
-			split_length = [16, 15, 15, 16]
+			split_length = [16, 15, 15, 16] # self.tables length (metallicity arrays)
 			yd = 'input/yields/lims/k10/'
 			
 			self.tables = np.array([np.genfromtxt(yd + 'Z'+str(Z)+'.dat',
 				delimiter=',', names=['Mini','Zini','Mfin','elemName','elemZ','elemA',
 				'Yield','Mi_windloss','Mi_ini','Xi_avg','Xi_ini','ProdFact'], 
-				
 				dtype =[('Mini', '<f8'), ('Zini', '<f8'), ('Mfin', '<f8'), ('elemName', 
 				'<U4'), ('elemZ', 'i4'), ('elemA', 'i4'), ('Yield', '<f8'), 
 				('Mi_windloss', '<f8'), ('Mi_ini', '<f8'), ('Xi_avg', '<f8'), 
@@ -319,5 +297,5 @@ class Yields_LIMs:
 			self.elemZ_sorting, self.elemZ = self.is_unique('elemZ', split_length)
 			self.metallicityIni, self.metallicity_bins = self.is_unique('Zini', split_length)
 			self.stellarMassIni, self.stellarMass_bins = self.is_unique('Mini', split_length)
-			#self.Returned_stellar_mass =
+			self.Returned_stellar_mass = self.is_unique('Mfin', split_length)
 			
