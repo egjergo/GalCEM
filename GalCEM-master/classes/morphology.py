@@ -270,7 +270,7 @@ class Star_Formation_Rate:
 	Defaults options are 'SFRgal', 'CSFR', [...]
 	'''
 	def __init__(self, option=IN.SFR_option, custom=IN.custom_SFR, 
-				 option_CSFR=IN.CSFR_option, morphology=IN.morphology)::
+				 option_CSFR=IN.CSFR_option, morphology=IN.morphology):
 		self.option = option
 		self.custom = custom
 		self.option_CSFR = option_CSFR
