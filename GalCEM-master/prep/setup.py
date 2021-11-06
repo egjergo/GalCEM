@@ -1,4 +1,6 @@
-""" I only achieve simplicity with enormous effort (Clarice Lispector) """
+""" 
+You can change the variables, but don't remove or rename any
+"""
 import time
 import math as m
 import numpy as np

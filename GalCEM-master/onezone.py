@@ -31,13 +31,14 @@ def f_RK4(t_n, y_n, n):
 	Explicit general diff eq GCE function
 	'''
 	return Infall_rate[n] - SFR(n)
-
-
+	
+	
 def no_integral():
 	for n in range(len(time_chosen)-1):	
-		SFR_v[n+1] = SFR(n)
-		Mstar_v[n+1] = Mstar_v[n] + SFR(n) * IN.nTimeStep
-		Mstar_test[n+1] = Mtot[n-1] - Mgas_v[n]
+		SFR_v[n] = SFR(n) # change from [n+1] to [n]
+		Mstar_v[n+1] = Mstar_v[n] + SFR_v[n] * IN.nTimeStep
+		Mstar_test[n+1] = aux.RK4(SFR, time_chosen[n], Mstar_v[n], n, IN.nTimeStep)
+		#Mstar_test[n+1] = Mtot[n-1] - Mgas_v[n]
 		Mgas_v[n+1] = aux.RK4(f_RK4, time_chosen[n], Mgas_v[n], n, IN.nTimeStep)		
 
 
@@ -50,7 +51,7 @@ def f_RK4_Mi(t_n, y_n, n, ZA_Symb):
 
 def no_integral_Mi():
 	for n in range(len(time_chosen)-1):	
-		SFR_v[n+1] = SFR(n)
+		SFR_v[n] = SFR(n)
 		Mstar_v[n+1] = Mstar_v[n] + SFR(n) * IN.nTimeStep
 		Mstar_test[n+1] = Mtot[n-1] - Mgas_v[n]
 		Mgas_v[n+1] = aux.RK4(f_RK4_Mi, time_chosen[n], Mgas_v[n], n, IN.nTimeStep)
