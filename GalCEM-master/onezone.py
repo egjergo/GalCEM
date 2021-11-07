@@ -47,7 +47,7 @@ def f_RK4_Mi(t_n, y_n, n, ZA_Symb):
 	'''
 	Explicit general diff eq GCE function
 	'''
-	return Infall_rate[n] * Xi_inf  - SFR(n) * Mass_i_v[n]
+	return Infall_rate[n] * Xi_inf * Mtot[n]  - SFR(n) * Mass_i_v[n]
 
 #@lru_cache(maxsize=4)
 def no_integral_Mi():

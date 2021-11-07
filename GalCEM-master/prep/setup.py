@@ -48,6 +48,7 @@ ZA_LIMs = c_class.extract_ZA_pairs_LIMs(yields_LIMs_class)
 ZA_SNIa = c_class.extract_ZA_pairs_SNIa(yields_SNIa_class)
 ZA_Massive = c_class.extract_ZA_pairs_Massive(yields_Massive_class)
 ZA_all = np.vstack((ZA_LIMs, ZA_SNIa, ZA_Massive))
+
 """ Initialize Global tracked quantities """ 
 Infall_rate = infall(time_chosen)
 ZA_sorted = c_class.ZA_sorted(ZA_all) # [Z, A] VERY IMPORTANT! 321 isotopes with yields_SNIa_option = 'km20', 192 isotopes for 'i99' 
@@ -61,9 +62,9 @@ Mstar_v = IN.epsilon * np.ones(len(time_chosen)) # Global
 Mstar_test = IN.epsilon * np.ones(len(time_chosen)) # Global
 Mgas_v = IN.epsilon * np.ones(len(time_chosen)) # Global
 SFR_v = IN.epsilon * np.ones(len(time_chosen)) #
-Mass_i_v = IN.epsilon * np.ones((len(ZA_sorted), len(time_chosen)))	# Gass mass (i,j) where the i rows are the isotopes and j are the timesteps
-#Mass_i_inf = 
-#Xi_inf = 
+Mass_i_v = IN.epsilon * np.ones((len(ZA_sorted), len(time_chosen)))	# Gass mass (i,j) where the i rows are the isotopes and j are the timesteps, [:,j] follows the timesteps
+Xi_inf = isotope_class.construct_yield_vector(yields_BBN_class, ZA_sorted)
+Mass_i_inf = np.column_stack(([Xi_inf] * len(Mtot)))
 Xi_v = IN.epsilon * np.ones((len(ZA_sorted), len(time_chosen)))	# Xi 
 Z_v = IN.epsilon * np.ones(len(time_chosen)) # Metallicity 
 G_v = IN.epsilon * np.ones(len(time_chosen)) # G 
