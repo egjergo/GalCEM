@@ -1,5 +1,6 @@
 """ I only achieve simplicity with enormous effort (Clarice Lispector) """
 import time
+#from functools import cache, lru_cache
 tic = []
 tic.append(time.process_time())
 import math as m
@@ -32,7 +33,7 @@ def f_RK4(t_n, y_n, n):
 	'''
 	return Infall_rate[n] - SFR(n)
 	
-	
+#@lru_cache(maxsize=4)
 def no_integral():
 	for n in range(len(time_chosen)-1):	
 		SFR_v[n] = SFR(n) # change from [n+1] to [n]
@@ -46,9 +47,9 @@ def f_RK4_Mi(t_n, y_n, n, ZA_Symb):
 	'''
 	Explicit general diff eq GCE function
 	'''
-	return Infall_rate[n] * X_i_inf  - SFR(n) * Mass_i_v[n]
+	return Infall_rate[n] * Xi_inf  - SFR(n) * Mass_i_v[n]
 
-
+#@lru_cache(maxsize=4)
 def no_integral_Mi():
 	for n in range(len(time_chosen)-1):	
 		SFR_v[n] = SFR(n)

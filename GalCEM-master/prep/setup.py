@@ -63,6 +63,7 @@ Mgas_v = IN.epsilon * np.ones(len(time_chosen)) # Global
 SFR_v = IN.epsilon * np.ones(len(time_chosen)) #
 Mass_i_v = IN.epsilon * np.ones((len(ZA_sorted), len(time_chosen)))	# Gass mass (i,j) where the i rows are the isotopes and j are the timesteps
 #Mass_i_inf = 
+#Xi_inf = 
 Xi_v = IN.epsilon * np.ones((len(ZA_sorted), len(time_chosen)))	# Xi 
 Z_v = IN.epsilon * np.ones(len(time_chosen)) # Metallicity 
 G_v = IN.epsilon * np.ones(len(time_chosen)) # G 
