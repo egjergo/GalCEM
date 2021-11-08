@@ -9,12 +9,15 @@ import scipy.interpolate as interp
 from scipy.integrate import quad
 from scipy.misc import derivative
 
-import prep.inputs as IN
+import prep.inputs as INp
+IN = INp.Inputs()
 import classes.morphology as morph
 import classes.yields as Y
 
 
 """ Setup """
+#class Setup:
+#    def __init__(self):
 aux = morph.Auxiliary()
 lifetime_class = morph.Stellar_Lifetimes()
 Ml = lifetime_class.s_mass[1] # Lower limit stellar masses [Msun] 

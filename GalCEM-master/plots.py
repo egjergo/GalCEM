@@ -2,7 +2,8 @@
 import time
 import numpy as np
 
-import prep.inputs as IN
+import prep.inputs as INp
+IN = INp.Inputs()
 import classes.morphology as morph
 import classes.yields as Y
 from prep.setup import *
@@ -42,11 +43,11 @@ def no_integral_plot():
 	ax.semilogy(time_chosen, Mstar_v, label= r'$M_{star}$', linewidth=2)
 	ax.semilogy(time_chosen, Mstar_v + Mgas_v, label= r'$M_g + M_s$', linestyle = '--')
 	ax.semilogy(time_chosen, Mstar_test, label= r'$M_{star,t}$', linewidth=2, linestyle = ':')
-	ax2.semilogy(time_chosen, Infall_rate, label= r'Infall', color = 'cyan', linestyle=':', linewidth=3)
-	ax2.semilogy(time_chosen, SFR_v, label= r'SFR', color = 'gray', linestyle=':', linewidth=3)
+	ax2.semilogy(time_chosen, np.divide(Infall_rate, 1e9), label= r'Infall', color = 'cyan', linestyle=':', linewidth=3)
+	ax2.semilogy(time_chosen, np.divide(SFR_v,1e9), label= r'SFR', color = 'gray', linestyle=':', linewidth=3)
 	ax.set_xlim(0,13.8)
 	ax.set_ylim(1e6, 1e11)
-	ax2.set_ylim(1e7, 1e11)
+	ax2.set_ylim(1e-2, 1e2)
 	ax.set_xlabel(r'Age [Gyr]', fontsize = 15)
 	ax.set_ylabel(r'Masses [$M_{\odot}$]', fontsize = 15)
 	ax2.set_ylabel(r'Rates [$M_{\odot}/yr$]', fontsize = 15)

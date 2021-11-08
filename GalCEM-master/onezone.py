@@ -3,14 +3,15 @@ import time
 #from functools import cache, lru_cache
 tic = []
 tic.append(time.process_time())
-import math as m
+import math
 import numpy as np
 import scipy.integrate
 import scipy.interpolate as interp
 from scipy.integrate import quad
 from scipy.misc import derivative
 
-import prep.inputs as IN
+import prep.inputs as INp
+IN = INp.Inputs()
 import classes.morphology as morph
 import classes.yields as Y
 import plots as plts
@@ -25,7 +26,6 @@ def SFR(timestep_n):
 	Feed it every timestep appropriately
 	'''
 	return SFR_class.SFR(Mgas=Mgas_v, Mtot=Mtot, timestep_n=timestep_n) # Function: SFR(Mgas)
-		
 
 def f_RK4(t_n, y_n, n):
 	'''
@@ -33,29 +33,42 @@ def f_RK4(t_n, y_n, n):
 	'''
 	return Infall_rate[n] - SFR(n)
 	
-#@lru_cache(maxsize=4)
-def no_integral():
-	for n in range(len(time_chosen)-1):	
-		SFR_v[n] = SFR(n) # change from [n+1] to [n]
-		Mstar_v[n+1] = Mstar_v[n] + SFR_v[n] * IN.nTimeStep
-		Mstar_test[n+1] = aux.RK4(SFR, time_chosen[n], Mstar_v[n], n, IN.nTimeStep)
-		#Mstar_test[n+1] = Mtot[n-1] - Mgas_v[n]
-		Mgas_v[n+1] = aux.RK4(f_RK4, time_chosen[n], Mgas_v[n], n, IN.nTimeStep)		
-
-
 def f_RK4_Mi(t_n, y_n, n):
 	'''
 	Explicit general diff eq GCE function
 	'''
-	return Infall_rate[n] * Xi_inf  - SFR(n) * Mass_i_v[:,n]
+	return Infall_rate[n] * Xi_inf  - np.multiply(SFR(n), Mass_i_v[:,n])
 
 #@lru_cache(maxsize=4)
-def no_integral_Mi():
+def no_integral(n):
+	SFR_v[n+1] = SFR(n) # change from [n+1] to [n]
+	Mstar_v[n+1] = Mstar_v[n] + SFR_v[n] * IN.nTimeStep
+	#Mstar_test[n+1] = aux.RK4(SFR, time_chosen[n], Mstar_v[n], n, IN.nTimeStep)
+	Mstar_test[n+1] = Mtot[n-1] - Mgas_v[n]
+	Mgas_v[n+1] = aux.RK4(f_RK4, time_chosen[n], Mgas_v[n], n, IN.nTimeStep)		
+
+	
+def f_RK4_Mi_1(t_n, y_n, n):
+	'''
+	Explicit general diff eq GCE function
+	'''
+	return Infall_rate[n] * Xi_inf 
+
+		
+def f_RK4_Mi_2(t_n, y_n, n):
+	'''
+	Explicit general diff eq GCE function
+	'''
+	return - SFR(n) * Mass_i_v[:,n]
+
+def no_integral_timestep():
+	for n in range(len(time_chosen)-1):
+		no_integral(n)
+
+#@lru_cache(maxsize=4)
+def no_integral_Mi_timestep():
 	for n in range(len(time_chosen)-1):	
-		SFR_v[n] = SFR(n)
-		Mstar_v[n+1] = Mstar_v[n] + SFR(n) * IN.nTimeStep
-		Mstar_test[n+1] = Mtot[n-1] - Mgas_v[n]
-		Mgas_v[n+1] = aux.RK4(f_RK4, time_chosen[n], Mgas_v[n], n, IN.nTimeStep)		
+		no_integral(n)		
 		Mass_i_v[:, n+1] = aux.RK4(f_RK4_Mi, time_chosen[n], Mass_i_v[:,n], n, IN.nTimeStep)
 		
 def pick_yields(channel_switch, ZA_Symb, n, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None):
@@ -344,8 +357,23 @@ def main():
 			   header = ' (0) elemZ,	(1) elemA,	(2) abundance mass ratios of every isotope for every timestep (normalized to solar, Asplund et al., 2009)')
 	print("Your output has been saved.")
 	return None
+
+def tic_count(string="Computation time = "):
+	tic.append(time.process_time())
+	m = math.floor((tic[-1] - tic[-2])/60.)
+	s = ((tic[-1] - tic[-2])%60.)
+	print(string+str(m)+" minutes and "+str(s)+" seconds.")
 	
+
 def run():
-	no_integral_Mi()
+	tic.append(time.process_time())
+	no_integral_timestep()
 	plts.no_integral_plot()
+	tic_count()
+	print("Saving the output...")
+	np.savetxt('output/phys.dat', np.column_stack((time_chosen, Mtot, Mgas_v,
+			   Mstar_v, SFR_v/1e9, Infall_rate, Z_v, G_v, S_v)), #SFR is divided by 1e9 to get the /Gyr to /yr conversion 
+			   header = ' (0) time_chosen 	(1) Mtot 	(2) Mgas_v 	(3) Mstar_v 	(4) SFR_v	(5)Infall_v		(6) Z_v 	(7) G_v 	(8) S_v')
+	tic_count(string="Saved output in = ")
+	return None
 #run()
