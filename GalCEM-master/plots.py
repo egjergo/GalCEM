@@ -50,7 +50,7 @@ def no_integral_plot():
 	ax.set_xlabel(r'Age [Gyr]', fontsize = 15)
 	ax.set_ylabel(r'Masses [$M_{\odot}$]', fontsize = 15)
 	ax2.set_ylabel(r'Rates [$M_{\odot}/yr$]', fontsize = 15)
-	ax.set_title(r'$f_{SFR} = $ %.2f' % (IN.SFR_rescaling / IN.M_inf[IN.morphology]), fontsize=15)
+	ax.set_title(r'$f_{SFR} = $ %.2f' % (IN.SFR_rescaling), fontsize=15)
 	ax.legend(fontsize=15, loc='lower left', ncol=2, frameon=False)
 	ax2.legend(fontsize=15, loc='lower right', frameon=False)
 	plt.tight_layout()

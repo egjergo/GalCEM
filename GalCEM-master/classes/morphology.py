@@ -279,7 +279,7 @@ class Star_Formation_Rate:
 	def SFRgal(self, k=IN.k_SFR, Mgas=[], Mtot=[], timestep_n=0): 
 		''' Talbot & Arnett (1975)'''
 		return np.multiply(IN.nu[self.morphology]  * (Mgas[timestep_n])**(k) 
-		    / (Mtot[timestep_n])**(k-1), IN.SFR_rescaling / IN.M_inf[self.morphology]) 
+		    / (Mtot[timestep_n])**(k-1), IN.SFR_rescaling)
 	
 	def CSFR(self):
 		'''

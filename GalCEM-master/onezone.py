@@ -43,11 +43,11 @@ def no_integral():
 		Mgas_v[n+1] = aux.RK4(f_RK4, time_chosen[n], Mgas_v[n], n, IN.nTimeStep)		
 
 
-def f_RK4_Mi(t_n, y_n, n, ZA_Symb):
+def f_RK4_Mi(t_n, y_n, n):
 	'''
 	Explicit general diff eq GCE function
 	'''
-	return Infall_rate[n] * Xi_inf * Mtot[n]  - SFR(n) * Mass_i_v[n]
+	return Infall_rate[n] * Xi_inf  - SFR(n) * Mass_i_v[:,n]
 
 #@lru_cache(maxsize=4)
 def no_integral_Mi():
@@ -55,8 +55,8 @@ def no_integral_Mi():
 		SFR_v[n] = SFR(n)
 		Mstar_v[n+1] = Mstar_v[n] + SFR(n) * IN.nTimeStep
 		Mstar_test[n+1] = Mtot[n-1] - Mgas_v[n]
-		Mgas_v[n+1] = aux.RK4(f_RK4_Mi, time_chosen[n], Mgas_v[n], n, IN.nTimeStep)
-		#Mass_i_v[n+1] = 
+		Mgas_v[n+1] = aux.RK4(f_RK4, time_chosen[n], Mgas_v[n], n, IN.nTimeStep)		
+		Mass_i_v[:, n+1] = aux.RK4(f_RK4_Mi, time_chosen[n], Mass_i_v[:,n], n, IN.nTimeStep)
 		
 def pick_yields(channel_switch, ZA_Symb, n, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None):
 	''' !!!!!!! this function must be edited if you import yields from other authors
@@ -346,6 +346,6 @@ def main():
 	return None
 	
 def run():
-	no_integral()
+	no_integral_Mi()
 	plts.no_integral_plot()
 #run()
