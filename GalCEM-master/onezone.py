@@ -378,9 +378,9 @@ def run():
 	#G_v = np.divide(Mgas_v, Mtot)
 	#S_v = 1 - G_v
 	np.savetxt('output/phys.dat', np.column_stack((time_chosen, Mtot, Mgas_v,
-			   Mstar_v, SFR_v/1e9, Infall_rate/1e9, Z_v, G_v, S_v)), #SFR is divided by 1e9 to get the /Gyr to /yr conversion 
+			   Mstar_v, SFR_v/1e9, Infall_rate/1e9, Z_v, G_v, S_v)), fmt='%-12.4e', #SFR is divided by 1e9 to get the /Gyr to /yr conversion 
 			   header = ' (0) time_chosen [Gyr]    (1) Mtot [Msun]    (2) Mgas_v [Msun]    (3) Mstar_v [Msun]    (4) SFR_v [Msun/yr]    (5)Infall_v [Msun/yr]    (6) Z_v    (7) G_v    (8) S_v')
-	np.savetxt('output/Mass_i.dat', np.column_stack((ZA_sorted, Mass_i_v)), 
+	np.savetxt('output/Mass_i.dat', np.column_stack((ZA_sorted, Mass_i_v)), fmt='%-12.4e',
 			   header = ' (0) elemZ,	(1) elemA,	(2) masses [Msun] of every isotope for every timestep')
 	tic_count(string="Saved output in = ")
 	return None
