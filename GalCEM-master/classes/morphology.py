@@ -1,3 +1,4 @@
+import math, time
 import numpy as np
 import scipy.integrate
 import scipy.misc as sm 
@@ -44,6 +45,12 @@ class Auxiliary:
 	def deriv(self, func, x, n=1):
 		''' Returns the nth order derivative of a function '''
 		return sm.derivative(func, x)
+
+	def tic_count(self, string="Computation time = ", tic=None):
+		tic.append(time.process_time())
+		m = math.floor((tic[-1] - tic[-2])/60.)
+		s = ((tic[-1] - tic[-2])%60.)
+		print(string+str(m)+" minutes and "+str(s)+" seconds.")
 
 	def age_from_z(self, zf, h = 0.7, OmegaLambda0 = 0.7, Omegam0 = 0.3, Omegar0 = 1e-4, lookback_time = False):
 		'''
