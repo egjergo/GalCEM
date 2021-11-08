@@ -28,7 +28,7 @@ class Inputs:
 
         self.delta_max = 8e-2 # Convergence limit for eq. 28, Portinari+98
         self.epsilon = 1e-32 # Avoid numerical errors - consistent with BBN
-        self.SFR_rescaling = 0.02 # !!!!!!! Constrained by observations at z=0 of the galaxy of interest
+        self.SFR_rescaling = 1 # !!!!!!! Constrained by observations at z=0 of the galaxy of interest
 
         self.custom_IMF = None
         self.custom_SFR = None
