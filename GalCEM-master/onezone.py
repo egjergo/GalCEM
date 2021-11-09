@@ -6,8 +6,8 @@ tic.append(time.process_time())
 import numpy as np
 import scipy.integrate
 import scipy.interpolate as interp
-from scipy.integrate import quad
-from scipy.misc import derivative
+#from scipy.integrate import quad
+#from scipy.misc import derivative
 
 import prep.inputs as INp
 IN = INp.Inputs()
@@ -18,7 +18,7 @@ from prep.setup import *
 
 ''' GCE Classes and Functions'''
 
-def SFR(timestep_n):
+def SFR_tn(timestep_n):
 	''' 
 	Actual SFR employed within the integro-differential equation
 	
@@ -30,21 +30,26 @@ def f_RK4(t_n, y_n, n):
 	'''
 	Explicit general diff eq GCE function
 	'''
-	return Infall_rate[n] - SFR(n)
+	return Infall_rate[n] - SFR_tn(n)
 	
 def f_RK4_Mi(t_n, y_n, n):
 	'''
 	Explicit general diff eq GCE function
 
-	INPUT:
+	INPUT
+		t_n		time_chosen[n]
+		y_n		dependent variable at n
+		n		index of the timestep
+
+	Functions:
 		Infall rate: [Msun/Gyr]
 		SFR: [Msun/Gyr]
 	'''
-	return Infall_rate[n] * Xi_inf  - np.multiply(SFR(n), Xi_v[:,n])
+	return Infall_rate[n] * Xi_inf  - np.multiply(SFR_tn(n), Xi_v[:,n])
 
 #@lru_cache(maxsize=4)
 def no_integral(n):
-	SFR_v[n] = SFR(n)
+	SFR_v[n] = SFR_tn(n)
 	Mstar_v[n+1] = Mstar_v[n] + SFR_v[n] * IN.nTimeStep
 	Mstar_test[n+1] = Mtot[n-1] - Mgas_v[n]
 	Mgas_v[n+1] = aux.RK4(f_RK4, time_chosen[n], Mgas_v[n], n, IN.nTimeStep)		
@@ -199,8 +204,8 @@ class Wi:
 		'''
 		n timestep index
 		'''
-		total = self.Mass_i_infall(n)
-		return total
+		return self.Mass_i_infall(n)
+
 	"""	
 	def yield_component(self):
 		'''
@@ -246,7 +251,6 @@ class Wi:
 		for i in range(len(time)-1):
 			X_r[i+1] = X_r[i] + 0.002 * diff_Xi(X_r[i], rate, i)
 		return X_r
-
 
 class Convergence:
 	'''
@@ -335,9 +339,9 @@ def main():
 
 	no_integral_Mi_timestep()
 	plts.no_integral_plot()
-	#Z_v = np.divide(Mass_i_v[elemZ_for_metallicity:,:], Mgas_v)
-	#G_v = np.divide(Mgas_v, Mtot)
-	#S_v = 1 - G_v
+	Z_v = np.divide(np.sum(Mass_i_v[elemZ_for_metallicity:,:]), Mgas_v)
+	G_v = np.divide(Mgas_v, Mtot)
+	S_v = 1 - G_v
 
 	aux.tic_count(tic=tic)
 	print("Saving the output...")
@@ -346,7 +350,7 @@ def main():
 			   header = ' (0) time_chosen [Gyr]    (1) Mtot [Msun]    (2) Mgas_v [Msun]    (3) Mstar_v [Msun]    (4) SFR_v [Msun/yr]    (5)Infall_v [Msun/yr]    (6) Z_v    (7) G_v    (8) S_v')
 	np.savetxt('output/Mass_i.dat', np.column_stack((ZA_sorted, Mass_i_v)), fmt='%-12.4e',
 			   header = ' (0) elemZ,	(1) elemA,	(2) masses [Msun] of every isotope for every timestep')
-	#np.savetxt('output/X_i.dat', np.column_stack((ZA_sorted, Xi_v)), 
+	#np.savetxt('output/X_i.dat', np.column_stack((ZA_sorted, Xi_v)),  fmt='%-12.4e',
 	#		   header = ' (0) elemZ,	(1) elemA,	(2) abundance mass ratios of every isotope for every timestep (normalized to solar, Asplund et al., 2009)')
 	aux.tic_count(string="Output saved in = ", tic=tic)
 	return None
