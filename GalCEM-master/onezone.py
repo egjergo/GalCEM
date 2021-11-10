@@ -122,13 +122,13 @@ class Wi:
 	birthtime (t') 	is the stellar birthtime
 	lifetime (tau)	is the stellar lifetime
 	'''
-	def __init__(self, metallicity, age_idx):
-		self.metallicity = metallicity
+	def __init__(self, age_idx):
+		self.metallicity = Z_v[age_idx]
 		self.age_idx = age_idx
 		#self.SFR_class = morph.Star_Formation_Rate(Mtot, age_idx, IN.SFR_option, IN.custom_SFR)
 		#self.SFR = self.SFR_class.SFR() # Function: SFR()(Mtot)(Mgas)
 		#self.mass_from_age = lifetime_class.interp_stellar_masses(metallicity)(time_chosen[age_idx])
-		self.Wi_grid_class = Wi_grid(metallicity, age_idx)
+		self.Wi_grid_class = Wi_grid(self.metallicity, age_idx)
 		self.Massive_birthtime_grid, self.Massive_lifetime_grid, self.Massive_mass_grid = (
 				self.Wi_grid_class.grids(IN.Ml_Massive, IN.Mu_Massive))
 		self.LIMs_birthtime_grid, self.LIMs_lifetime_grid, self.LIMs_mass_grid = (
@@ -142,13 +142,17 @@ class Wi:
 		Selects e.g. "self.LIMs_birthtime_grid"
 		
 		channel_switch:		can be 'LIMs', 'SNIa', 'Massive'
-		grid_type:			can be 'birthtime', 'lifetime', 'mass'
+		grid_type:			can be 'birthtime', 'lifetime', 'mass' 
 		'''
 		return self.__dict__[channel_switch+'_'+grid_type+'_grid']
 	
 	def SFR_component(self, birthtime_grid):
 		''' Returns the interpolated SFR vector computed at the birthtime grids'''
-		SFR_interp = interp.interp1d(time_chosen, SFR(Mgas_v))
+		SFR_interp = interp.interp1d(time_chosen[:self.age_idx+1], SFR_v[:self.age_idx+1])
+		#print('time_chosen[:self.age_idx+1]:\t', time_chosen[:self.age_idx+1])
+		#print('SFR_v[:self.age_idx+1]:\t', SFR_v[:self.age_idx+1])
+		#print('')
+		#print('birthtime_grid: \t', birthtime_grid)
 		return SFR_interp(birthtime_grid)
 	
 	def IMF_component(self, mass_grid):
@@ -167,16 +171,18 @@ class Wi:
 										metallicity_idx=metallicity_idx, vel_idx=vel_idx)
 		return Yield_i_birthtime
 
-	def mass_component(self, channel_switch, ZA_Symb, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None):
+	def mass_component(self, channel_switch, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None): #, ZA_Symb
 		''' page 22, last eq. first column '''
 		mass_grid = self.grid_picker(channel_switch, 'mass')
 		lifetime_grid = self.grid_picker(channel_switch, 'lifetime')
-		return self.dMdtauM_component(lifetime_grid) * self.IMF_component(mass_grid) #* self.yield_component(channel_switch, ZA_Symb) 
+		return self.IMF_component(mass_grid) #* self.dMdtauM_component(lifetime_grid) #* self.yield_component(channel_switch, ZA_Symb) 
 
-	def compute_simpson(self, channel_switch, ZA_Symb, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None):
+	def compute_simpson(self, channel_switch, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None): #ZA_Symb,
 		'''Computes, using the Simpson rule, the integral elements of eq. (34) Portinari+98 -- for alive stars'''	
+		mass_grid = self.grid_picker(channel_switch, 'mass')
+		#print('mass_grid: \t', mass_grid)
 		birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
-		mass_comp = self.mass_component(channel_switch, ZA_Symb, 
+		mass_comp = self.mass_component(channel_switch,# ZA_Symb, 
 					stellar_mass_idx=stellar_mass_idx, metallicity_idx=metallicity_idx, vel_idx=vel_idx)
 		integrand = np.multiply(self.SFR_component(birthtime_grid), mass_comp)
 		#if channel_switch == 'SNIa':
@@ -309,7 +315,33 @@ class Convergence:
 		while delta_i >= IN.delta_max:
 			Gi_k1 *= (1 + delta_i)
 		return Gi_k1
+	
+def f_RK4_Mi_Wi(t_n, y_n, n):
+	'''
+	Explicit general diff eq GCE function
 
+	INPUT
+		t_n		time_chosen[n]
+		y_n		dependent variable at n
+		n		index of the timestep
+
+	Functions:
+		Infall rate: [Msun/Gyr]
+		SFR: [Msun/Gyr]
+	'''
+	Wi_class = Wi(n)
+	#if n <= 29: # time_uniform dt 0.001
+	if n <= 500:
+		return Infall_rate[n] * Xi_inf  - np.multiply(SFR_tn(n), Xi_v[:,n])
+	else:
+		return Infall_rate[n] * Xi_inf  - np.multiply(SFR_tn(n), Xi_v[:,n]) + Wi_class.compute_simpson("Massive")
+
+def Mi_timestep():
+	for n in range(len(time_chosen)-1):	
+		print('n = ', n)
+		no_integral(n)		
+		Xi_v[:, n] = np.divide(Mass_i_v[:,n], Mgas_v[n]) 
+		Mass_i_v[:, n+1] = aux.RK4(f_RK4_Mi_Wi, time_chosen[n], Mass_i_v[:,n], n, IN.nTimeStep)
 
 class Evolution:
 	'''
@@ -337,7 +369,7 @@ def main():
 	#for j in range(1, len(time_chosen)):
 	#s	Wi_class.compute(j)
 
-	no_integral_Mi_timestep()
+	Mi_timestep()
 	plts.no_integral_plot()
 	Z_v = np.divide(np.sum(Mass_i_v[elemZ_for_metallicity:,:]), Mgas_v)
 	G_v = np.divide(Mgas_v, Mtot)

@@ -1,6 +1,7 @@
 import matplotlib.pylab as plt
 import numpy as np
-import input_parameters as IN
+import prep.inputs as INp
+IN = INp.Inputs()
 from util import mplsetup
 mplsetup()
 from onezone import *

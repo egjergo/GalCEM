@@ -19,7 +19,7 @@ class Inputs:
         self.Ml_Massive = 10 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Mu_Massive = 120 # [Msun] !!!!!!! temporary. Import from yield tables
 
-        self.nTimeStep = 0.01#0.001 # Picked to smooth the mapping between stellar masses and lifetimes
+        self.nTimeStep = 0.001 # Picked to smooth the mapping between stellar masses and lifetimes
         self.numTimeStep = 2000 # Like FM
         self.num_MassGrid = 200
 

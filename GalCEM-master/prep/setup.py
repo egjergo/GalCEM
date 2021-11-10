@@ -23,8 +23,10 @@ lifetime_class = morph.Stellar_Lifetimes()
 Ml = lifetime_class.s_mass[1] # Lower limit stellar masses [Msun] 
 Mu = lifetime_class.s_mass[-2] # Upper limit stellar masses [Msun]
 mass_uniform = np.linspace(Ml, Mu, num = IN.num_MassGrid)
-time_uniform = np.arange(IN.time_start, IN.time_end, IN.nTimeStep)
-time_logspace = np.logspace(np.log10(IN.time_start), np.log10(IN.time_end), num=IN.numTimeStep)
+#time_uniform = np.arange(IN.time_start, IN.time_end, IN.nTimeStep)
+#time_logspace = np.logspace(np.log10(IN.time_start), np.log10(IN.time_end), num=IN.numTimeStep)
+time_uniform = np.arange(IN.time_start, IN.age_Galaxy, IN.nTimeStep)
+time_logspace = np.logspace(np.log10(IN.time_start), np.log10(IN.age_Galaxy), num=IN.numTimeStep)
 time_chosen = time_uniform
 '''Surface density for the disk. The bulge goes as an inverse square law.'''
 surf_density_Galaxy = IN.sd / np.exp(IN.r / IN.Reff[IN.morphology]) #sigma(t_G) before eq(7) not used so far !!!!!!!
