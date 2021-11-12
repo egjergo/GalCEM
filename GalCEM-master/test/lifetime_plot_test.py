@@ -15,7 +15,7 @@ fig = plt.figure(figsize=(8,4))
 for i in range(len(Zcol)):
 	plt.scatter(np.log10(IN.s_lifetimes_p98['M']), np.log10(IN.s_lifetimes_p98[Zcol[i]]/1e9), label = Zcol[i])
 	plt.plot(np.log10(IN.s_lifetimes_p98['M']), np.log10(lifetime_class.stellar_lifetimes()[i](IN.s_lifetimes_p98['M'])))
-plt.legend(frameon=False, loc = 'upper right', fontsize = 15)
+plt.legend(frameon=False, loc = 'upper right', fontsize = 15r)
 plt.title('Portinari+98 interpolation fit crosscheck', fontsize = 15)
 plt.ylabel(r'$\log_{10}(\tau(M_*))$ lifetime [Gyr]', fontsize = 15)
 plt.xlabel(r'$M$ stellar mass [$M_{\odot}$]', fontsize = 15)

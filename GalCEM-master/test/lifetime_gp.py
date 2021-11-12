@@ -11,6 +11,7 @@ so I've stuck with the (significantly more complicated) default kernel.
 import numpy as np
 import pandas as pd
 from sklearn import gaussian_process
+from scipy.interpolate import RBFInterpolator
 from util import mplsetup
 from matplotlib import pyplot as plt, cm
 mplsetup()
@@ -26,18 +27,6 @@ print(df.describe())
 X = df[['log10_mass','metalicity']].values
 Y = df['log_lifetime_gy'].values
 
-# fit GP
-gp = gaussian_process.GaussianProcessRegressor()
-gp.fit(X,Y)
-
-# get GP predictions at fitting points
-Yhat = gp.predict(X)
-eps = Y-Yhat
-abs_eps = np.abs(eps)
-print('\nRMSE: %.1e'%np.sqrt(np.mean(abs_eps**2)))
-print('MAE: %.1e'%np.mean(abs_eps))
-print('Max Abs Error: %.1e'%abs_eps.max())
-
 # get GP predictions for plot
 xlim = np.array([X.min(0),X.max(0)])
 ylim = np.array([Y.min(),Y.max()])
@@ -45,10 +34,35 @@ nticks = 64
 ticks = [np.linspace(*xlim[:,i],nticks) for i in range(X.shape[1])]
 x1mesh,x2mesh = np.meshgrid(*ticks)
 xquery = np.hstack([x1mesh.reshape(-1,1),x2mesh.reshape(-1,1)])
-yquery = gp.predict(xquery)
-ymesh = yquery.reshape(x1mesh.shape)
+
+# fit Model and make predictions
+# other models from https://docs.scipy.org/doc/scipy/reference/interpolate.html
+modeltype = 'RBFInterpolator' # GaussianProcessRegressor, RBFInterpolator
+if modeltype == 'GaussianProcessRegressor':
+    gp = gaussian_process.GaussianProcessRegressor()
+    gp.fit(X,Y)
+    yquery = gp.predict(xquery)
+    Yhat = gp.predict(X)
+elif modeltype == 'RBFInterpolator':
+    model = RBFInterpolator(X,Y)
+    yquery = model(xquery)
+    Yhat = model(X)
+
+xquery2 = np.array([[np.log10(120),0.0004],
+                    [np.log10(0.6),0.0004]])
+yquery2 = model(xquery2)
+print(10**yquery2)
+
+# Model predictions at fitting points
+eps = Y-Yhat
+abs_eps = np.abs(eps)
+print('\nRMSE: %.1e'%np.sqrt(np.mean(abs_eps**2)))
+print('MAE: %.1e'%np.mean(abs_eps))
+print('Max Abs Error: %.1e'%abs_eps.max())
+
 
 # plot
+ymesh = yquery.reshape(x1mesh.shape)
 fig,ax = plt.subplots(nrows=1,ncols=1,figsize=(10,10),subplot_kw={"projection": "3d"})
 surf = ax.plot_surface(x1mesh,x2mesh,ymesh,cmap=cm.winter,alpha=.75)
 fig.colorbar(surf,shrink=0.5,aspect=5)
