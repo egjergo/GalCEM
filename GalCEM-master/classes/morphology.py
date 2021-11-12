@@ -1,10 +1,12 @@
+import math, time
 import numpy as np
 import scipy.integrate
 import scipy.misc as sm 
 import scipy.stats as ss
 import scipy.interpolate as interp
 
-import prep.inputs as IN
+import prep.inputs as INp
+IN = INp.Inputs()
 
 """"""""""""""""""""""""""""""""""""""""""""""""
 "                                              "
@@ -43,6 +45,12 @@ class Auxiliary:
 	def deriv(self, func, x, n=1):
 		''' Returns the nth order derivative of a function '''
 		return sm.derivative(func, x)
+
+	def tic_count(self, string="Computation time = ", tic=None):
+		tic.append(time.process_time())
+		m = math.floor((tic[-1] - tic[-2])/60.)
+		s = ((tic[-1] - tic[-2])%60.)
+		print(string+str(m)+" minutes and "+str(s)+" seconds.")
 
 	def age_from_z(self, zf, h = 0.7, OmegaLambda0 = 0.7, Omegam0 = 0.3, Omegar0 = 1e-4, lookback_time = False):
 		'''
@@ -279,7 +287,7 @@ class Star_Formation_Rate:
 	def SFRgal(self, k=IN.k_SFR, Mgas=[], Mtot=[], timestep_n=0): 
 		''' Talbot & Arnett (1975)'''
 		return np.multiply(IN.nu[self.morphology]  * (Mgas[timestep_n])**(k) 
-		    / (Mtot[timestep_n])**(k-1), IN.SFR_rescaling / IN.M_inf[self.morphology]) 
+		    / (Mtot[timestep_n])**(k-1), IN.SFR_rescaling)
 	
 	def CSFR(self):
 		'''

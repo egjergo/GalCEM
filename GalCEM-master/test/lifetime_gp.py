@@ -17,15 +17,15 @@ from matplotlib import pyplot as plt, cm
 mplsetup()
 
 # parse data
-df = pd.read_csv('GalCEM-master/input/starlifetime/portinari98table14.dat')
+df = pd.read_csv('../input/starlifetime/portinari98table14.dat')
 df.columns = [name.replace('#M','mass').replace('Z=','') for name in df.columns]
-df = pd.melt(df,id_vars='mass',value_vars=list(df.columns[1:]),var_name='metalicity',value_name='lifetime_y')
+df = pd.melt(df,id_vars='mass',value_vars=list(df.columns[1:]),var_name='metallicity',value_name='lifetime_yr')
 df['log10_mass'] = np.log10(df['mass'])
-df['metalicity'] = df['metalicity'].astype(float)
-df['log_lifetime_gy'] = np.log10(df['lifetime_y']/1e9)
+df['metallicity'] = df['metallicity'].astype(float)
+df['log_lifetime_Gyr'] = np.log10(df['lifetime_yr']/1e9)
 print(df.describe())
-X = df[['log10_mass','metalicity']].values
-Y = df['log_lifetime_gy'].values
+X = df[['log10_mass','metallicity']].values
+Y = df['log_lifetime_Gyr'].values
 
 # get GP predictions for plot
 xlim = np.array([X.min(0),X.max(0)])

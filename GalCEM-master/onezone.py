@@ -1,15 +1,16 @@
 """ I only achieve simplicity with enormous effort (Clarice Lispector) """
 import time
+#from functools import cache, lru_cache
 tic = []
 tic.append(time.process_time())
-import math as m
 import numpy as np
 import scipy.integrate
 import scipy.interpolate as interp
-from scipy.integrate import quad
-from scipy.misc import derivative
+#from scipy.integrate import quad
+#from scipy.misc import derivative
 
-import prep.inputs as IN
+import prep.inputs as INp
+IN = INp.Inputs()
 import classes.morphology as morph
 import classes.yields as Y
 import plots as plts
@@ -17,44 +18,52 @@ from prep.setup import *
 
 ''' GCE Classes and Functions'''
 
-def SFR(timestep_n):
+def SFR_tn(timestep_n):
 	''' 
 	Actual SFR employed within the integro-differential equation
 	
 	Feed it every timestep appropriately
 	'''
 	return SFR_class.SFR(Mgas=Mgas_v, Mtot=Mtot, timestep_n=timestep_n) # Function: SFR(Mgas)
-		
 
 def f_RK4(t_n, y_n, n):
 	'''
 	Explicit general diff eq GCE function
 	'''
-	return Infall_rate[n] - SFR(n)
-
-
-def no_integral():
-	for n in range(len(time_chosen)-1):	
-		SFR_v[n+1] = SFR(n)
-		Mstar_v[n+1] = Mstar_v[n] + SFR(n) * IN.nTimeStep
-		Mstar_test[n+1] = Mtot[n-1] - Mgas_v[n]
-		Mgas_v[n+1] = aux.RK4(f_RK4, time_chosen[n], Mgas_v[n], n, IN.nTimeStep)		
-
-
-def f_RK4_Mi(t_n, y_n, n, ZA_Symb):
+	return Infall_rate[n] - SFR_tn(n)
+	
+def f_RK4_Mi(t_n, y_n, n):
 	'''
 	Explicit general diff eq GCE function
+
+	INPUT
+		t_n		time_chosen[n]
+		y_n		dependent variable at n
+		n		index of the timestep
+
+	Functions:
+		Infall rate: [Msun/Gyr]
+		SFR: [Msun/Gyr]
 	'''
-	return Infall_rate[n] * X_i_inf  - SFR(n) * Mass_i_v[n]
+	return Infall_rate[n] * Xi_inf  - np.multiply(SFR_tn(n), Xi_v[:,n])
 
+#@lru_cache(maxsize=4)
+def no_integral(n):
+	SFR_v[n] = SFR_tn(n)
+	Mstar_v[n+1] = Mstar_v[n] + SFR_v[n] * IN.nTimeStep
+	Mstar_test[n+1] = Mtot[n-1] - Mgas_v[n]
+	Mgas_v[n+1] = aux.RK4(f_RK4, time_chosen[n], Mgas_v[n], n, IN.nTimeStep)		
+	
+def no_integral_timestep():
+	for n in range(len(time_chosen)-1):
+		no_integral(n)
 
-def no_integral_Mi():
+#@lru_cache(maxsize=4)
+def no_integral_Mi_timestep():
 	for n in range(len(time_chosen)-1):	
-		SFR_v[n+1] = SFR(n)
-		Mstar_v[n+1] = Mstar_v[n] + SFR(n) * IN.nTimeStep
-		Mstar_test[n+1] = Mtot[n-1] - Mgas_v[n]
-		Mgas_v[n+1] = aux.RK4(f_RK4_Mi, time_chosen[n], Mgas_v[n], n, IN.nTimeStep)
-		#Mass_i_v[n+1] = 
+		no_integral(n)		
+		Xi_v[:, n] = np.divide(Mass_i_v[:,n], Mgas_v[n]) 
+		Mass_i_v[:, n+1] = aux.RK4(f_RK4_Mi, time_chosen[n], Mass_i_v[:,n], n, IN.nTimeStep)
 		
 def pick_yields(channel_switch, ZA_Symb, n, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None):
 	''' !!!!!!! this function must be edited if you import yields from other authors
@@ -113,13 +122,13 @@ class Wi:
 	birthtime (t') 	is the stellar birthtime
 	lifetime (tau)	is the stellar lifetime
 	'''
-	def __init__(self, metallicity, age_idx):
-		self.metallicity = metallicity
+	def __init__(self, age_idx):
+		self.metallicity = Z_v[age_idx]
 		self.age_idx = age_idx
 		#self.SFR_class = morph.Star_Formation_Rate(Mtot, age_idx, IN.SFR_option, IN.custom_SFR)
 		#self.SFR = self.SFR_class.SFR() # Function: SFR()(Mtot)(Mgas)
 		#self.mass_from_age = lifetime_class.interp_stellar_masses(metallicity)(time_chosen[age_idx])
-		self.Wi_grid_class = Wi_grid(metallicity, age_idx)
+		self.Wi_grid_class = Wi_grid(self.metallicity, age_idx)
 		self.Massive_birthtime_grid, self.Massive_lifetime_grid, self.Massive_mass_grid = (
 				self.Wi_grid_class.grids(IN.Ml_Massive, IN.Mu_Massive))
 		self.LIMs_birthtime_grid, self.LIMs_lifetime_grid, self.LIMs_mass_grid = (
@@ -133,13 +142,17 @@ class Wi:
 		Selects e.g. "self.LIMs_birthtime_grid"
 		
 		channel_switch:		can be 'LIMs', 'SNIa', 'Massive'
-		grid_type:			can be 'birthtime', 'lifetime', 'mass'
+		grid_type:			can be 'birthtime', 'lifetime', 'mass' 
 		'''
 		return self.__dict__[channel_switch+'_'+grid_type+'_grid']
 	
 	def SFR_component(self, birthtime_grid):
 		''' Returns the interpolated SFR vector computed at the birthtime grids'''
-		SFR_interp = interp.interp1d(time_chosen, SFR(Mgas_v))
+		SFR_interp = interp.interp1d(time_chosen[:self.age_idx+1], SFR_v[:self.age_idx+1])
+		#print('time_chosen[:self.age_idx+1]:\t', time_chosen[:self.age_idx+1])
+		#print('SFR_v[:self.age_idx+1]:\t', SFR_v[:self.age_idx+1])
+		#print('')
+		#print('birthtime_grid: \t', birthtime_grid)
 		return SFR_interp(birthtime_grid)
 	
 	def IMF_component(self, mass_grid):
@@ -158,16 +171,18 @@ class Wi:
 										metallicity_idx=metallicity_idx, vel_idx=vel_idx)
 		return Yield_i_birthtime
 
-	def mass_component(self, channel_switch, ZA_Symb, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None):
+	def mass_component(self, channel_switch, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None): #, ZA_Symb
 		''' page 22, last eq. first column '''
 		mass_grid = self.grid_picker(channel_switch, 'mass')
 		lifetime_grid = self.grid_picker(channel_switch, 'lifetime')
-		return self.dMdtauM_component(lifetime_grid) * self.IMF_component(mass_grid) #* self.yield_component(channel_switch, ZA_Symb) 
+		return self.IMF_component(mass_grid) #* self.dMdtauM_component(lifetime_grid) #* self.yield_component(channel_switch, ZA_Symb) 
 
-	def compute_simpson(self, channel_switch, ZA_Symb, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None):
+	def compute_simpson(self, channel_switch, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None): #ZA_Symb,
 		'''Computes, using the Simpson rule, the integral elements of eq. (34) Portinari+98 -- for alive stars'''	
+		mass_grid = self.grid_picker(channel_switch, 'mass')
+		#print('mass_grid: \t', mass_grid)
 		birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
-		mass_comp = self.mass_component(channel_switch, ZA_Symb, 
+		mass_comp = self.mass_component(channel_switch,# ZA_Symb, 
 					stellar_mass_idx=stellar_mass_idx, metallicity_idx=metallicity_idx, vel_idx=vel_idx)
 		integrand = np.multiply(self.SFR_component(birthtime_grid), mass_comp)
 		#if channel_switch == 'SNIa':
@@ -195,8 +210,8 @@ class Wi:
 		'''
 		n timestep index
 		'''
-		total = self.Mass_i_infall(n)
-		return total
+		return self.Mass_i_infall(n)
+
 	"""	
 	def yield_component(self):
 		'''
@@ -242,7 +257,6 @@ class Wi:
 		for i in range(len(time)-1):
 			X_r[i+1] = X_r[i] + 0.002 * diff_Xi(X_r[i], rate, i)
 		return X_r
-
 
 class Convergence:
 	'''
@@ -301,7 +315,33 @@ class Convergence:
 		while delta_i >= IN.delta_max:
 			Gi_k1 *= (1 + delta_i)
 		return Gi_k1
+	
+def f_RK4_Mi_Wi(t_n, y_n, n):
+	'''
+	Explicit general diff eq GCE function
 
+	INPUT
+		t_n		time_chosen[n]
+		y_n		dependent variable at n
+		n		index of the timestep
+
+	Functions:
+		Infall rate: [Msun/Gyr]
+		SFR: [Msun/Gyr]
+	'''
+	Wi_class = Wi(n)
+	#if n <= 29: # time_uniform dt 0.001
+	if n <= 500:
+		return Infall_rate[n] * Xi_inf  - np.multiply(SFR_tn(n), Xi_v[:,n])
+	else:
+		return Infall_rate[n] * Xi_inf  - np.multiply(SFR_tn(n), Xi_v[:,n]) + Wi_class.compute_simpson("Massive")
+
+def Mi_timestep():
+	for n in range(len(time_chosen)-1):	
+		print('n = ', n)
+		no_integral(n)		
+		Xi_v[:, n] = np.divide(Mass_i_v[:,n], Mgas_v[n]) 
+		Mass_i_v[:, n+1] = aux.RK4(f_RK4_Mi_Wi, time_chosen[n], Mass_i_v[:,n], n, IN.nTimeStep)
 
 class Evolution:
 	'''
@@ -324,26 +364,25 @@ print('Package lodaded in '+str(1e0*(tic[-1]))+' seconds.')
 
 def main():
 	tic.append(time.process_time())
-	Evolution_class = Evolution()
-	Evolution_class.evolve()
+	#Evolution_class = Evolution()
+	#Evolution_class.evolve()
 	#for j in range(1, len(time_chosen)):
 	#s	Wi_class.compute(j)
-	tic.append(time.process_time())
-	delta_computation_m = m.floor((tic[-1] - tic[-2])/60.)
-	delta_computation_s = ((tic[-1] - tic[-2])%60.)
-	print("Computation time = "+str(delta_computation_m)+" minutes and "+str(delta_computation_s)+" seconds.")
+
+	Mi_timestep()
+	plts.no_integral_plot()
+	Z_v = np.divide(np.sum(Mass_i_v[elemZ_for_metallicity:,:]), Mgas_v)
+	G_v = np.divide(Mgas_v, Mtot)
+	S_v = 1 - G_v
+
+	aux.tic_count(tic=tic)
 	print("Saving the output...")
 	np.savetxt('output/phys.dat', np.column_stack((time_chosen, Mtot, Mgas_v,
-			   Mstar_v, SFR_v, Z_v, G_v, S_v)), 
-			   header = ' (0) time_chosen 	(1) Mtot 	(2) Mgas_v 	(3) Mstar_v 	(4) SFR_v 	(5) Z_v 	(6) G_v 	(7) S_v')
-	np.savetxt('output/Mass_i.dat', np.column_stack((ZA_sorted, Mass_i_v)), 
+			   Mstar_v, SFR_v/1e9, Infall_rate/1e9, Z_v, G_v, S_v)), fmt='%-12.4e', #SFR is divided by 1e9 to get the /Gyr to /yr conversion 
+			   header = ' (0) time_chosen [Gyr]    (1) Mtot [Msun]    (2) Mgas_v [Msun]    (3) Mstar_v [Msun]    (4) SFR_v [Msun/yr]    (5)Infall_v [Msun/yr]    (6) Z_v    (7) G_v    (8) S_v')
+	np.savetxt('output/Mass_i.dat', np.column_stack((ZA_sorted, Mass_i_v)), fmt='%-12.4e',
 			   header = ' (0) elemZ,	(1) elemA,	(2) masses [Msun] of every isotope for every timestep')
-	np.savetxt('output/X_i.dat', np.column_stack((ZA_sorted, Xi_v)), 
-			   header = ' (0) elemZ,	(1) elemA,	(2) abundance mass ratios of every isotope for every timestep (normalized to solar, Asplund et al., 2009)')
-	print("Your output has been saved.")
+	#np.savetxt('output/X_i.dat', np.column_stack((ZA_sorted, Xi_v)),  fmt='%-12.4e',
+	#		   header = ' (0) elemZ,	(1) elemA,	(2) abundance mass ratios of every isotope for every timestep (normalized to solar, Asplund et al., 2009)')
+	aux.tic_count(string="Output saved in = ", tic=tic)
 	return None
-	
-def run():
-	no_integral()
-	plts.no_integral_plot()
-#run()

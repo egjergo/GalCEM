@@ -2,7 +2,8 @@ import numpy as np
 import pandas as pd
 from pandas.core.common import flatten
 
-import prep.inputs as IN
+import prep.inputs as INp
+IN = INp.Inputs()
 
 """"""""""""""""""""""""""""""""""""""""""""""""
 "                                              "
@@ -61,7 +62,19 @@ class Isotopes:
 		print(type(self.elemSymb))
 		idx = np.where(self.elemSymb == elemSymb)
 		return np.where(ndarray_elemZ == self.elemZ[idx])
-
+	
+	def yield_vector_intersect(self, yield_channel, ZA_sorted, i):
+		idx = np.intersect1d(np.where(ZA_sorted[:,0] == yield_channel.elemZ[i]), 
+							 np.where(ZA_sorted[:,1] == yield_channel.elemA[i]))
+		return yield_channel.yields[i] 
+	
+	def construct_yield_vector(self, yield_channel, ZA_sorted):
+		extract_yield_vector = np.zeros(len(ZA_sorted))
+		for i in range(len(yield_channel.yields)): # !!!!!!! optimize later
+			idx = np.intersect1d(np.where(ZA_sorted[:,0] == yield_channel.elemZ[i]), 
+								 np.where(ZA_sorted[:,1] == yield_channel.elemA[i]))
+			extract_yield_vector[idx] = yield_channel.yields[i] 
+		return extract_yield_vector
 
 class Concentrations:
 	'''
