@@ -206,11 +206,6 @@ class Infall:
 	    '''
 	    return lambda t: self.aInf() * self.infall_func()(t)
 	
-	def inf_cumulative(self):
-		'''
-		Returns the total infall mass
-		'''
-		return np.sumcum(self.aInf())
 		
 
 class Initial_Mass_Function:

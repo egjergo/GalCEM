@@ -33,7 +33,7 @@ class Isotopes:
 		self.elemName = IN.periodic['elemName']
 		self.elemA_characteristic = IN.periodic['elemA']
 		
-	def pick_by_Symb(self, ndarray_elemZ, elemSymb):
+	def pick_by_Symb(self, ndarray_elemZ=0, elemSymb='Symb'):
 		'''
 		Finds the indices 
 		

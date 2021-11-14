@@ -173,8 +173,8 @@ class Wi:
 		print(lifetime_grid)
 		return self.IMF_component(mass_grid) * self.dMdtauM_component(lifetime_grid, self.metallicity) #* self.yield_component(channel_switch, ZA_Symb) 
 
-	def compute(self, channel_switch, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None): #ZA_Symb,
-		'''Computes, using the Simpson rule, the integral elements of eq. (34) Portinari+98 -- for alive stars'''	
+	def compute(self, channel_switch, ZA_Symb, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None): #ZA_Symb,
+		'''Computes, using the Simpson rule, the integral Wi elements of eq. (34) Portinari+98 -- for stars that die at tn'''		
 		birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
 		SFR_comp = self.SFR_component(birthtime_grid)
 		mass_comp = self.mass_component(channel_switch,# ZA_Symb, 
