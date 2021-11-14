@@ -107,16 +107,14 @@ class Stellar_Lifetimes:
 	def __init__(self):
 		self.s_Z = IN.p98_t14_df['metallicity'].values
 		self.s_mass = IN.p98_t14_df['mass'].values
-		#self.s_mass_log10 = IN.p98_t14_df['mass_log10'].values
+		self.s_mass_log10 = IN.p98_t14_df['mass_log10'].values
 		self.s_lifetime_yr = IN.p98_t14_df['lifetimes_yr'].values
 		self.s_lifetime_Gyr = IN.p98_t14_df['lifetimes_Gyr'].values
-		#self.s_lifetime_log10_Gyr = IN.p98_t14_df['lifetimes_log10_Gyr'].values
-		self.X1 = IN.p98_t14_df[['mass','metallicity']].values
-		print('X1:\t', self.X1)
+		self.s_lifetime_log10_Gyr = IN.p98_t14_df['lifetimes_log10_Gyr'].values
+		self.X1 = IN.p98_t14_df[['log10_mass','metallicity']].values
 		self.X2 = IN.p98_t14_df[['lifetimes_log10_Gyr','metallicity']].values
-		print('X2:\t', self.X2)
-		self.from_mass_to_lifetime = interp.RBFInterpolator(self.X1, self.s_lifetime_Gyr)
-		self.from_lifetime_to_mass = interp.RBFInterpolator(self.X2, self.s_mass)
+		self.from_mass_to_lifetime = interp.RBFInterpolator(self.X1, self.s_lifetime_log10_Gyr)
+		self.from_lifetime_to_mass = interp.RBFInterpolator(self.X2, self.s_mass_log10, kernel='linear')
 
 	def interp_stellar_lifetimes(self, s_mass, metallicity):
 		'''

@@ -24,21 +24,22 @@ df['metallicity'] = df['metallicity'].astype(float)
 df['log_lifetime_Gyr'] = np.log10(df['lifetime_yr']/1e9)
 print(df.describe())
 X = df[['log10_mass','metallicity']].values
-Xinv = df[['log_lifetime_Gyr','metallicity']].values
 Y = df['log_lifetime_Gyr'].values
-Yinv = df['mass'].values
 
 # get GP predictions for plot
 xlim = np.array([X.min(0),X.max(0)])
-xliminv = np.array([Xinv.min(0),Xinv.max(0)])
 ylim = np.array([Y.min(),Y.max()])
-yliminv = np.array([Yinv.min(),Yinv.max()])
 nticks = 64
 ticks = [np.linspace(*xlim[:,i],nticks) for i in range(X.shape[1])]
-ticksinv = [np.linspace(*xliminv[:,i],nticks) for i in range(Xinv.shape[1])]
 x1mesh,x2mesh = np.meshgrid(*ticks)
-x1meshinv,x2meshinv = np.meshgrid(*ticksinv)
 xquery = np.hstack([x1mesh.reshape(-1,1),x2mesh.reshape(-1,1)])
+
+Xinv = df[['log_lifetime_Gyr','metallicity']].values
+Yinv = df['log10_mass'].values
+xliminv = np.array([Xinv.min(0),Xinv.max(0)])
+yliminv = np.array([Yinv.min(),Yinv.max()])
+ticksinv = [np.linspace(*xliminv[:,i],nticks) for i in range(Xinv.shape[1])]
+x1meshinv,x2meshinv = np.meshgrid(*ticksinv)
 xqueryinv = np.hstack([x1meshinv.reshape(-1,1),x2meshinv.reshape(-1,1)])
 
 # fit Model and make predictions
@@ -51,10 +52,10 @@ if modeltype == 'GaussianProcessRegressor':
     Yhat = gp.predict(X)
 elif modeltype == 'RBFInterpolator':
     model = RBFInterpolator(X,Y)
-    modelinv = RBFInterpolator(Xinv, Yinv)
     yquery = model(xquery)
-    yqueryinv = model(xqueryinv)
     Yhat = model(X)
+    modelinv = RBFInterpolator(Xinv, Yinv, kernel='linear')
+    yqueryinv = modelinv(xqueryinv)
     Yhatinv = modelinv(Xinv)
 
 xquery2 = np.array([[np.log10(120),0.0004],
@@ -96,7 +97,7 @@ ymeshinv = yqueryinv.reshape(x1meshinv.shape)
 fig2,ax2 = plt.subplots(nrows=1,ncols=1,figsize=(10,10),subplot_kw={"projection": "3d"})
 surfinv = ax2.plot_surface(x1meshinv,x2meshinv,ymeshinv,cmap=cm.plasma,alpha=.75)
 fig2.colorbar(surfinv,shrink=0.5,aspect=5)
-ax2.scatter(Xinv[:,0],Xinv[:,1],Y,color='k')
+ax2.scatter(Xinv[:,0],Xinv[:,1],Yinv,color='k')
 ax2.set_xlim(xliminv[:,0])
 ax2.set_ylim(xliminv[:,1])
 ax2.set_zlim(yliminv)
