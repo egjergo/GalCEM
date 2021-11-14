@@ -24,7 +24,9 @@ df['metallicity'] = df['metallicity'].astype(float)
 df['log_lifetime_Gyr'] = np.log10(df['lifetime_yr']/1e9)
 print(df.describe())
 X = df[['log10_mass','metallicity']].values
+Xinv = df[['log_lifetime_Gyr','metallicity']].values
 Y = df['log_lifetime_Gyr'].values
+Yinv = df['mass'].values
 
 # get GP predictions for plot
 xlim = np.array([X.min(0),X.max(0)])
@@ -44,6 +46,7 @@ if modeltype == 'GaussianProcessRegressor':
     Yhat = gp.predict(X)
 elif modeltype == 'RBFInterpolator':
     model = RBFInterpolator(X,Y)
+    modelinv = RBFInterpolator(Xinv, Yinv)
     yquery = model(xquery)
     Yhat = model(X)
 
