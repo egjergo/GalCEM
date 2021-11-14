@@ -21,10 +21,11 @@ df.columns = [name.replace('#M','mass').replace('Z=','') for name in df.columns]
 df = pd.melt(df,id_vars='mass',value_vars=list(df.columns[1:]),var_name='metallicity',value_name='lifetime_yr')
 df['log10_mass'] = np.log10(df['mass'])
 df['metallicity'] = df['metallicity'].astype(float)
-df['log_lifetime_Gyr'] = np.log10(df['lifetime_yr']/1e9)
+df['log10_lifetime_Gyr'] = np.log10(df['lifetime_yr']/1e9)
+df['lifetime_Gyr'] = np.array(df['lifetime_yr']/1e9)
 print(df.describe())
 X = df[['log10_mass','metallicity']].values
-Y = df['log_lifetime_Gyr'].values
+Y = df['log10_lifetime_Gyr'].values
 
 # get GP predictions for plot
 xlim = np.array([X.min(0),X.max(0)])
@@ -34,7 +35,7 @@ ticks = [np.linspace(*xlim[:,i],nticks) for i in range(X.shape[1])]
 x1mesh,x2mesh = np.meshgrid(*ticks)
 xquery = np.hstack([x1mesh.reshape(-1,1),x2mesh.reshape(-1,1)])
 
-Xinv = df[['log_lifetime_Gyr','metallicity']].values
+Xinv = df[['log10_lifetime_Gyr','metallicity']].values
 Yinv = df['log10_mass'].values
 xliminv = np.array([Xinv.min(0),Xinv.max(0)])
 yliminv = np.array([Yinv.min(),Yinv.max()])
@@ -82,24 +83,32 @@ print(' ')
 
 # plot
 ymesh = yquery.reshape(x1mesh.shape)
-fig,ax = plt.subplots(nrows=1,ncols=1,figsize=(10,10),subplot_kw={"projection": "3d"})
+fig,ax = plt.subplots(nrows=1,ncols=1,figsize=(10,7),subplot_kw={"projection": "3d"})
 surf = ax.plot_surface(x1mesh,x2mesh,ymesh,cmap=cm.winter,alpha=.75)
 fig.colorbar(surf,shrink=0.5,aspect=5)
 ax.scatter(X[:,0],X[:,1],Y,color='r')
 ax.set_xlim(xlim[:,0])
 ax.set_ylim(xlim[:,1])
 ax.set_zlim(ylim)
+ax.set_zlabel(r'lifetime', fontsize=20, y=1.1, rotation=90)
+ax.set_ylabel(r'metallicity', fontsize=20, x=-0.1)
+ax.set_xlabel(r'mass', fontsize=20, y=1.1)
+ax.set_title(r'$\tau(M)$', fontsize=25)
 fig.savefig('figures/test/lifetimes_gp.pdf',format='pdf',bbox_inches='tight')
 plt.show(block=False)
 
 
 ymeshinv = yqueryinv.reshape(x1meshinv.shape)
-fig2,ax2 = plt.subplots(nrows=1,ncols=1,figsize=(10,10),subplot_kw={"projection": "3d"})
+fig2,ax2 = plt.subplots(nrows=1,ncols=1,figsize=(10,7),subplot_kw={"projection": "3d"})
 surfinv = ax2.plot_surface(x1meshinv,x2meshinv,ymeshinv,cmap=cm.plasma,alpha=.75)
 fig2.colorbar(surfinv,shrink=0.5,aspect=5)
 ax2.scatter(Xinv[:,0],Xinv[:,1],Yinv,color='k')
 ax2.set_xlim(xliminv[:,0])
 ax2.set_ylim(xliminv[:,1])
 ax2.set_zlim(yliminv)
+ax2.set_xlabel(r'lifetime', fontsize=20, y=1.1)
+ax2.set_ylabel(r'metallicity', fontsize=20, x=-0.1)
+ax2.set_zlabel(r'mass', fontsize=20, y=1.1, rotation=90)
+ax2.set_title(r'$M(\tau)$', fontsize=25)
 fig2.savefig('figures/test/lifetimesinv_gp.pdf',format='pdf',bbox_inches='tight')
 plt.show(block=False)

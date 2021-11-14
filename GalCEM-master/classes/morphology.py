@@ -111,41 +111,41 @@ class Stellar_Lifetimes:
 		self.s_lifetime_yr = IN.p98_t14_df['lifetimes_yr'].values
 		self.s_lifetime_Gyr = IN.p98_t14_df['lifetimes_Gyr'].values
 		self.s_lifetime_log10_Gyr = IN.p98_t14_df['lifetimes_log10_Gyr'].values
-		self.X1 = IN.p98_t14_df[['log10_mass','metallicity']].values
+		self.X1 = IN.p98_t14_df[['mass_log10','metallicity']].values
 		self.X2 = IN.p98_t14_df[['lifetimes_log10_Gyr','metallicity']].values
 		self.from_mass_to_lifetime = interp.RBFInterpolator(self.X1, self.s_lifetime_log10_Gyr)
 		self.from_lifetime_to_mass = interp.RBFInterpolator(self.X2, self.s_mass_log10, kernel='linear')
 
-	def interp_stellar_lifetimes(self, s_mass, metallicity):
+	def interp_stellar_lifetimes(self, s_mass_log10, metallicity):
 		'''
 		INPUT
-			s_mass				[array, size p] stellar mass [Msun]
+			s_mass_log10		[array, size p] logarithmic (base 10) stellar mass [Msun]
 			metallicity			[array, size p] stellar metallicity
 
 		RETURNS
-			tau_Z(M)			[array, size p] logarithmic stellar lifetime [Gyr]
+			tau_Z(M) log10		[array, size p] logarithmic (base 10) stellar lifetime [Gyr]
 		'''
-		return self.from_mass_to_lifetime(np.array([s_mass, metallicity]).T)
+		return self.from_mass_to_lifetime(np.array([s_mass_log10, metallicity]).T)
 
-	def interp_stellar_masses(self, s_lifetime_yr, metallicity):
+	def interp_stellar_masses(self, s_lifetime_log10_Gyr, metallicity):
 		'''
 		INPUT
-			s_lifetime_yr	[array, size p] logarithmic (base 10) stellar lifetime [Gyr]
+			s_lifetime_log10_Gyr	[array, size p] logarithmic (base 10) stellar lifetime [Gyr]
 			metallicity				[array, size p] stellar metallicity
 
 		RETURNS
 			M(tau)_log10			[array, size p] logarithmic (base 10) stellar mass [Msun]
 		'''
-		return self.from_lifetime_to_mass([s_lifetime_yr, metallicity])
+		return self.from_lifetime_to_mass(np.array([s_lifetime_log10_Gyr, metallicity]).T)
 		
-	def dMdtauM(self, s_lifetime_yr, metallicity, n=1):
+	def dMdtauM(self, s_lifetime_log10_Gyr, metallicity, n=1):
 		'''
 		Computes the first order derivative of the M(tau) function
 		with respect to dtau, but multiplied by dtau/dt' = -1
 		'''
 		#dMdtau_deriv = - sm.derivative(self.interp_stellar_masses(s_lifetime_yr, metallicity), time_chosen, n=n) #time_chosen[501:-500], n=n) !!!!!!!
-		f = self.interp_stellar_masses(s_lifetime_yr, metallicity)
-		diff = np.diff(s_lifetime_yr)
+		f = self.interp_stellar_masses(s_lifetime_log10_Gyr, metallicity * np.ones(len(s_lifetime_log10_Gyr)))
+		diff = np.diff(s_lifetime_log10_Gyr)
 		dx = np.concatenate(([diff[0]], (diff[1:] + diff[:-1])/2., [diff[-1]])).ravel()
 		return - np.gradient(f, dx)
 

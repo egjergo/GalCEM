@@ -7,8 +7,6 @@ import numpy as np
 from varname import varname
 import scipy.integrate
 import scipy.interpolate as interp
-#from scipy.integrate import quad
-#from scipy.misc import derivative
 
 import prep.inputs as INp
 IN = INp.Inputs()
@@ -27,45 +25,6 @@ def SFR_tn(timestep_n):
 	'''
 	return SFR_class.SFR(Mgas=Mgas_v, Mtot=Mtot, timestep_n=timestep_n) # Function: SFR(Mgas)
 
-def f_RK4(t_n, y_n, n):
-	'''
-	Explicit general diff eq GCE function
-	'''
-	return Infall_rate[n] - SFR_tn(n)
-	
-def f_RK4_Mi(t_n, y_n, n):
-	'''
-	Explicit general diff eq GCE function
-
-	INPUT
-		t_n		time_chosen[n]
-		y_n		dependent variable at n
-		n		index of the timestep
-
-	Functions:
-		Infall rate: [Msun/Gyr]
-		SFR: [Msun/Gyr]
-	'''
-	return Infall_rate[n] * Xi_inf  - np.multiply(SFR_tn(n), Xi_v[:,n])
-
-#@lru_cache(maxsize=4)
-def no_integral(n):
-	SFR_v[n] = SFR_tn(n)
-	Mstar_v[n+1] = Mstar_v[n] + SFR_v[n] * IN.nTimeStep
-	Mstar_test[n+1] = Mtot[n-1] - Mgas_v[n]
-	Mgas_v[n+1] = aux.RK4(f_RK4, time_chosen[n], Mgas_v[n], n, IN.nTimeStep)		
-	
-def no_integral_timestep():
-	for n in range(len(time_chosen)-1):
-		no_integral(n)
-
-#@lru_cache(maxsize=4)
-def no_integral_Mi_timestep():
-	for n in range(len(time_chosen)-1):	
-		no_integral(n)		
-		Xi_v[:, n] = np.divide(Mass_i_v[:,n], Mgas_v[n]) 
-		Mass_i_v[:, n+1] = aux.RK4(f_RK4_Mi, time_chosen[n], Mass_i_v[:,n], n, IN.nTimeStep)
-		
 def pick_yields(channel_switch, ZA_Symb, n, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None):
 	''' !!!!!!! this function must be edited if you import yields from other authors
 	channel_switch	[str] can be 'LIMs', 'Massive', or 'SNIa'
@@ -129,7 +88,6 @@ class Wi:
 		self.Wi_grid_class = Wi_grid(self.metallicity, age_idx)
 		self.Massive_birthtime_grid, self.Massive_lifetime_grid, self.Massive_mass_grid = (
 				self.Wi_grid_class.grids(IN.Ml_Massive, IN.Mu_Massive))
-		#print('self.Massive_lifetime_grid:\t', self.Massive_lifetime_grid)
 		self.LIMs_birthtime_grid, self.LIMs_lifetime_grid, self.LIMs_mass_grid = (
 				self.Wi_grid_class.grids(IN.Ml_LIMs, IN.Mu_LIMs))
 		self.SNIa_birthtime_grid, self.SNIa_lifetime_grid, self.SNIa_mass_grid = (
@@ -170,16 +128,18 @@ class Wi:
 		''' Portinari+98, page 22, last eq. first column '''
 		mass_grid = self.grid_picker(channel_switch, 'mass')
 		lifetime_grid = self.grid_picker(channel_switch, 'lifetime')
-		print(lifetime_grid)
-		return self.IMF_component(mass_grid) * self.dMdtauM_component(lifetime_grid, self.metallicity) #* self.yield_component(channel_switch, ZA_Symb) 
+		return self.IMF_component(mass_grid) #* self.dMdtauM_component(np.log10(lifetime_grid), self.metallicity) #* self.yield_component(channel_switch, ZA_Symb) 
 
-	def compute(self, channel_switch, ZA_Symb, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None): #ZA_Symb,
+	def compute(self, channel_switch, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None): #ZA_Symb,
 		'''Computes, using the Simpson rule, the integral Wi elements of eq. (34) Portinari+98 -- for stars that die at tn'''		
 		birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
 		SFR_comp = self.SFR_component(birthtime_grid)
 		mass_comp = self.mass_component(channel_switch,# ZA_Symb, 
 					stellar_mass_idx=stellar_mass_idx, metallicity_idx=metallicity_idx, vel_idx=vel_idx)
+		print('SFR_comp: \t', SFR_comp)
+		print('mass_comp: \t', mass_comp)
 		integrand = np.multiply(SFR_comp, mass_comp)
+		print('integrand: \t', integrand)
 		#if channel_switch == 'SNIa':
 		#	return (1 - IN.A) * scipy.integrate.simpson(integrand) 
 		#else:
@@ -222,13 +182,25 @@ class Evolution:
 			val[val<0] = 0. # !!!!!!! if negative set to zero
 			return val
 
+	def f_RK4(self, t_n, y_n, n):
+		'''
+		Explicit general diff eq GCE function
+		'''
+		return Infall_rate[n] - SFR_tn(n)
+
+	#@lru_cache(maxsize=4)
+	def no_integral(self, n):
+		SFR_v[n] = SFR_tn(n)
+		Mstar_v[n+1] = Mstar_v[n] + SFR_v[n] * IN.nTimeStep
+		Mstar_test[n+1] = Mtot[n-1] - Mgas_v[n]
+		Mgas_v[n+1] = aux.RK4(self.f_RK4, time_chosen[n], Mgas_v[n], n, IN.nTimeStep)	
+
 	def evolve(self):
 		for n in range(len(time_chosen[:idx_age_Galaxy])):	
 			print('n = ', n)
-			no_integral(n)		
+			self.no_integral(n)		
 			Xi_v[:, n] = np.divide(Mass_i_v[:,n], Mgas_v[n]) 
 			Mass_i_v[:, n+1] = aux.RK4(self.f_RK4_Mi_Wi, time_chosen[n], Mass_i_v[:,n], n, IN.nTimeStep)
-			#print('Mgas_v[n] - Mass_i_v[:,n]: \t', Mgas_v[n] - np.sum(Mass_i_v[:,n]))
 		Xi_v[:,-1] = np.divide(Mass_i_v[:,-1], Mgas_v[-1]) 
 		return None
 
@@ -246,13 +218,10 @@ def main():
 	tic.append(time.process_time())
 	Evolution_class = Evolution()
 	Evolution_class.evolve()
-
-	#Mi_timestep()
 	plts.no_integral_plot()
 	Z_v = np.divide(np.sum(Mass_i_v[elemZ_for_metallicity:,:]), Mgas_v)
 	G_v = np.divide(Mgas_v, Mtot)
 	S_v = 1 - G_v
-
 	aux.tic_count(tic=tic)
 	print("Saving the output...")
 	np.savetxt('output/phys.dat', np.column_stack((time_chosen, Mtot, Mgas_v,
