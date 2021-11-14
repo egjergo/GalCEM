@@ -28,6 +28,7 @@ mass_uniform = np.linspace(Ml, Mu, num = IN.num_MassGrid)
 time_uniform = np.arange(IN.time_start, IN.age_Galaxy, IN.nTimeStep)
 time_logspace = np.logspace(np.log10(IN.time_start), np.log10(IN.age_Galaxy), num=IN.numTimeStep)
 time_chosen = time_uniform
+idx_age_Galaxy = aux.find_nearest(time_chosen, IN.age_Galaxy)
 '''Surface density for the disk. The bulge goes as an inverse square law.'''
 surf_density_Galaxy = IN.sd / np.exp(IN.r / IN.Reff[IN.morphology]) #sigma(t_G) before eq(7) not used so far !!!!!!!
 

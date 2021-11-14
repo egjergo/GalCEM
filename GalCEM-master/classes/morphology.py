@@ -4,6 +4,7 @@ import scipy.integrate
 import scipy.misc as sm 
 import scipy.stats as ss
 import scipy.interpolate as interp
+from varname import varname
 
 import prep.inputs as INp
 IN = INp.Inputs()
@@ -67,13 +68,13 @@ class Auxiliary:
 		lookback time.
 		'''
 		H0 = 100 * h * 3.24078e-20 * 3.15570e16 # [ km s^-1 Mpc^-1 * Mpc km^-1 * s Gyr^-1 ]
-		age = integrate.quad(lambda z: 1 / ( (z + 1) *np.sqrt(OmegaLambda0 + 
+		age = scipy.integrate.quad(lambda z: 1 / ( (z + 1) *np.sqrt(OmegaLambda0 + 
 								Omegam0 * (z+1)**3 + Omegar0 * (z+1)**4) ), 
 								zf, np.inf)[0] / H0 # Since BB [Gyr]
 		if not lookback_time:
 			return age
 		else:
-			age0 = integrate.quad(lambda z: 1 / ( (z + 1) *np.sqrt(OmegaLambda0 
+			age0 = scipy.ntegrate.quad(lambda z: 1 / ( (z + 1) *np.sqrt(OmegaLambda0 
 								+ Omegam0 * (z+1)**3 + Omegar0 * (z+1)**4) ),
 								 0, np.inf)[0] / H0 # present time [Gyr]
 			return age0 - age
@@ -99,6 +100,45 @@ class Auxiliary:
 		return y + h * (k1 + 2*k2 + 2*k3 + k4) / 6
 
 class Stellar_Lifetimes:
+	'''
+	Interpolation of stellar lifetime tables 
+	Portinari+98 Table 14
+	'''
+	def __init__(self):
+		self.s_Z = IN.p98_t14_df['metallicity'].values
+		self.s_mass = IN.p98_t14_df['mass'].values
+		self.s_mass_log10 = IN.p98_t14_df['mass'].values
+		self.s_lifetimes_yr = IN.p98_t14_df['lifetimes_yr'].values
+		self.s_lifetime_log10_Gyr = IN.p98_t14_df['lifetimes_log10_Gyr'].values
+		self.X1 = IN.p98_t14_df[['mass_log10','metallicity']].values
+		self.X2 = IN.p98_t14_df[['lifetimes_log10_Gyr','metallicity']].values
+		self.from_mass_to_lifetime = interp.RBFInterpolator(self.X1, self.s_lifetime_log10_Gyr)
+		#self.from_lifetime_to_s_mass = interp.RBFInterpolator(self.X2, self.s_mass_log10)
+
+	def interp_stellar_lifetimes(self, s_mass_log10, metallicity):
+		'''
+		INPUT
+			s_mass_log10		[array, size p] logarithmic (base 10) stellar mass [Msun]
+			metallicity			[array, size p] stellar metallicity
+
+		RETURNS
+			tau_Z(M)_log10		[array, size p] logarithmic (base 10) stellar lifetime [Gyr]
+		'''
+		return self.from_mass_to_lifetime(np.array([s_mass_log10, metallicity]).T)
+
+	def interp_stellar_masses(self, s_lifetime_log10_Gyr, metallicity):
+		'''
+		INPUT
+			s_lifetime_log10_Gyr	[array, size p] logarithmic (base 10) stellar lifetime [Gyr]
+			metallicity				[array, size p] stellar metallicity
+
+		RETURNS
+			M(tau)_log10			[array, size p] logarithmic (base 10) stellar mass [Msun]
+		'''
+		return self.from_lifetime_to_mass([s_lifetime_log10_Gyr, metallicity])
+
+
+class Stellar_Lifetimes_old:
 	'''
 	Interpolation of Portinari+98 Table 14
 	
@@ -313,7 +353,7 @@ class Star_Formation_Rate:
 					return self.SFRgal(Mgas=Mgas, Mtot=Mtot, timestep_n=timestep_n)
 			elif self.option == 'CSFR':
 				if self.option_CSFR:
-					return CSFR(self.option_CSFR)
+					return self.CSFR(self.option_CSFR)
 				else:
 					print('Please define the CSFR option "option_CSFR"')
 		if self.custom:
