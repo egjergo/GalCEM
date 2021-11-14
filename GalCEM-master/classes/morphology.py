@@ -147,7 +147,7 @@ class Stellar_Lifetimes:
 		'''
 		#dMdtau_deriv = - sm.derivative(self.interp_stellar_masses(s_lifetime_yr, metallicity), time_chosen, n=n) #time_chosen[501:-500], n=n) !!!!!!!
 		f = self.interp_stellar_masses(s_lifetime_yr, metallicity)
-		return - np.gradient(f, np.diff(f, prepend=f[0]), s_lifetime_yr)
+		return - np.gradient(f, np.diff(s_lifetime_yr, prepend=IN.epsilon))
 		#return ss.mode(dMdtau_deriv)[0][0]
 
 
