@@ -113,6 +113,7 @@ class Inputs:
         self.p98_t14_df['mass_log10'] = np.log10(self.p98_t14_df['mass'])
         self.p98_t14_df['metallicity'] = self.p98_t14_df['metallicity'].astype(float)
         self.p98_t14_df['lifetimes_log10_Gyr'] = np.log10(self.p98_t14_df['lifetimes_yr']/1e9)
+        self.p98_t14_df['lifetimes_Gyr'] = self.p98_t14_df['lifetimes_yr']/1e9
 
         self.s_lifetimes_p98 = np.genfromtxt('input/starlifetime/portinari98table14.dat', 
                                 delimiter = ',', # padded to evaluate at boundary masses

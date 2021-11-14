@@ -20,8 +20,8 @@ import classes.yields as Y
 #    def __init__(self):
 aux = morph.Auxiliary()
 lifetime_class = morph.Stellar_Lifetimes()
-Ml = lifetime_class.s_mass[1] # Lower limit stellar masses [Msun] 
-Mu = lifetime_class.s_mass[-2] # Upper limit stellar masses [Msun]
+Ml = lifetime_class.s_mass[0] # Lower limit stellar masses [Msun] 
+Mu = lifetime_class.s_mass[-1] # Upper limit stellar masses [Msun]
 mass_uniform = np.linspace(Ml, Mu, num = IN.num_MassGrid)
 #time_uniform = np.arange(IN.time_start, IN.time_end, IN.nTimeStep)
 #time_logspace = np.logspace(np.log10(IN.time_start), np.log10(IN.time_end), num=IN.numTimeStep)

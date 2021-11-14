@@ -129,6 +129,7 @@ class Wi:
 		self.Wi_grid_class = Wi_grid(self.metallicity, age_idx)
 		self.Massive_birthtime_grid, self.Massive_lifetime_grid, self.Massive_mass_grid = (
 				self.Wi_grid_class.grids(IN.Ml_Massive, IN.Mu_Massive))
+		#print('self.Massive_lifetime_grid:\t', self.Massive_lifetime_grid)
 		self.LIMs_birthtime_grid, self.LIMs_lifetime_grid, self.LIMs_mass_grid = (
 				self.Wi_grid_class.grids(IN.Ml_LIMs, IN.Mu_LIMs))
 		self.SNIa_birthtime_grid, self.SNIa_lifetime_grid, self.SNIa_mass_grid = (
@@ -153,10 +154,10 @@ class Wi:
 		''' Returns the IMF vector computed at the mass grids'''
 		return IMF(mass_grid)
 	
-	def dMdtauM_component(self, lifetime_grid, derlog = False): #!!!!!!!
+	def dMdtauM_component(self, lifetime_grid, metallicity, derlog = False): #!!!!!!!
 		''' computes the derivative of M(tauM) w.r.t. tauM '''
 		if derlog == False:
-			return lifetime_class.dMdtauM(self.metallicity, time_chosen)#(lifetime_grid)
+			return lifetime_class.dMdtauM(np.log10(lifetime_grid), metallicity*np.ones(len(lifetime_grid)))#(lifetime_grid)
 		if derlog == True:
 			return 0.5	
 				
@@ -169,9 +170,10 @@ class Wi:
 		''' Portinari+98, page 22, last eq. first column '''
 		mass_grid = self.grid_picker(channel_switch, 'mass')
 		lifetime_grid = self.grid_picker(channel_switch, 'lifetime')
-		return self.IMF_component(mass_grid) #* self.dMdtauM_component(lifetime_grid) #* self.yield_component(channel_switch, ZA_Symb) 
+		print(lifetime_grid)
+		return self.IMF_component(mass_grid) * self.dMdtauM_component(lifetime_grid, self.metallicity) #* self.yield_component(channel_switch, ZA_Symb) 
 
-	def compute_simpson(self, channel_switch, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None): #ZA_Symb,
+	def compute(self, channel_switch, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None): #ZA_Symb,
 		'''Computes, using the Simpson rule, the integral elements of eq. (34) Portinari+98 -- for alive stars'''	
 		birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
 		SFR_comp = self.SFR_component(birthtime_grid)
@@ -216,7 +218,7 @@ class Evolution:
 		if n <= 0:
 			return Infall_rate[n] * Xi_inf  - np.multiply(SFR_tn(n), Xi_v[:,n])
 		else:
-			val = Infall_rate[n] * Xi_inf  - np.multiply(SFR_tn(n), Xi_v[:,n]) + Wi_class.compute_simpson("Massive")
+			val = Infall_rate[n] * Xi_inf  - np.multiply(SFR_tn(n), Xi_v[:,n]) + Wi_class.compute("Massive")
 			val[val<0] = 0. # !!!!!!! if negative set to zero
 			return val
 
@@ -226,6 +228,8 @@ class Evolution:
 			no_integral(n)		
 			Xi_v[:, n] = np.divide(Mass_i_v[:,n], Mgas_v[n]) 
 			Mass_i_v[:, n+1] = aux.RK4(self.f_RK4_Mi_Wi, time_chosen[n], Mass_i_v[:,n], n, IN.nTimeStep)
+			#print('Mgas_v[n] - Mass_i_v[:,n]: \t', Mgas_v[n] - np.sum(Mass_i_v[:,n]))
+		Xi_v[:,-1] = np.divide(Mass_i_v[:,-1], Mgas_v[-1]) 
 		return None
 
 tic.append(time.process_time())
@@ -254,9 +258,9 @@ def main():
 	np.savetxt('output/phys.dat', np.column_stack((time_chosen, Mtot, Mgas_v,
 			   Mstar_v, SFR_v/1e9, Infall_rate/1e9, Z_v, G_v, S_v)), fmt='%-12.4e', #SFR is divided by 1e9 to get the /Gyr to /yr conversion 
 			   header = ' (0) time_chosen [Gyr]    (1) Mtot [Msun]    (2) Mgas_v [Msun]    (3) Mstar_v [Msun]    (4) SFR_v [Msun/yr]    (5)Infall_v [Msun/yr]    (6) Z_v    (7) G_v    (8) S_v')
-	np.savetxt('output/Mass_i.dat', np.column_stack((ZA_sorted.astype(int), Mass_i_v)), fmt=' '.join(['%5.i']*2 + ['%12.4e']*Mass_i_v[0,:].shape[0]),
+	np.savetxt('output/Mass_i.dat', np.column_stack((ZA_sorted, Mass_i_v)), fmt=' '.join(['%5.i']*2 + ['%12.4e']*Mass_i_v[0,:].shape[0]),
 			   header = ' (0) elemZ,	(1) elemA,	(2) masses [Msun] of every isotope for every timestep')
-	#np.savetxt('output/X_i.dat', np.column_stack((ZA_sorted, Xi_v)),  fmt='%-12.4e',
-	#		   header = ' (0) elemZ,	(1) elemA,	(2) abundance mass ratios of every isotope for every timestep (normalized to solar, Asplund et al., 2009)')
+	np.savetxt('output/X_i.dat', np.column_stack((ZA_sorted, Xi_v)), fmt=' '.join(['%5.i']*2 + ['%12.4e']*Xi_v[0,:].shape[0]),
+			   header = ' (0) elemZ,	(1) elemA,	(2) abundance mass ratios of every isotope for every timestep (normalized to solar, Asplund et al., 2009)')
 	aux.tic_count(string="Output saved in = ", tic=tic)
 	return None
