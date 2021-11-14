@@ -30,11 +30,16 @@ Yinv = df['mass'].values
 
 # get GP predictions for plot
 xlim = np.array([X.min(0),X.max(0)])
+xliminv = np.array([Xinv.min(0),Xinv.max(0)])
 ylim = np.array([Y.min(),Y.max()])
+yliminv = np.array([Yinv.min(),Yinv.max()])
 nticks = 64
 ticks = [np.linspace(*xlim[:,i],nticks) for i in range(X.shape[1])]
+ticksinv = [np.linspace(*xliminv[:,i],nticks) for i in range(Xinv.shape[1])]
 x1mesh,x2mesh = np.meshgrid(*ticks)
+x1meshinv,x2meshinv = np.meshgrid(*ticksinv)
 xquery = np.hstack([x1mesh.reshape(-1,1),x2mesh.reshape(-1,1)])
+xqueryinv = np.hstack([x1meshinv.reshape(-1,1),x2meshinv.reshape(-1,1)])
 
 # fit Model and make predictions
 # other models from https://docs.scipy.org/doc/scipy/reference/interpolate.html
@@ -48,7 +53,9 @@ elif modeltype == 'RBFInterpolator':
     model = RBFInterpolator(X,Y)
     modelinv = RBFInterpolator(Xinv, Yinv)
     yquery = model(xquery)
+    yqueryinv = model(xqueryinv)
     Yhat = model(X)
+    Yhatinv = modelinv(Xinv)
 
 xquery2 = np.array([[np.log10(120),0.0004],
                     [np.log10(0.6),0.0004]])
@@ -58,11 +65,20 @@ print(10**yquery2)
 # Model predictions at fitting points
 eps = Y-Yhat
 abs_eps = np.abs(eps)
+print('For tau(M)')
 print('\nRMSE: %.1e'%np.sqrt(np.mean(abs_eps**2)))
 print('MAE: %.1e'%np.mean(abs_eps))
 print('Max Abs Error: %.1e'%abs_eps.max())
+print(' ')
 
-'''
+epsinv = Yinv-Yhatinv
+abs_epsinv = np.abs(epsinv)
+print('For M(tau)')
+print('\nRMSE: %.1e'%np.sqrt(np.mean(abs_epsinv**2)))
+print('MAE: %.1e'%np.mean(abs_epsinv))
+print('Max Abs Error: %.1e'%abs_epsinv.max())
+print(' ')
+
 # plot
 ymesh = yquery.reshape(x1mesh.shape)
 fig,ax = plt.subplots(nrows=1,ncols=1,figsize=(10,10),subplot_kw={"projection": "3d"})
@@ -72,5 +88,17 @@ ax.scatter(X[:,0],X[:,1],Y,color='r')
 ax.set_xlim(xlim[:,0])
 ax.set_ylim(xlim[:,1])
 ax.set_zlim(ylim)
-fig.savefig('GalCEM-master/figures/test/lifetimes_gp.pdf',format='pdf',bbox_inches='tight')
-'''
+fig.savefig('figures/test/lifetimes_gp.pdf',format='pdf',bbox_inches='tight')
+plt.show(block=False)
+
+
+ymeshinv = yqueryinv.reshape(x1meshinv.shape)
+fig2,ax2 = plt.subplots(nrows=1,ncols=1,figsize=(10,10),subplot_kw={"projection": "3d"})
+surfinv = ax2.plot_surface(x1meshinv,x2meshinv,ymeshinv,cmap=cm.plasma,alpha=.75)
+fig2.colorbar(surfinv,shrink=0.5,aspect=5)
+ax2.scatter(Xinv[:,0],Xinv[:,1],Y,color='k')
+ax2.set_xlim(xliminv[:,0])
+ax2.set_ylim(xliminv[:,1])
+ax2.set_zlim(yliminv)
+fig2.savefig('figures/test/lifetimesinv_gp.pdf',format='pdf',bbox_inches='tight')
+plt.show(block=False)
