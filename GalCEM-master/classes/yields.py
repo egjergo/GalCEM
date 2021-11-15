@@ -83,6 +83,15 @@ class Concentrations:
 	'''
 	def __init__(self):
 		self.concentration = None
+		self.solarA09_vs_H_bynumb = (IN.asplund1['photospheric'] - IN.asplund1['photospheric'][1])
+		self.solarA09_vs_Fe_bynumb = (IN.asplund1['photospheric'] - IN.asplund1['photospheric'][26])
+		self.solarA09_vs_H_bymass = (IN.asplund1['photospheric'] - IN.asplund1['photospheric'][1] + 
+							np.log10(np.divide(IN.periodic['elemA'],
+							IN.periodic['elemA'][1]))[:IN.asplund1['photospheric'].shape[0]])
+		self.solarA09_vs_Fe_bymass = (IN.asplund1['photospheric'] - IN.asplund1['photospheric'][26] + 
+							 np.log10(np.divide(IN.periodic['elemA'],
+							 IN.periodic['elemA'][26]))[:IN.asplund1['photospheric'].shape[0]])
+		self.asplund3_pd = pd.DataFrame(IN.asplund3, columns=['elemN','elemZ','elemA','percentage'])
 		return None
 		
 	def log10_avg_elem_vs_X(self, elemZ=1):
@@ -91,18 +100,6 @@ class Concentrations:
 		'''
 		return np.log10(np.divide(IN.periodic['elemA'],
 				IN.periodic['elemA'][elemZ]))[:IN.asplund1['photospheric'].shape[0]]
-
-	solarA09_vs_H_bynumb = (IN.asplund1['photospheric'] - IN.asplund1['photospheric'][1])
-	solarA09_vs_Fe_bynumb = (IN.asplund1['photospheric'] - IN.asplund1['photospheric'][26])
-
-	solarA09_vs_H_bymass = (IN.asplund1['photospheric'] - IN.asplund1['photospheric'][1] + 
-							np.log10(np.divide(IN.periodic['elemA'],
-							IN.periodic['elemA'][1]))[:IN.asplund1['photospheric'].shape[0]])
-	solarA09_vs_Fe_bymass = (IN.asplund1['photospheric'] - IN.asplund1['photospheric'][26] + 
-							 np.log10(np.divide(IN.periodic['elemA'],
-							 IN.periodic['elemA'][26]))[:IN.asplund1['photospheric'].shape[0]])
-	
-	asplund3_pd = pd.DataFrame(IN.asplund3, columns=['elemN','elemZ','elemA','percentage'])
 	
 	def abund_percentage(self, asplund3_pd, ZA_sorted):
 		percentages = []

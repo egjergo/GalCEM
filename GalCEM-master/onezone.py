@@ -25,7 +25,7 @@ def SFR_tn(timestep_n):
 	'''
 	return SFR_class.SFR(Mgas=Mgas_v, Mtot=Mtot, timestep_n=timestep_n) # Function: SFR(Mgas)
 
-def pick_yields(channel_switch, ZA_Symb, n, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None):
+def pick_yields(channel_switch, ZA_Symb, n, stellar_mass_idx=None, metallicity_idx=None, vel_idx=IN.LC18_vel_idx):
 	''' !!!!!!! this function must be edited if you import yields from other authors
 	channel_switch	[str] can be 'LIMs', 'Massive', or 'SNIa'
 	ZA_Symb			[str] is the element symbol, e.g. 'Na'
@@ -112,38 +112,22 @@ class Wi:
 		''' Returns the IMF vector computed at the mass grids'''
 		return IMF(mass_grid)
 	
-	def dMdtauM_component(self, lifetime_grid, metallicity, derlog = False): #!!!!!!!
+	def dMdtauM_component(self, lifetime_grid, derlog = IN.derlog): #!!!!!!!
 		''' computes the derivative of M(tauM) w.r.t. tauM '''
 		if derlog == False:
-			return lifetime_class.dMdtauM(np.log10(lifetime_grid), metallicity*np.ones(len(lifetime_grid)))#(lifetime_grid)
+			return lifetime_class.dMdtauM(np.log10(lifetime_grid), self.metallicity*np.ones(len(lifetime_grid)))#(lifetime_grid)
 		if derlog == True:
 			return 0.5	
 				
-	def yield_component(self, channel_switch, ZA_Symb, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None):
-		Yield_i_birthtime = pick_yields(channel_switch, ZA_Symb, stellar_mass_idx=stellar_mass_idx, 
-										metallicity_idx=metallicity_idx, vel_idx=vel_idx)
+	def yield_component(self, channel_switch, ZA_Symb, vel_idx=IN.LC18_vel_idx):
+		Yield_i_birthtime = pick_yields(channel_switch, ZA_Symb, vel_idx=vel_idx)
 		return Yield_i_birthtime
 
-	def mass_component(self, channel_switch, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None): #, ZA_Symb
+	def mass_component(self, channel_switch, ZA_Symb, vel_idx=IN.LC18_vel_idx): #
 		''' Portinari+98, page 22, last eq. first column '''
 		mass_grid = self.grid_picker(channel_switch, 'mass')
 		lifetime_grid = self.grid_picker(channel_switch, 'lifetime')
-		return self.IMF_component(mass_grid) #* self.dMdtauM_component(np.log10(lifetime_grid), self.metallicity) #* self.yield_component(channel_switch, ZA_Symb) 
-
-	def compute(self, channel_switch, stellar_mass_idx=None, metallicity_idx=None, vel_idx=None): #ZA_Symb,
-		'''Computes, using the Simpson rule, the integral Wi elements of eq. (34) Portinari+98 -- for stars that die at tn'''		
-		birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
-		SFR_comp = self.SFR_component(birthtime_grid)
-		mass_comp = self.mass_component(channel_switch,# ZA_Symb, 
-					stellar_mass_idx=stellar_mass_idx, metallicity_idx=metallicity_idx, vel_idx=vel_idx)
-		print('SFR_comp: \t', SFR_comp)
-		print('mass_comp: \t', mass_comp)
-		integrand = np.multiply(SFR_comp, mass_comp)
-		print('integrand: \t', integrand)
-		#if channel_switch == 'SNIa':
-		#	return (1 - IN.A) * scipy.integrate.simpson(integrand) 
-		#else:
-		return scipy.integrate.simps(integrand, x=birthtime_grid) 
+		return self.IMF_component(mass_grid) * self.dMdtauM_component(np.log10(lifetime_grid)) #* self.yield_component(channel_switch, ZA_Symb, vel_idx=vel_idx) 
 
 	def SNIa_FM1(self, M1):
 		f_nu = lambda nu: 24 * (1 - nu)**2
@@ -154,6 +138,27 @@ class Wi:
 		int_SNIa = lambda nu: f_nu(nu) * IMF(M1 / nu)
 		integrand_SNIa = quad(int_SNIa, nu_min, nu_max)[0]
 		return integrand_SNIa, M1_min, M1_max
+
+	#def compute_iso(self, channel_switch, ZA_Symb, vel_idx=IN.LC18_vel_idx): #
+	def compute(self, channel_switch, ZA_Symb, vel_idx=IN.LC18_vel_idx): #
+		'''Computes, using the Simpson rule, the integral Wi 
+		elements of eq. (34) Portinari+98 -- for stars that die at tn, for every i'''		
+		birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
+		SFR_comp = self.SFR_component(birthtime_grid)
+		SFR_comp[SFR_comp<0] = 0.
+		mass_comp = self.mass_component(channel_switch, ZA_Symb, vel_idx=vel_idx)# 
+		integrand = np.multiply(SFR_comp, mass_comp)
+		#print('SFR_comp: \t', SFR_comp)
+		#print('mass_comp: \t', mass_comp)
+		#print('integrand: \t', integrand)
+		#if channel_switch == 'SNIa':
+		#	return (1 - IN.A) * scipy.integrate.simpson(integrand) 
+		#else:
+		return scipy.integrate.simps(integrand, x=birthtime_grid) 
+
+	#def compute():
+	#	''' Computes the vector to be added to Mass_i_v[:, tn] '''
+	#	return None
 
 
 class Evolution:
@@ -178,7 +183,7 @@ class Evolution:
 		if n <= 0:
 			return Infall_rate[n] * Xi_inf  - np.multiply(SFR_tn(n), Xi_v[:,n])
 		else:
-			val = Infall_rate[n] * Xi_inf  - np.multiply(SFR_tn(n), Xi_v[:,n]) + Wi_class.compute("Massive")
+			val = Infall_rate[n] * Xi_inf  - np.multiply(SFR_tn(n), Xi_v[:,n]) + Wi_class.compute("Massive", 'Na')
 			val[val<0] = 0. # !!!!!!! if negative set to zero
 			return val
 
