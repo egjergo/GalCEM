@@ -76,6 +76,29 @@ class Isotopes:
 			extract_yield_vector[idx] = yield_channel.yields[i] 
 		return extract_yield_vector
 
+	def construct_yield_Massive(self, yield_channel, ZA_sorted, iso):
+		dummy = np.zeros((4,3,9))
+		if np.intersect1d(np.where(yield_channel.elemZ == ZA_sorted[iso,0]), 
+								 np.where(yield_channel.elemA == ZA_sorted[iso,1])):
+			idx = np.intersect1d(np.where(yield_channel.elemZ == ZA_sorted[iso,0]), 
+								 np.where(yield_channel.elemA == ZA_sorted[iso,1]))[0]
+			X = None # !!!!!! take linear RBF interpolation but make test
+			Y = yield_channel.yields[:,:,idx,:] 
+			return X,Y
+		else:
+			return dummy
+
+	def construct_yield_LIMs(self, yield_channel, ZA_sorted, iso):
+		dummy = [0.]
+		if np.intersect1d(np.where(yield_channel.elemZ == ZA_sorted[iso,0]), 
+								 np.where(yield_channel.elemA == ZA_sorted[iso,1])):
+			idx = np.intersect1d(np.where(yield_channel.elemZ == ZA_sorted[iso,0]), 
+								 np.where(yield_channel.elemA == ZA_sorted[iso,1]))[0]
+			return [met.yields[idx,:] for met in yield_channel]
+		else:
+			return dummy
+
+
 class Concentrations:
 	'''
 	Computes the [X,Y] ratios

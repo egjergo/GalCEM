@@ -1,13 +1,8 @@
 """ 
 You can change the variables, but don't remove or rename any
 """
-import time
-import math as m
 import numpy as np
-import scipy.integrate
 import scipy.interpolate as interp
-from scipy.integrate import quad
-from scipy.misc import derivative
 
 import prep.inputs as INp
 IN = INp.Inputs()
@@ -77,3 +72,23 @@ G_v = IN.epsilon * np.ones(len(time_chosen)) # G
 S_v = IN.epsilon * np.ones(len(time_chosen)) # S = 1 - G 
 
 """ create interpolation tables """
+def construct_Xi_Massive(i):
+    return isotope_class.construct_yield_Massive(yields_Massive_class, ZA_sorted, i)
+Xi_list = []
+for i in range(len(ZA_sorted)):
+    #Xi_list.append(interp.RBFInterpolation(construct_Xi_Massive(i)))
+    Xi_list.append(construct_Xi_Massive(i))
+Xi_Massive = Xi_list #np.array(Xi_list)
+
+def construct_Xi_LIMs(i):
+    return isotope_class.construct_yield_LIMs(yields_LIMs_class, ZA_sorted, i)
+#Xi_list = []
+#for i in range(len(ZA_sorted)):
+#    Xi_list.append(construct_Xi_LIMs(i))
+#Xi_LIMs = Xi_list #np.array(Xi_list)
+
+#def construct_Xi_SNIa(i):
+#    return isotope_class.construct_yield_SNIa(yields_SNIa_class, ZA_sorted, i)
+
+def interpolation(Xi,Y):
+    return interp.RBFInterpolator(Xi,Y)

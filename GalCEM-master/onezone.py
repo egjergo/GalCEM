@@ -4,8 +4,7 @@ import time
 tic = []
 tic.append(time.process_time())
 import numpy as np
-from varname import varname
-import scipy.integrate
+import scipy.integrate as integr
 import scipy.interpolate as interp
 
 import prep.inputs as INp
@@ -89,7 +88,7 @@ class Wi:
 		self.Massive_birthtime_grid, self.Massive_lifetime_grid, self.Massive_mass_grid = (
 				self.Wi_grid_class.grids(IN.Ml_Massive, IN.Mu_Massive))
 		self.LIMs_birthtime_grid, self.LIMs_lifetime_grid, self.LIMs_mass_grid = (
-				self.Wi_grid_class.grids(IN.Ml_LIMs, IN.Mu_LIMs))
+				self.Wi_grid_class.grids(IN.Ml_LIMs, IN.Mu_LIMs)) # !!!!!!! you should subtract SNIa fraction
 		self.SNIa_birthtime_grid, self.SNIa_lifetime_grid, self.SNIa_mass_grid = (
 				self.Wi_grid_class.grids(IN.Ml_SNIa, IN.Mu_SNIa))
 		return None
@@ -136,7 +135,7 @@ class Wi:
 		nu_min = np.max(0.5, M1 / IN.MBu)
 		nu_max = np.min(1, M1 / IN.MBl)
 		int_SNIa = lambda nu: f_nu(nu) * IMF(M1 / nu)
-		integrand_SNIa = quad(int_SNIa, nu_min, nu_max)[0]
+		integrand_SNIa = integr.quad(int_SNIa, nu_min, nu_max)[0]
 		return integrand_SNIa, M1_min, M1_max
 
 	#def compute_iso(self, channel_switch, ZA_Symb, vel_idx=IN.LC18_vel_idx): #
@@ -148,13 +147,11 @@ class Wi:
 		SFR_comp[SFR_comp<0] = 0.
 		mass_comp = self.mass_component(channel_switch, ZA_Symb, vel_idx=vel_idx)# 
 		integrand = np.multiply(SFR_comp, mass_comp)
-		#print('SFR_comp: \t', SFR_comp)
-		#print('mass_comp: \t', mass_comp)
-		#print('integrand: \t', integrand)
 		#if channel_switch == 'SNIa':
-		#	return (1 - IN.A) * scipy.integrate.simpson(integrand) 
+		# 	integrand_SNIa, M1_min, M1_max = SNIa_FM1(self, M1)
+		#	return (1 - IN.A) * integr.simps(integrand) + IN.A * integr.simps(integrand_SNIa)
 		#else:
-		return scipy.integrate.simps(integrand, x=birthtime_grid) 
+		return integr.simps(integrand, x=birthtime_grid) 
 
 	#def compute():
 	#	''' Computes the vector to be added to Mass_i_v[:, tn] '''

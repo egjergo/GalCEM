@@ -59,6 +59,40 @@ elif modeltype == 'RBFInterpolator':
     yqueryinv = modelinv(xqueryinv)
     Yhatinv = modelinv(Xinv)
 
+def interpolation(X,Y):
+    return RBFInterpolator(X,Y)
+
+def interpolation_test(X,Y, modelname='tauM', nticks=64):
+    xlim = np.array([X.min(0),X.max(0)])
+    ylim = np.array([Y.min(),Y.max()])
+    ticks = [np.linspace(*xlim[:,i],nticks) for i in range(X.shape[1])]
+    x1mesh, x2mesh = np.meshgrid(*ticks)
+    xquery = np.hstack([x1mesh.reshape(-1,1),x2mesh.reshape(-1,1)])
+    model = interpolation(X,Y)
+    yquery = model(xquery)
+    Yhat = model(X)
+    eps = Y-Yhat
+    abs_eps = np.abs(eps)
+    print('For the chosen interpolation set (X,Y), the model '+str(modelname)+' performs as follows:')
+    print('\nRMSE: %.1e'%np.sqrt(np.mean(abs_eps**2)))
+    print('MAE: %.1e'%np.mean(abs_eps))
+    print('Max Abs Error: %.1e'%abs_eps.max())
+    print(' ')
+    ymesh = yquery.reshape(x1mesh.shape)
+    fig,ax = plt.subplots(nrows=1,ncols=1,figsize=(10,7),subplot_kw={"projection": "3d"})
+    surf = ax.plot_surface(x1mesh,x2mesh,ymesh,cmap=cm.winter,alpha=.75)
+    fig.colorbar(surf,shrink=0.5,aspect=5)
+    ax.scatter(X[:,0],X[:,1],Y,color='r')
+    ax.set_xlim(xlim[:,0])
+    ax.set_ylim(xlim[:,1])
+    ax.set_zlim(ylim)
+    ax.set_zlabel(r'lifetime', fontsize=20, y=1.1, rotation=90)
+    ax.set_ylabel(r'metallicity', fontsize=20, x=-0.1)
+    ax.set_xlabel(r'mass', fontsize=20, y=1.1)
+    ax.set_title(str(modelname), fontsize=25)
+    fig.savefig('figures/test/'+str(modelname)+'_gp.pdf',format='pdf',bbox_inches='tight')
+    plt.show(block=False)
+    
 xquery2 = np.array([[np.log10(120),0.0004],
                     [np.log10(0.6),0.0004]])
 yquery2 = model(xquery2)

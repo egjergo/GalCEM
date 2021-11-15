@@ -2,7 +2,6 @@ import math, time
 import numpy as np
 import scipy.integrate
 import scipy.misc as sm 
-import scipy.stats as ss
 import scipy.interpolate as interp
 from varname import varname
 
