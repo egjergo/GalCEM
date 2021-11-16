@@ -1,5 +1,5 @@
 # From file: input/yields/lims/k10/['Z0.0001.dat', 'Z0.008.dat', 'Z0.004.dat', 'Z0.02.dat']
-mass_ini,Z_ini,mass_fin,elemSymb,elemZ,elemA,Yield,Mi_windloss,Mi_ini,Xi_avg,Xi_ini,ProdFact
+mass_ini,Z_ini,mass_fin,elemSymb,elemZ,elemA,yields,Mi_windloss,Mi_ini,Xi_avg,Xi_ini,ProdFact
 1.0,0.0001,0.72,g    ,0,1,5.8190168e-09,5.8983649e-09,7.9347945e-11,2.1065592e-08,2.8343647e-10,1.8711179
 1.0,0.0001,0.72,n    ,0,1,-3.253815e-42,-3.253815e-42,0.0,-1.1620967999999998e-41,0.0,0.0
 1.0,0.0001,0.72,p    ,1,1,-0.005642622700000001,0.20989175,0.21553437,0.74961346,0.76990402,-0.011599216

@@ -43,7 +43,9 @@ def lc18_example(filename='tab_yieldstot_iso_exp_pd.dec', loc='input/yields/snii
                            pd.DataFrame({'vel_ini': [vel[j]]}, index=df[i][j].index)], axis=1)
                 df[i][j] = df[i][j][1:]
                 df[i][j][numerics] = df[i][j][numerics].apply(pd.to_numeric)
+                df[i][j] = df[i][j][['vel_ini', 'Z_ini']+header]
         df = pd.concat(list(itertools.chain(*df)), axis=0)
+        print(f'Saving table \n {df}\n\n')
         with open(output_name, 'w') as f:
             f.write(f'# From file: {loc}/{filename}\n')
         df.to_csv(output_name, mode='a', header=True, index=False)
@@ -52,7 +54,7 @@ def lc18_example(filename='tab_yieldstot_iso_exp_pd.dec', loc='input/yields/snii
 
 def k10_example(filename=['Z0.0001.dat', 'Z0.008.dat', 'Z0.004.dat', 'Z0.02.dat'], 
                 loc='input/yields/lims/k10', outfilename='k10_pandas.csv',
-                columns=['mass_ini','Z_ini','mass_fin','elemSymb','elemZ','elemA','Yield',
+                columns=['mass_ini','Z_ini','mass_fin','elemSymb','elemZ','elemA','yields',
                 'Mi_windloss','Mi_ini','Xi_avg','Xi_ini','ProdFact']):
     '''
     Example of how to merge multiple yield tables
