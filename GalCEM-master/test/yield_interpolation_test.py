@@ -81,16 +81,19 @@ def k10_test(i_elemZ, i_elemA, loc='input/yields/lims/k10', filename='k10_pandas
     return X, Y
 
 def test_for_ZA_sorted(func):
-    for i, val in enumerate(ZA_sorted[:2]):
+    X, Y = [], []
+    for i, val in enumerate(ZA_sorted):
         print(f'i:    {i}')
-        X, Y = func(val[0], val[1])
+        Xi, Yi = func(val[0], val[1])
+        X.append(Xi)
+        Y.append(Yi)
         if X.size != 0:
             print(f'X\n{X}')
             print(f'Y\n{Y}')
-            interpolation_test(X,Y, func, modelname=f' Z={val[0]}, A={val[1]} ')
+            #interpolation_test(X,Y, func, modelname=f' Z={val[0]}, A={val[1]} ')
         else:
             print('X is empty')
     return X, Y
 
-#test_for_ZA_sorted(lc18_test)
-test_for_ZA_sorted(k10_test)
+X_lc18, Y_lc18 = test_for_ZA_sorted(lc18_test)
+X_k10, Y_k10 = test_for_ZA_sorted(k10_test)
