@@ -87,7 +87,7 @@ def test_for_ZA_sorted(func):
         Xi, Yi = func(val[0], val[1])
         X.append(Xi)
         Y.append(Yi)
-        if X.size != 0:
+        if Xi.size != 0:
             print(f'X\n{X}')
             print(f'Y\n{Y}')
             #interpolation_test(X,Y, func, modelname=f' Z={val[0]}, A={val[1]} ')
