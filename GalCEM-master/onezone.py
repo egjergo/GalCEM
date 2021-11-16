@@ -199,7 +199,7 @@ class Evolution:
 
 	def evolve(self):
 		for n in range(len(time_chosen[:idx_age_Galaxy])):	
-			print('n = ', n)
+			print(f'n = {n}')
 			self.no_integral(n)		
 			Xi_v[:, n] = np.divide(Mass_i_v[:,n], Mgas_v[n]) 
 			Mass_i_v[:, n+1] = aux.RK4(self.f_RK4_Mi_Wi, time_chosen[n], Mass_i_v[:,n], n, IN.nTimeStep)
@@ -208,7 +208,7 @@ class Evolution:
 
 tic.append(time.process_time())
 package_loading_time = tic[-1]
-print('Package lodaded in '+str(1e0*(package_loading_time))+' seconds.')
+print(f'Package lodaded in {1e0*(package_loading_time)} seconds.')
 
 """"""""""""""""""""""""""""""""""""
 "                                  "

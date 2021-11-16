@@ -29,7 +29,7 @@ class Auxiliary:
   		return [ key for key, val in dir.items() if id( val) == id( var)][0]
   
 	def is_monotonic(self, arr):
-		print ("for ", varname(arr)) 
+		print (f"for  {varname(arr)}") 
 		if all(arr[i] <= arr[i + 1] for i in range(len(arr) - 1)): 
 			return "monotone increasing" 
 		elif all(arr[i] >= arr[i + 1] for i in range(len(arr) - 1)):
@@ -46,11 +46,11 @@ class Auxiliary:
 		''' Returns the nth order derivative of a function '''
 		return sm.derivative(func, x)
 
-	def tic_count(self, string="Computation time = ", tic=None):
+	def tic_count(self, string="Computation time", tic=None):
 		tic.append(time.process_time())
 		m = math.floor((tic[-1] - tic[-2])/60.)
 		s = ((tic[-1] - tic[-2])%60.)
-		print(string+str(m)+" minutes and "+str(s)+" seconds.")
+		print(f"{string} = {m} minutes and {s} seconds.")
 
 	def age_from_z(self, zf, h = 0.7, OmegaLambda0 = 0.7, Omegam0 = 0.3, Omegar0 = 1e-4, lookback_time = False):
 		'''
