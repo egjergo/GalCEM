@@ -7,6 +7,7 @@ class Inputs:
     def __init__(self):
         '''	applies to thick disk at 8 kpc '''
         self.age_Galaxy = 13.8 # [Gyr]
+        self.solar_metallicity = 0.0181 # Asplund et al. (2009, Table 4)
         self.morphology = 'spiral'
         self.r = 8 # Compute around the solar neighborhood [kpc]
         self.k_SFR = 1
