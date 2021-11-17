@@ -24,22 +24,22 @@ df['metallicity'] = df['metallicity'].astype(float)
 df['log10_lifetime_Gyr'] = np.log10(df['lifetime_yr']/1e9)
 df['lifetime_Gyr'] = np.array(df['lifetime_yr']/1e9)
 print(df.describe())
-X = df[['log10_mass','metallicity']].values
-Y = df['log10_lifetime_Gyr'].values
+X = df[['log10_mass','metallicity']]
+Y = df['log10_lifetime_Gyr']
 
 # get GP predictions for plot
-xlim = np.array([X.min(0),X.max(0)])
-ylim = np.array([Y.min(),Y.max()])
+xlim = np.array([X.values.min(0),X.values.max(0)])
+ylim = np.array([Y.values.min(),Y.values.max()])
 nticks = 64
-ticks = [np.linspace(*xlim[:,i],nticks) for i in range(X.shape[1])]
+ticks = [np.linspace(*xlim[:,i],nticks) for i in range(X.values.shape[1])]
 x1mesh,x2mesh = np.meshgrid(*ticks)
 xquery = np.hstack([x1mesh.reshape(-1,1),x2mesh.reshape(-1,1)])
 
-Xinv = df[['log10_lifetime_Gyr','metallicity']].values
-Yinv = df['log10_mass'].values
-xliminv = np.array([Xinv.min(0),Xinv.max(0)])
-yliminv = np.array([Yinv.min(),Yinv.max()])
-ticksinv = [np.linspace(*xliminv[:,i],nticks) for i in range(Xinv.shape[1])]
+Xinv = df[['log10_lifetime_Gyr','metallicity']]
+Yinv = df['log10_mass']
+xliminv = np.array([Xinv.values.min(0),Xinv.values.max(0)])
+yliminv = np.array([Yinv.values.min(),Yinv.values.max()])
+ticksinv = [np.linspace(*xliminv[:,i],nticks) for i in range(Xinv.values.shape[1])]
 x1meshinv,x2meshinv = np.meshgrid(*ticksinv)
 xqueryinv = np.hstack([x1meshinv.reshape(-1,1),x2meshinv.reshape(-1,1)])
 
@@ -60,18 +60,18 @@ elif modeltype == 'RBFInterpolator':
     Yhatinv = modelinv(Xinv)
 
 def interpolation(X,Y):
-    return RBFInterpolator(X,Y)
+    return RBFInterpolator(X.values,Y.values)
 
 def interpolation_test(X,Y, modelname='tauM', nticks=64):
-    xlim = np.array([X.min(0),X.max(0)])
-    ylim = np.array([Y.min(),Y.max()])
-    ticks = [np.linspace(*xlim[:,i],nticks) for i in range(X.shape[1])]
+    xlim = np.array([X.values.min(0),X.values.max(0)])
+    ylim = np.array([Y.values.min(),Y.values.max()])
+    ticks = [np.linspace(*xlim[:,i],nticks) for i in range(X.values.shape[1])]
     x1mesh, x2mesh = np.meshgrid(*ticks)
     xquery = np.hstack([x1mesh.reshape(-1,1),x2mesh.reshape(-1,1)])
     model = interpolation(X,Y)
     yquery = model(xquery)
     Yhat = model(X)
-    eps = Y-Yhat
+    eps = Y.values-Yhat
     abs_eps = np.abs(eps)
     print('For the chosen interpolation set (X,Y), the model '+str(modelname)+' performs as follows:')
     print('\nRMSE: %.1e'%np.sqrt(np.mean(abs_eps**2)))
@@ -99,7 +99,7 @@ yquery2 = model(xquery2)
 print(10**yquery2)
 
 # Model predictions at fitting points
-eps = Y-Yhat
+eps = Y.values-Yhat
 abs_eps = np.abs(eps)
 print('For tau(M)')
 print('\nRMSE: %.1e'%np.sqrt(np.mean(abs_eps**2)))
@@ -107,7 +107,7 @@ print('MAE: %.1e'%np.mean(abs_eps))
 print('Max Abs Error: %.1e'%abs_eps.max())
 print(' ')
 
-epsinv = Yinv-Yhatinv
+epsinv = Yinv.values-Yhatinv
 abs_epsinv = np.abs(epsinv)
 print('For M(tau)')
 print('\nRMSE: %.1e'%np.sqrt(np.mean(abs_epsinv**2)))
@@ -120,7 +120,7 @@ ymesh = yquery.reshape(x1mesh.shape)
 fig,ax = plt.subplots(nrows=1,ncols=1,figsize=(10,7),subplot_kw={"projection": "3d"})
 surf = ax.plot_surface(x1mesh,x2mesh,ymesh,cmap=cm.winter,alpha=.75)
 fig.colorbar(surf,shrink=0.5,aspect=5)
-ax.scatter(X[:,0],X[:,1],Y,color='r')
+ax.scatter(X.values[:,0],X.values[:,1],Y.values,color='r')
 ax.set_xlim(xlim[:,0])
 ax.set_ylim(xlim[:,1])
 ax.set_zlim(ylim)
@@ -136,7 +136,7 @@ ymeshinv = yqueryinv.reshape(x1meshinv.shape)
 fig2,ax2 = plt.subplots(nrows=1,ncols=1,figsize=(10,7),subplot_kw={"projection": "3d"})
 surfinv = ax2.plot_surface(x1meshinv,x2meshinv,ymeshinv,cmap=cm.plasma,alpha=.75)
 fig2.colorbar(surfinv,shrink=0.5,aspect=5)
-ax2.scatter(Xinv[:,0],Xinv[:,1],Yinv,color='k')
+ax2.scatter(Xinv.values[:,0],Xinv.values[:,1],Yinv.values,color='k')
 ax2.set_xlim(xliminv[:,0])
 ax2.set_ylim(xliminv[:,1])
 ax2.set_zlim(yliminv)

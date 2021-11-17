@@ -65,7 +65,7 @@ def lc18_test(i_elemZ, i_elemA, loc='input/yields/snii/lc18/tab_R', filename='lc
                  var_name=var_name, value_name=value_name)
     df = df.apply(pd.to_numeric)
     X = df[id_vars+[var_name]]#.values
-    Y = df[value_name].values
+    Y = df[value_name]#.values
     print(f'X header: {id_vars+[var_name]}')
     print(f'Y header: {[value_name]}')
     return X, Y
@@ -75,13 +75,13 @@ def k10_test(i_elemZ, i_elemA, loc='input/yields/lims/k10', filename='k10_pandas
     df = pd.read_csv(f'{loc}/{filename}', comment='#')
     df = df.loc[(df['elemZ'] == i_elemZ) & (df['elemA'] == i_elemA)]
     X = df[id_vars+[var_name]]#.values
-    Y = df[value_name].values
+    Y = df[value_name]#.values
     print(f'X header: {id_vars+[var_name]}')
     print(f'Y header: {[value_name]}')
     return X, Y
 
 def test_for_ZA_sorted(func):
-    X, Y = [], []
+    X, Y, models = [], [], []
     for i, val in enumerate(ZA_sorted):
         print(f'i:    {i}')
         Xi, Yi = func(val[0], val[1])
@@ -90,10 +90,11 @@ def test_for_ZA_sorted(func):
         if Xi.size != 0:
             print(f'X\n{X}')
             print(f'Y\n{Y}')
-            #interpolation_test(X,Y, func, modelname=f' Z={val[0]}, A={val[1]} ')
+            models.append(interpolation_test(Xi.values,Yi.values, func, modelname=f' Z={val[0]}, A={val[1]} '))
         else:
+            models.append(None)
             print('X is empty')
-    return X, Y
+    return X, Y, models
 
 X_lc18, Y_lc18 = test_for_ZA_sorted(lc18_test)
 X_k10, Y_k10 = test_for_ZA_sorted(k10_test)
