@@ -11,29 +11,47 @@ from prep.setup import *
 def interpolation(X,Y, kernel='linear'):
     return interp.RBFInterpolator(X,Y, kernel=kernel)
 
-def plot_interpolation(X,Y, xlim, ylim, x1mesh, x2mesh, ymesh, modelname, func):
-    fig,ax = plt.subplots(nrows=1,ncols=1,figsize=(10,7),subplot_kw={"projection": "3d"})
-    surf = ax.plot_surface(x1mesh,x2mesh,ymesh,cmap=cm.winter,alpha=.75)
-    fig.colorbar(surf,shrink=0.5,aspect=5)
-    ax.scatter(X[:,0],X[:,1],Y,color='r')
-    ax.set_xlim(xlim[:,0])
-    ax.set_ylim(xlim[:,1])
-    ax.set_zlim(ylim)
-    ax.set_zlabel('yields', fontsize=20, y=1.1, rotation=90)
-    ax.set_ylabel(X.columns[1], fontsize=20, x=-0.1)
-    ax.set_xlabel(X.columns[0], fontsize=20, y=1.1)
-    ax.set_title(str(modelname), fontsize=25)
+def pass_meshes(X, Y, model, Xindex=None, nticks=64):
+    if Xindex == 0:
+        column_bool = [True, False, True]
+    if Xindex == 1:
+        column_bool = [False, True, True]
+    xlim = np.array([X.loc[:, column_bool].values.min(0),X.loc[:, column_bool].values.max(0)])
+    ylim = np.array([Y.values.min(),Y.values.max()])
+    ticks = [np.linspace(*xlim[:,i],nticks) for i in range(X.shape[1])]
+    x1mesh, x2mesh, x3mesh = np.meshgrid(*ticks)
+    xquery = np.hstack([x1mesh.reshape(-1,1),x2mesh.reshape(-1,1),x3mesh.reshape(-1,1)])
+    yquery = model(xquery)
+    ymesh = yquery.reshape(x1mesh.shape)
+    return xlim, ylim, x1mesh, x2mesh, ymesh, column_bool
+
+def plot_interpolation(X,Y, model, modelname, func):
+    cmapc = [cm.plasma, cm.winter]
+    color_scatter = ['k', 'r']
+    fig,axs = plt.subplots(nrows=1,ncols=2,figsize=(15,7),subplot_kw={"projection": "3d"})
+    for i, ax in enumerate(axs):
+        xlim, ylim, x1mesh, x2mesh, ymesh, column_bool = pass_meshes(X, Y, model, Xindex=i)
+        surf = ax[i].plot_surface(x1mesh, x2mesh, ymesh, cmap=cmapc[i], alpha=.75)
+        ax[i].colorbar(surf, shrink=0.5, aspect=5)
+        ax[i].scatter(X.loc[:, column_bool].values[:,0],X.loc[:, column_bool].values[:,1],
+                      Y.values, color=color_scatter[i])
+        ax[i].set_xlim(xlim[:,0])
+        ax[i].set_ylim(xlim[:,1])
+        ax[i].set_zlim(ylim)
+        ax[i].set_zlabel(Y.columns[0], fontsize=20, y=1.1, rotation=90)
+        ax[i].set_xlabel(X.loc[:, column_bool].values.columns[0], fontsize=20, y=1.1)
+        ax[i].set_ylabel(X.loc[:, column_bool].columns[1], fontsize=20, x=-0.1)
+        ax[i].set_title(str(modelname), fontsize=25)
     fig.savefig(f'figures/test/yields_{func.__name__}_{modelname}.pdf', format='pdf', bbox_inches='tight')
     plt.show(block=False)
     return None
 
-def interpolation_test(X,Y, func, modelname=' ', nticks=64):
+def interpolation_test(X,Y, model, func, modelname=' ', nticks=64):
     xlim = np.array([X.min(0),X.max(0)])
     ylim = np.array([Y.min(),Y.max()])
     ticks = [np.linspace(*xlim[:,i],nticks) for i in range(X.shape[1])]
-    x1mesh, x2mesh = np.meshgrid(*ticks)
-    xquery = np.hstack([x1mesh.reshape(-1,1),x2mesh.reshape(-1,1)])
-    model = interpolation(X,Y)
+    x1mesh, x2mesh, x3mesh = np.meshgrid(*ticks)
+    xquery = np.hstack([x1mesh.reshape(-1,1),x2mesh.reshape(-1,1), x3mesh.reshape(-1,1)])
     yquery = model(xquery)
     Yhat = model(X)
     eps = Y-Yhat
@@ -44,9 +62,16 @@ def interpolation_test(X,Y, func, modelname=' ', nticks=64):
     print('Max Abs Error: %.1e'%abs_eps.max())
     print(' ')
     ymesh = yquery.reshape(x1mesh.shape)
-    plot_interpolation(X, Y, xlim, ylim, x1mesh, x2mesh, ymesh, modelname, func)
     return None
-    
+
+def run_test(X,Y,models):
+    for i, val in enumerate(X):
+        if val.shape[0] > 0:
+            print(f'{i=}')
+            interpolation_test(X[i].values, Y[i].values, models[i], 
+            lc18_test, modelname=f' Z={ZA_sorted[i,0]}, A={ZA_sorted[i,1]} ')
+    return None
+
 def lc18_test(i_elemZ, i_elemA, loc='input/yields/snii/lc18/tab_R', filename='lc18_pandas.csv',
               id_vars=['Z_ini', 'vel_ini'], var_name='mass_ini', value_name='yields',
               col_number=9):
@@ -83,18 +108,17 @@ def k10_test(i_elemZ, i_elemA, loc='input/yields/lims/k10', filename='k10_pandas
 def test_for_ZA_sorted(func):
     X, Y, models = [], [], []
     for i, val in enumerate(ZA_sorted):
-        print(f'i:    {i}')
+        print(f'{i = }')
         Xi, Yi = func(val[0], val[1])
         X.append(Xi)
         Y.append(Yi)
         if Xi.size != 0:
-            print(f'X\n{X}')
-            print(f'Y\n{Y}')
-            models.append(interpolation_test(Xi.values,Yi.values, func, modelname=f' Z={val[0]}, A={val[1]} '))
+            models.append(interpolation(Xi.values,Yi.values))
         else:
             models.append(None)
             print('X is empty')
     return X, Y, models
 
-X_lc18, Y_lc18 = test_for_ZA_sorted(lc18_test)
-X_k10, Y_k10 = test_for_ZA_sorted(k10_test)
+X_lc18, Y_lc18, models_lc18 = test_for_ZA_sorted(lc18_test)
+run_test(X_lc18, Y_lc18, models_lc18)
+X_k10, Y_k10, models_k10 = test_for_ZA_sorted(k10_test)
