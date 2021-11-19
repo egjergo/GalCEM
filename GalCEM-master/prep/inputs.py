@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 # Romano+10 uses Portinari's code, with Kroupa+03 and the two-infall model
 # So far, I'm using Salpeter+55 for the IMF. Also check the Schmidt power exponent
 
@@ -6,6 +7,7 @@ class Inputs:
     def __init__(self):
         '''	applies to thick disk at 8 kpc '''
         self.age_Galaxy = 13.8 # [Gyr]
+        self.solar_metallicity = 0.0181 # Asplund et al. (2009, Table 4)
         self.morphology = 'spiral'
         self.r = 8 # Compute around the solar neighborhood [kpc]
         self.k_SFR = 1
@@ -19,7 +21,7 @@ class Inputs:
         self.Ml_Massive = 10 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Mu_Massive = 120 # [Msun] !!!!!!! temporary. Import from yield tables
 
-        self.nTimeStep = 0.001 # Picked to smooth the mapping between stellar masses and lifetimes
+        self.nTimeStep = 0.01 # Picked to smooth the mapping between stellar masses and lifetimes
         self.numTimeStep = 2000 # Like FM
         self.num_MassGrid = 200
 
@@ -29,6 +31,7 @@ class Inputs:
         self.delta_max = 8e-2 # Convergence limit for eq. 28, Portinari+98
         self.epsilon = 1e-32 # Avoid numerical errors - consistent with BBN
         self.SFR_rescaling = 1 # !!!!!!! Constrained by observations at z=0 of the galaxy of interest
+        self.derlog = True
 
         self.custom_IMF = None
         self.custom_SFR = None
@@ -103,6 +106,16 @@ class Inputs:
         	'Sextan': 11,
         	'UrsaMinor': 11}
         self.wind_efficiency = 0 # override: no overflow in this run
+        
+        self.p98_t14_df = pd.read_csv('input/starlifetime/portinari98table14.dat')
+        self.p98_t14_df.columns = [name.replace('#M','mass').replace('Z=','') 
+                                            for name in self.p98_t14_df.columns]
+        self.p98_t14_df = pd.melt(self.p98_t14_df, id_vars='mass', 
+                                        value_vars=list(self.p98_t14_df.columns[1:]), var_name='metallicity', value_name='lifetimes_yr')
+        self.p98_t14_df['mass_log10'] = np.log10(self.p98_t14_df['mass'])
+        self.p98_t14_df['metallicity'] = self.p98_t14_df['metallicity'].astype(float)
+        self.p98_t14_df['lifetimes_log10_Gyr'] = np.log10(self.p98_t14_df['lifetimes_yr']/1e9)
+        self.p98_t14_df['lifetimes_Gyr'] = self.p98_t14_df['lifetimes_yr']/1e9
 
         self.s_lifetimes_p98 = np.genfromtxt('input/starlifetime/portinari98table14.dat', 
                                 delimiter = ',', # padded to evaluate at boundary masses

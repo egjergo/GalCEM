@@ -33,7 +33,7 @@ class Isotopes:
 		self.elemName = IN.periodic['elemName']
 		self.elemA_characteristic = IN.periodic['elemA']
 		
-	def pick_by_Symb(self, ndarray_elemZ, elemSymb):
+	def pick_by_Symb(self, ndarray_elemZ=0, elemSymb='Symb'):
 		'''
 		Finds the indices 
 		
@@ -44,7 +44,7 @@ class Isotopes:
 		Returns:
 			the indices of the yield classes corresponding to the given element 
 		'''
-		print(type(self.elemSymb))
+		print(f'Symbol: \t {type(self.elemSymb)}')
 		idx = np.where(self.elemSymb == elemSymb)
 		return np.where(ndarray_elemZ == self.elemZ[idx])
 		
@@ -59,7 +59,7 @@ class Isotopes:
 		Returns:
 			the indices of the yield classes corresponding to the given element 
 		'''
-		print(type(self.elemSymb))
+		print(f'Symbol: \t {type(self.elemSymb)}')
 		idx = np.where(self.elemSymb == elemSymb)
 		return np.where(ndarray_elemZ == self.elemZ[idx])
 	
@@ -76,6 +76,29 @@ class Isotopes:
 			extract_yield_vector[idx] = yield_channel.yields[i] 
 		return extract_yield_vector
 
+	def construct_yield_Massive(self, yield_channel, ZA_sorted, iso):
+		dummy = np.zeros((4,3,9))
+		if np.intersect1d(np.where(yield_channel.elemZ == ZA_sorted[iso,0]), 
+								 np.where(yield_channel.elemA == ZA_sorted[iso,1])):
+			idx = np.intersect1d(np.where(yield_channel.elemZ == ZA_sorted[iso,0]), 
+								 np.where(yield_channel.elemA == ZA_sorted[iso,1]))[0]
+			X = None # !!!!!! take linear RBF interpolation but make test
+			Y = yield_channel.yields[:,:,idx,:] 
+			return X,Y
+		else:
+			return dummy
+
+	def construct_yield_LIMs(self, yield_channel, ZA_sorted, iso):
+		dummy = [0.]
+		if np.intersect1d(np.where(yield_channel.elemZ == ZA_sorted[iso,0]), 
+								 np.where(yield_channel.elemA == ZA_sorted[iso,1])):
+			idx = np.intersect1d(np.where(yield_channel.elemZ == ZA_sorted[iso,0]), 
+								 np.where(yield_channel.elemA == ZA_sorted[iso,1]))[0]
+			return [met.yields[idx,:] for met in yield_channel]
+		else:
+			return dummy
+
+
 class Concentrations:
 	'''
 	Computes the [X,Y] ratios
@@ -83,6 +106,15 @@ class Concentrations:
 	'''
 	def __init__(self):
 		self.concentration = None
+		self.solarA09_vs_H_bynumb = (IN.asplund1['photospheric'] - IN.asplund1['photospheric'][1])
+		self.solarA09_vs_Fe_bynumb = (IN.asplund1['photospheric'] - IN.asplund1['photospheric'][26])
+		self.solarA09_vs_H_bymass = (IN.asplund1['photospheric'] - IN.asplund1['photospheric'][1] + 
+							np.log10(np.divide(IN.periodic['elemA'],
+							IN.periodic['elemA'][1]))[:IN.asplund1['photospheric'].shape[0]])
+		self.solarA09_vs_Fe_bymass = (IN.asplund1['photospheric'] - IN.asplund1['photospheric'][26] + 
+							 np.log10(np.divide(IN.periodic['elemA'],
+							 IN.periodic['elemA'][26]))[:IN.asplund1['photospheric'].shape[0]])
+		self.asplund3_pd = pd.DataFrame(IN.asplund3, columns=['elemN','elemZ','elemA','percentage'])
 		return None
 		
 	def log10_avg_elem_vs_X(self, elemZ=1):
@@ -91,18 +123,6 @@ class Concentrations:
 		'''
 		return np.log10(np.divide(IN.periodic['elemA'],
 				IN.periodic['elemA'][elemZ]))[:IN.asplund1['photospheric'].shape[0]]
-
-	solarA09_vs_H_bynumb = (IN.asplund1['photospheric'] - IN.asplund1['photospheric'][1])
-	solarA09_vs_Fe_bynumb = (IN.asplund1['photospheric'] - IN.asplund1['photospheric'][26])
-
-	solarA09_vs_H_bymass = (IN.asplund1['photospheric'] - IN.asplund1['photospheric'][1] + 
-							np.log10(np.divide(IN.periodic['elemA'],
-							IN.periodic['elemA'][1]))[:IN.asplund1['photospheric'].shape[0]])
-	solarA09_vs_Fe_bymass = (IN.asplund1['photospheric'] - IN.asplund1['photospheric'][26] + 
-							 np.log10(np.divide(IN.periodic['elemA'],
-							 IN.periodic['elemA'][26]))[:IN.asplund1['photospheric'].shape[0]])
-	
-	asplund3_pd = pd.DataFrame(IN.asplund3, columns=['elemN','elemZ','elemA','percentage'])
 	
 	def abund_percentage(self, asplund3_pd, ZA_sorted):
 		percentages = []

@@ -1,13 +1,8 @@
 """ 
 You can change the variables, but don't remove or rename any
 """
-import time
-import math as m
 import numpy as np
-import scipy.integrate
 import scipy.interpolate as interp
-from scipy.integrate import quad
-from scipy.misc import derivative
 
 import prep.inputs as INp
 IN = INp.Inputs()
@@ -20,14 +15,15 @@ import classes.yields as Y
 #    def __init__(self):
 aux = morph.Auxiliary()
 lifetime_class = morph.Stellar_Lifetimes()
-Ml = lifetime_class.s_mass[1] # Lower limit stellar masses [Msun] 
-Mu = lifetime_class.s_mass[-2] # Upper limit stellar masses [Msun]
+Ml = lifetime_class.s_mass[0] # Lower limit stellar masses [Msun] 
+Mu = lifetime_class.s_mass[-1] # Upper limit stellar masses [Msun]
 mass_uniform = np.linspace(Ml, Mu, num = IN.num_MassGrid)
 #time_uniform = np.arange(IN.time_start, IN.time_end, IN.nTimeStep)
 #time_logspace = np.logspace(np.log10(IN.time_start), np.log10(IN.time_end), num=IN.numTimeStep)
 time_uniform = np.arange(IN.time_start, IN.age_Galaxy, IN.nTimeStep)
 time_logspace = np.logspace(np.log10(IN.time_start), np.log10(IN.age_Galaxy), num=IN.numTimeStep)
 time_chosen = time_uniform
+idx_age_Galaxy = aux.find_nearest(time_chosen, IN.age_Galaxy)
 '''Surface density for the disk. The bulge goes as an inverse square law.'''
 surf_density_Galaxy = IN.sd / np.exp(IN.r / IN.Reff[IN.morphology]) #sigma(t_G) before eq(7) not used so far !!!!!!!
 
@@ -74,3 +70,25 @@ Xi_v = IN.epsilon * np.ones((len(ZA_sorted), len(time_chosen)))	# Xi
 Z_v = IN.epsilon * np.ones(len(time_chosen)) # Metallicity 
 G_v = IN.epsilon * np.ones(len(time_chosen)) # G 
 S_v = IN.epsilon * np.ones(len(time_chosen)) # S = 1 - G 
+
+""" create interpolation tables """
+def construct_Xi_Massive(i):
+    return isotope_class.construct_yield_Massive(yields_Massive_class, ZA_sorted, i)
+Xi_list = []
+for i in range(len(ZA_sorted)):
+    #Xi_list.append(interp.RBFInterpolation(construct_Xi_Massive(i)))
+    Xi_list.append(construct_Xi_Massive(i))
+Xi_Massive = Xi_list #np.array(Xi_list)
+
+def construct_Xi_LIMs(i):
+    return isotope_class.construct_yield_LIMs(yields_LIMs_class, ZA_sorted, i)
+#Xi_list = []
+#for i in range(len(ZA_sorted)):
+#    Xi_list.append(construct_Xi_LIMs(i))
+#Xi_LIMs = Xi_list #np.array(Xi_list)
+
+#def construct_Xi_SNIa(i):
+#    return isotope_class.construct_yield_SNIa(yields_SNIa_class, ZA_sorted, i)
+
+def interpolation(Xi,Y):
+    return interp.RBFInterpolator(Xi,Y)

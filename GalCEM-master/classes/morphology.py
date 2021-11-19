@@ -2,8 +2,8 @@ import math, time
 import numpy as np
 import scipy.integrate
 import scipy.misc as sm 
-import scipy.stats as ss
 import scipy.interpolate as interp
+from varname import varname
 
 import prep.inputs as INp
 IN = INp.Inputs()
@@ -29,7 +29,7 @@ class Auxiliary:
   		return [ key for key, val in dir.items() if id( val) == id( var)][0]
   
 	def is_monotonic(self, arr):
-		print ("for ", varname(arr)) 
+		print (f"for  {varname(arr)}") 
 		if all(arr[i] <= arr[i + 1] for i in range(len(arr) - 1)): 
 			return "monotone increasing" 
 		elif all(arr[i] >= arr[i + 1] for i in range(len(arr) - 1)):
@@ -46,11 +46,11 @@ class Auxiliary:
 		''' Returns the nth order derivative of a function '''
 		return sm.derivative(func, x)
 
-	def tic_count(self, string="Computation time = ", tic=None):
+	def tic_count(self, string="Computation time", tic=None):
 		tic.append(time.process_time())
 		m = math.floor((tic[-1] - tic[-2])/60.)
 		s = ((tic[-1] - tic[-2])%60.)
-		print(string+str(m)+" minutes and "+str(s)+" seconds.")
+		print(f"{string} = {m} minutes and {s} seconds.")
 
 	def age_from_z(self, zf, h = 0.7, OmegaLambda0 = 0.7, Omegam0 = 0.3, Omegar0 = 1e-4, lookback_time = False):
 		'''
@@ -67,13 +67,13 @@ class Auxiliary:
 		lookback time.
 		'''
 		H0 = 100 * h * 3.24078e-20 * 3.15570e16 # [ km s^-1 Mpc^-1 * Mpc km^-1 * s Gyr^-1 ]
-		age = integrate.quad(lambda z: 1 / ( (z + 1) *np.sqrt(OmegaLambda0 + 
+		age = scipy.integrate.quad(lambda z: 1 / ( (z + 1) *np.sqrt(OmegaLambda0 + 
 								Omegam0 * (z+1)**3 + Omegar0 * (z+1)**4) ), 
 								zf, np.inf)[0] / H0 # Since BB [Gyr]
 		if not lookback_time:
 			return age
 		else:
-			age0 = integrate.quad(lambda z: 1 / ( (z + 1) *np.sqrt(OmegaLambda0 
+			age0 = scipy.ntegrate.quad(lambda z: 1 / ( (z + 1) *np.sqrt(OmegaLambda0 
 								+ Omegam0 * (z+1)**3 + Omegar0 * (z+1)**4) ),
 								 0, np.inf)[0] / H0 # present time [Gyr]
 			return age0 - age
@@ -100,49 +100,54 @@ class Auxiliary:
 
 class Stellar_Lifetimes:
 	'''
-	Interpolation of Portinari+98 Table 14
-	
-	The first column of s_lifetimes_p98 identifies the stellar mass
-	All the other columns indicate the respective lifetimes, 
-	evaluated at different metallicities.
+	Interpolation of stellar lifetime tables 
+	Portinari+98 Table 14
 	'''
 	def __init__(self):
-		self.Z_names = ['Z0004', 'Z008', 'Z02', 'Z05']
-		self.Z_binned = [0.0004, 0.008, 0.02, 0.05]
-		self.Z_bins = [0.001789, 0.012649, 0.031623] # log-avg'd Z_binned
-		self.s_mass = IN.s_lifetimes_p98['M']
-	
-	def interp_tau(self, idx):
-		tau = IN.s_lifetimes_p98[self.Z_names[idx]] / 1e9
-		return interp.interp1d(self.s_mass, tau)
-	def stellar_lifetimes(self):
-		return [self.interp_tau(ids) for ids in range(4)]
+		self.s_Z = IN.p98_t14_df['metallicity'].values
+		self.s_mass = IN.p98_t14_df['mass'].values
+		self.s_mass_log10 = IN.p98_t14_df['mass_log10'].values
+		self.s_lifetime_yr = IN.p98_t14_df['lifetimes_yr'].values
+		self.s_lifetime_Gyr = IN.p98_t14_df['lifetimes_Gyr'].values
+		self.s_lifetime_log10_Gyr = IN.p98_t14_df['lifetimes_log10_Gyr'].values
+		self.X1 = IN.p98_t14_df[['mass_log10','metallicity']].values
+		self.X2 = IN.p98_t14_df[['lifetimes_log10_Gyr','metallicity']].values
+		self.from_mass_to_lifetime = interp.RBFInterpolator(self.X1, self.s_lifetime_log10_Gyr)
+		self.from_lifetime_to_mass = interp.RBFInterpolator(self.X2, self.s_mass_log10, kernel='linear')
+
+	def interp_stellar_lifetimes(self, s_mass_log10, metallicity):
+		'''
+		INPUT
+			s_mass_log10		[array, size p] logarithmic (base 10) stellar mass [Msun]
+			metallicity			[array, size p] stellar metallicity
+
+		RETURNS
+			tau_Z(M) log10		[array, size p] logarithmic (base 10) stellar lifetime [Gyr]
+		'''
+		return self.from_mass_to_lifetime(np.array([s_mass_log10, metallicity]).T)
+
+	def interp_stellar_masses(self, s_lifetime_log10_Gyr, metallicity):
+		'''
+		INPUT
+			s_lifetime_log10_Gyr	[array, size p] logarithmic (base 10) stellar lifetime [Gyr]
+			metallicity				[array, size p] stellar metallicity
+
+		RETURNS
+			M(tau)_log10			[array, size p] logarithmic (base 10) stellar mass [Msun]
+		'''
+		return self.from_lifetime_to_mass(np.array([s_lifetime_log10_Gyr, metallicity]).T)
 		
-	def interp_M(self, idx):
-		tau = IN.s_lifetimes_p98[self.Z_names[idx]] / 1e9
-		return interp.interp1d(tau, self.s_mass)
-	def stellar_masses(self):
-		return [self.interp_M(idx) for idx in range(4)]
-	
-	def interp_stellar_lifetimes(self, metallicity):
-		'''Picks the tau(M) interpolation at the appropriate metallicity'''
-		Z_idx = np.digitize(metallicity, self.Z_bins)
-		return self.stellar_lifetimes()[Z_idx]
-
-	def interp_stellar_masses(self, metallicity):
-		'''Picks the M(tau) interpolation at the appropriate metallicity'''
-		Z_idx = np.digitize(metallicity, self.Z_bins)
-		return self.stellar_masses()[Z_idx]
-
-	def dMdtauM(self, metallicity, time_chosen, n=1):
+	def dMdtauM(self, s_lifetime_log10_Gyr, metallicity, n=1):
 		'''
 		Computes the first order derivative of the M(tau) function
 		with respect to dtau, but multiplied by dtau/dt' = -1
 		'''
-		Z_idx = np.digitize(metallicity, self.Z_bins)
-		dMdtau_deriv = - sm.derivative(self.interp_stellar_masses(metallicity), time_chosen[1001:-1000], n=n) #time_chosen[501:-500], n=n) !!!!!!!
-		return ss.mode(dMdtau_deriv)[0][0]
-		
+		#dMdtau_deriv = - sm.derivative(self.interp_stellar_masses(s_lifetime_yr, metallicity), time_chosen, n=n) #time_chosen[501:-500], n=n) !!!!!!!
+		f = self.interp_stellar_masses(s_lifetime_log10_Gyr, metallicity * np.ones(len(s_lifetime_log10_Gyr)))
+		diff = np.diff(s_lifetime_log10_Gyr)
+		dx = np.concatenate(([diff[0]], (diff[1:] + diff[:-1])/2., [diff[-1]])).ravel()
+		return - np.gradient(f, dx)
+
 
 class Infall:
 	'''
@@ -199,11 +204,6 @@ class Infall:
 	    '''
 	    return lambda t: self.aInf() * self.infall_func()(t)
 	
-	def inf_cumulative(self):
-		'''
-		Returns the total infall mass
-		'''
-		return np.sumcum(self.aInf())
 		
 
 class Initial_Mass_Function:
@@ -313,7 +313,7 @@ class Star_Formation_Rate:
 					return self.SFRgal(Mgas=Mgas, Mtot=Mtot, timestep_n=timestep_n)
 			elif self.option == 'CSFR':
 				if self.option_CSFR:
-					return CSFR(self.option_CSFR)
+					return self.CSFR(self.option_CSFR)
 				else:
 					print('Please define the CSFR option "option_CSFR"')
 		if self.custom:
