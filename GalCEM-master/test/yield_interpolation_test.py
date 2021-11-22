@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pandas as pd
 import scipy.interpolate as interp
@@ -5,7 +6,10 @@ from matplotlib import pyplot as plt
 from matplotlib import cm
 from util import mplsetup
 mplsetup()
-
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
 from prep.setup import *
 
 def interpolation(X,Y, kernel='linear'):
@@ -119,6 +123,68 @@ def test_for_ZA_sorted(func):
             print('X is empty')
     return X, Y, models
 
+def save_processed_dataframes(X_or_Y, ZA_sorted, name='X or Y', func=lc18_test, loc='input/yields/snii/lc18/tab_R'):
+    if name != 'models':
+        with open(f'{loc}/processed/{name}_{func.__name__}.csv', 'a') as f:
+            for i, val in enumerate(ZA_sorted):
+                f.write(f'\n\tZ = {val[0]}, \tA = {val[1]}\n')
+                X_or_Y[i].to_csv(f, sep='\t') 
+    elif name != 'models':
+        for i, val in enumerate(ZA_sorted):
+            with open(f'{loc}/processed/interp/{name}_Z{val[0]}A{val[1]}_{func.__name__}.pkl', 'wb') as f:
+                    pickle.dump(X_or_Y[i], f) 
+    return None
+
+def save_processed_yields(X, Y, models, func=lc18_test, loc='input/yields/snii/lc18/tab_R', **kwargs):
+    if not os.path.exists(f'{loc}/processed'):
+        os.makedirs(f'{loc}/processed')
+
+    if os.path.exists(f'{loc}/processed/X_{func.__name__}.csv'):
+        while True:
+            choice = input('Processed X yield file already exists. Overwrite? (y/n)\n')
+            if choice.lower() == 'y':
+                save_processed_dataframes(X, ZA_sorted, name='X', func=func, loc=loc)
+            elif choice.lower() == 'n':
+                break
+            else:
+                print('Not a valid choice. Pick "y" or "n".')
+                continue
+    else:
+        save_processed_dataframes(X, ZA_sorted, func=func, name='X', loc=loc)
+ 
+    if os.path.exists(f'{loc}/processed/Y_{func.__name__}.csv'):
+        while True:
+            choice = input('Processed Y yield file already exists. Overwrite? (y/n)\n')
+            if choice.lower() == 'y':
+                save_processed_dataframes(Y, ZA_sorted, name='Y', func=func, loc=loc)
+            elif choice.lower() == 'n':
+                break
+            else:
+                print('Not a valid choice. Pick "y" or "n".')
+                continue
+    else:
+        save_processed_dataframes(Y, ZA_sorted, func=func, name='Y', loc=loc)
+
+    if not os.path.exists(f'{loc}/processed/interp'):
+        os.makedirs(f'{loc}/processed/interp')
+    #while True:
+    #    choice: input('Processed models file already exists. Overwrite? (y/n)\n')
+    #    if choice.lower() == 'y':
+    #        save_processed_dataframes(models, ZA_sorted, name='models', func=func, loc=loc)
+    #    elif choice.lower() == 'n':
+    #        break
+    #    else:
+    #        print('Not a valid choice. Pick "y" or "n".')
+    #        continue     
+    #else:
+    save_processed_dataframes(models, ZA_sorted, name='models', func=func, loc=loc)
+    return None
+
+def read_processed_yields(ZA_sorted, loc='', func=None):
+    X, Y, models = [], [], []
+    return X, Y, models
+
 X_lc18, Y_lc18, models_lc18 = test_for_ZA_sorted(lc18_test)
 run_test(X_lc18, Y_lc18, models_lc18)
-X_k10, Y_k10, models_k10 = test_for_ZA_sorted(k10_test)
+save_processed_yields(X_lc18, Y_lc18, models_lc18)
+#X_k10, Y_k10, models_k10 = test_for_ZA_sorted(k10_test)
