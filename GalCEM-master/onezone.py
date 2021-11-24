@@ -16,7 +16,7 @@ from prep.setup import *
 import test.yield_interpolation_test as yt 
 
 X_lc18, Y_lc18, models_lc18 = yt.test_for_ZA_sorted(yt.lc18_test)
-X_k10, Y_k10, models_k10 = yt.test_for_ZA_sorted(yt.k10_test)
+#X_k10, Y_k10, models_k10 = yt.test_for_ZA_sorted(yt.k10_test)
 ''' GCE Classes and Functions'''
 
 def SFR_tn(timestep_n):
@@ -126,10 +126,11 @@ class Wi:
 		if derlog == True:
 			return 0.5	
 				
-	#def yield_component(self, channel_switch, ZA_Symb, vel_idx=IN.LC18_vel_idx):
-	#	Yield_i_birthtime = pick_yields(channel_switch, ZA_Symb, vel_idx=vel_idx)
-	#	return Yield_i_birthtime
-	def yield_component(self, channel_switch, i, _Z_comp, mass_grid, vel_idx=IN.LC18_vel_idx):
+	def yield_component(self, channel_switch, ZA_Symb, vel_idx=IN.LC18_vel_idx):
+		Yield_i_birthtime = pick_yields(channel_switch, ZA_Symb, vel_idx=vel_idx)
+		return Yield_i_birthtime
+		
+	def _yield_component(self, channel_switch, i, _Z_comp, mass_grid, vel_idx=IN.LC18_vel_idx):
 		#Yield_i_birthtime = pick_yields(channel_switch, ZA_Symb, vel_idx=vel_idx)
 		if channel_switch == 'Massive':
 			Xi = np.array([_Z_comp, vel_idx * np.ones(len(mass_grid)), mass_grid]).T
@@ -147,12 +148,15 @@ class Wi:
 		#	return yields_SNIa_class.yields[idx]
 		#return Yield_i_birthtime
 
-	#def mass_component(self, channel_switch, ZA_Symb, vel_idx=IN.LC18_vel_idx): #
-	def mass_component(self, channel_switch, i, _Z_comp, vel_idx=IN.LC18_vel_idx): #
+	def mass_component(self, channel_switch, ZA_Symb, vel_idx=IN.LC18_vel_idx): #
 		''' Portinari+98, page 22, last eq. first column '''
 		mass_grid = self.grid_picker(channel_switch, 'mass')
 		lifetime_grid = self.grid_picker(channel_switch, 'lifetime')
-		#return self.IMF_component(mass_grid) * self.dMdtauM_component(np.log10(lifetime_grid)) #* self.yield_component(channel_switch, ZA_Symb, vel_idx=vel_idx) 
+		return self.IMF_component(mass_grid) * self.dMdtauM_component(np.log10(lifetime_grid)) #* self.yield_component(channel_switch, ZA_Symb, vel_idx=vel_idx) 
+	def _mass_component(self, channel_switch, i, _Z_comp, vel_idx=IN.LC18_vel_idx): #
+		''' Portinari+98, page 22, last eq. first column '''
+		mass_grid = self.grid_picker(channel_switch, 'mass')
+		lifetime_grid = self.grid_picker(channel_switch, 'lifetime')	
 		return (self.IMF_component(mass_grid) * self.dMdtauM_component(np.log10(lifetime_grid))
 		 		* self.yield_component(channel_switch, i, _Z_comp, mass_grid, vel_idx=vel_idx))
 
@@ -167,7 +171,7 @@ class Wi:
 		return integrand_SNIa, M1_min, M1_max
 
 	#def compute_iso(self, channel_switch, ZA_Symb, vel_idx=IN.LC18_vel_idx): #
-	def _compute(self, channel_switch, ZA_Symb, vel_idx=IN.LC18_vel_idx): #
+	def compute(self, channel_switch, ZA_Symb, vel_idx=IN.LC18_vel_idx): #
 		'''Computes, using the Simpson rule, the integral Wi 
 		elements of eq. (34) Portinari+98 -- for stars that die at tn, for every i'''		
 		birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
@@ -184,7 +188,7 @@ class Wi:
 	#def compute():
 	#	''' Computes the vector to be added to Mass_i_v[:, tn] '''
 	#	return None
-	def compute(self, channel_switch, vel_idx=IN.LC18_vel_idx):
+	def _compute(self, channel_switch, vel_idx=IN.LC18_vel_idx):
 		''' Computes the vector to be added to Mass_i_v[:, tn] '''	
 		mass_comp, integrand, integral = [], [], []
 		birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
@@ -240,6 +244,7 @@ class Wi:
 		IMF_comp = self.IMF_component(mass_grid)
 		integrand = np.multiply(SFR_comp, IMF_comp)
 		return integr.simps(integrand, x=birthtime_grid)
+		
 
 class Evolution:
 	'''
@@ -248,12 +253,10 @@ class Evolution:
 	def f_RK4_Mi_Wi(self, t_n, y_n, n):
 		'''
 		Explicit general diff eq GCE function
-
 		INPUT
 			t_n		time_chosen[n]
 			y_n		dependent variable at n
 			n		index of the timestep
-
 		Functions:
 			Infall rate: [Msun/Gyr]
 			SFR: [Msun/Gyr]
@@ -289,11 +292,11 @@ class Evolution:
 
 	def evolve(self):
 		for n in range(len(time_chosen[:idx_age_Galaxy])):	
-			print(f'n = {n}')
+			print(f'{n = }')
 			self.no_integral(n)		
 			Xi_v[:, n] = np.divide(Mass_i_v[:,n], Mgas_v[n]) 
-			Z_v[n] = np.sum(Xi_v[:, n])#Mass_i_v[elemZ_for_metallicity:,:]), Mgas_v)
 			Mass_i_v[:, n+1] = aux.RK4(self.f_RK4_Mi_Wi, time_chosen[n], Mass_i_v[:,n], n, IN.nTimeStep)
+			Z_v[n] = np.divide(np.sum(Mass_i_v[:,n]), Mgas_v[n])
 		Xi_v[:,-1] = np.divide(Mass_i_v[:,-1], Mgas_v[-1]) 
 		return None
 
