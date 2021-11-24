@@ -1,15 +1,12 @@
 import os
+import pickle
 import numpy as np
 import pandas as pd
 import scipy.interpolate as interp
 from matplotlib import pyplot as plt
 from matplotlib import cm
-from util import mplsetup
+from test.util import mplsetup
 mplsetup()
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
 from prep.setup import *
 
 def interpolation(X,Y, kernel='linear'):
@@ -29,7 +26,7 @@ def pass_meshes(X, Y, model, Xindex=None, nticks=64):
     ymesh = yquery.reshape(x1mesh.shape)
     return xlim, ylim, x1mesh, x2mesh, ymesh, column_bool
 
-def plot_interpolation(X,Y, model, modelname, func):
+def plot_interpolation(X, Y, model, func, modelname=''):
     cmapc = [cm.plasma, cm.winter]
     color_scatter = ['k', 'r']
     fig,axs = plt.subplots(nrows=1,ncols=2,figsize=(15,7),subplot_kw={"projection": "3d"})
@@ -68,12 +65,12 @@ def interpolation_test(X,Y, model, func, modelname=' ', nticks=64):
     ymesh = yquery.reshape(x1mesh.shape)
     return None
 
-def run_test(X,Y,models):
+def run_test(X,Y, models, func):
     for i, val in enumerate(X):
         if val.shape[0] > 0:
             print(f'{i=}')
             interpolation_test(X[i].values, Y[i].values, models[i], 
-            lc18_test, modelname=f' Z={ZA_sorted[i,0]}, A={ZA_sorted[i,1]} ')
+            func, modelname=f' Z={ZA_sorted[i,0]}, A={ZA_sorted[i,1]} ')
     return None
 
 def lc18_test(i_elemZ, i_elemA, loc='input/yields/snii/lc18/tab_R', filename='lc18_pandas.csv',

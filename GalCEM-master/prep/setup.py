@@ -70,6 +70,7 @@ Xi_v = IN.epsilon * np.ones((len(ZA_sorted), len(time_chosen)))	# Xi
 Z_v = IN.epsilon * np.ones(len(time_chosen)) # Metallicity 
 G_v = IN.epsilon * np.ones(len(time_chosen)) # G 
 S_v = IN.epsilon * np.ones(len(time_chosen)) # S = 1 - G 
+Rate_SNII = IN.epsilon * np.ones(len(time_chosen)) 
 
 """ create interpolation tables """
 def construct_Xi_Massive(i):
