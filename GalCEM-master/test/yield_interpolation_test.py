@@ -181,7 +181,7 @@ def read_processed_yields(ZA_sorted, loc='', func=None):
     X, Y, models = [], [], []
     return X, Y, models
 
-X_lc18, Y_lc18, models_lc18 = test_for_ZA_sorted(lc18_test)
+#X_lc18, Y_lc18, models_lc18 = test_for_ZA_sorted(lc18_test)
 #run_test(X_lc18, Y_lc18, models_lc18, lc18_test)
 #save_processed_yields(X_lc18, Y_lc18, models_lc18, func=lc18_test, loc='input/yields/snii/lc18/tab_R')
 #X_k10, Y_k10, models_k10 = test_for_ZA_sorted(k10_test)

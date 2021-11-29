@@ -15,8 +15,8 @@ import plots as plts
 from prep.setup import *
 import test.yield_interpolation_test as yt 
 
-X_lc18, Y_lc18, models_lc18 = yt.test_for_ZA_sorted(yt.lc18_test)
-#X_k10, Y_k10, models_k10 = yt.test_for_ZA_sorted(yt.k10_test)
+#X_lc18, Y_lc18, models_lc18 = yt.test_for_ZA_sorted(yt.lc18_test)
+##X_k10, Y_k10, models_k10 = yt.test_for_ZA_sorted(yt.k10_test)
 ''' GCE Classes and Functions'''
 
 def SFR_tn(timestep_n):
@@ -152,23 +152,14 @@ class Wi:
 		''' Portinari+98, page 22, last eq. first column '''
 		mass_grid = self.grid_picker(channel_switch, 'mass')
 		lifetime_grid = self.grid_picker(channel_switch, 'lifetime')
-		return self.IMF_component(mass_grid) * self.dMdtauM_component(np.log10(lifetime_grid)) #* self.yield_component(channel_switch, ZA_Symb, vel_idx=vel_idx) 
+		IMF_comp = self.IMF_component(mass_grid)
+		return IMF_comp, IMF_comp * self.dMdtauM_component(np.log10(lifetime_grid)) #* self.yield_component(channel_switch, ZA_Symb, vel_idx=vel_idx) 
 	def _mass_component(self, channel_switch, i, _Z_comp, vel_idx=IN.LC18_vel_idx): #
 		''' Portinari+98, page 22, last eq. first column '''
 		mass_grid = self.grid_picker(channel_switch, 'mass')
 		lifetime_grid = self.grid_picker(channel_switch, 'lifetime')	
 		return (self.IMF_component(mass_grid) * self.dMdtauM_component(np.log10(lifetime_grid))
 		 		* self.yield_component(channel_switch, i, _Z_comp, mass_grid, vel_idx=vel_idx))
-
-	def SNIa_FM1(self, M1):
-		f_nu = lambda nu: 24 * (1 - nu)**2
-		M1_min = 0.5 * IN.MBl
-		M1_max = IN.MBu
-		nu_min = np.max(0.5, M1 / IN.MBu)
-		nu_max = np.min(1, M1 / IN.MBl)
-		int_SNIa = lambda nu: f_nu(nu) * IMF(M1 / nu)
-		integrand_SNIa = integr.quad(int_SNIa, nu_min, nu_max)[0]
-		return integrand_SNIa, M1_min, M1_max
 
 	#def compute_iso(self, channel_switch, ZA_Symb, vel_idx=IN.LC18_vel_idx): #
 	def compute(self, channel_switch, ZA_Symb, vel_idx=IN.LC18_vel_idx): #
@@ -177,13 +168,19 @@ class Wi:
 		birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
 		SFR_comp = self.SFR_component(birthtime_grid)
 		SFR_comp[SFR_comp<0] = 0.
-		mass_comp = self.mass_component(channel_switch, ZA_Symb, vel_idx=vel_idx)# 
+		IMF_comp, mass_comp = self.mass_component(channel_switch, ZA_Symb, vel_idx=vel_idx)# 
 		integrand = np.multiply(SFR_comp, mass_comp)
+		#print(f"For compute, {SFR_comp=}")
+		#print(f"For compute, {mass_comp=}")
+		#print(f"For compute, {IMF_comp=}")
+		#print(f"For compute, {integrand=}")
+		integrand_rateSNII = np.multiply(SFR_comp, IMF_comp)
+		R_SNIa = self.compute_rateSNIa()
 		#if channel_switch == 'SNIa':
 		# 	integrand_SNIa, M1_min, M1_max = SNIa_FM1(self, M1)
 		#	return (1 - IN.A) * integr.simps(integrand) + IN.A * integr.simps(integrand_SNIa)
 		#else:
-		return integr.simps(integrand, x=birthtime_grid) 
+		return integr.simps(integrand, x=birthtime_grid), integr.simps(integrand_rateSNII, x=birthtime_grid), R_SNIa
 
 	#def compute():
 	#	''' Computes the vector to be added to Mass_i_v[:, tn] '''
@@ -234,7 +231,7 @@ class Wi:
 		#else:
 		return np.array(integral)
 
-	def compute_rateSNII(self, channel_switch):
+	def compute_rateSNII(self, channel_switch='Massive'):
 		''' Computes the Type II SNae rate '''	
 		birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
 		mass_grid = self.grid_picker(channel_switch, 'mass')
@@ -243,8 +240,25 @@ class Wi:
 		SFR_comp[SFR_comp<0] = 0.
 		IMF_comp = self.IMF_component(mass_grid)
 		integrand = np.multiply(SFR_comp, IMF_comp)
+		#print(f"For compute_rateSNII, {SFR_comp=}")
+		#print(f"For compute_rateSNII, {IMF_comp=}")
+		#print(f"For compute_rateSNII, {integrand=}")
 		return integr.simps(integrand, x=birthtime_grid)
-		
+	
+	def compute_rateSNIa(self, channel_switch='SNIa'):
+		birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
+		mass_grid = self.grid_picker(channel_switch, 'mass')
+		f_nu = lambda nu: 24 * (1 - nu)**2
+		#M1_min = 0.5 * IN.Ml_SNIa
+		#M1_max = IN.Mu_SNIa
+		nu_min = np.max(0.5, np.divide(mass_grid, IN.Mu_SNIa))
+		nu_max = np.min(1, np.divide(mass_grid, IN.Ml_SNIa))
+		IMF_v = lambda nu: np.divide(self.IMF_component(mass_grid), nu)
+		int_SNIa = lambda nu: f_nu(nu) * self.IMF_component(IMF_v(nu))
+		F_SNIa = integr.quad(int_SNIa, nu_min, nu_max)[0]		
+		SFR_comp = self.SFR_component(birthtime_grid)
+		integrand = np.multiply(SFR_comp, F_SNIa)
+		return integr.simps(integrand, x=birthtime_grid)
 
 class Evolution:
 	'''
@@ -266,7 +280,10 @@ class Evolution:
 		if n <= 0:
 			return Infall_rate[n] * Xi_inf  - np.multiply(SFR_tn(n), Xi_v[:,n])
 		else:
-			val = Infall_rate[n] * Xi_inf  - np.multiply(SFR_tn(n), Xi_v[:,n]) + Wi_class.compute("Massive", 'H')
+			Wi_val, rateSNII, rateSNIa = Wi_class.compute("Massive", 'H')
+			Rate_SNII[n] = rateSNII
+			Rate_SNIa[n] = rateSNIa
+			val = Infall_rate[n] * Xi_inf  - np.multiply(SFR_tn(n), Xi_v[:,n]) + Wi_val
 			val[val<0] = 0. # !!!!!!! if negative set to zero
 			return val
 
@@ -281,7 +298,10 @@ class Evolution:
 		SNII Rate
 		'''
 		Wi_class = Wi(n)
-		return Wi_class.compute_rateSNII("Massive")
+		if n <= 10:
+			return 0.
+		else:
+			return Wi_class.compute_rateSNII()
 
 	#@lru_cache(maxsize=4)
 	def no_integral(self, n):
@@ -323,9 +343,9 @@ def main():
 	np.savetxt('output/phys.dat', np.column_stack((time_chosen, Mtot, Mgas_v,
 			   Mstar_v, SFR_v/1e9, Infall_rate/1e9, Z_v, G_v, S_v, Rate_SNII)), fmt='%-12.4e', #SFR is divided by 1e9 to get the /Gyr to /yr conversion 
 			   header = ' (0) time_chosen [Gyr]    (1) Mtot [Msun]    (2) Mgas_v [Msun]    (3) Mstar_v [Msun]    (4) SFR_v [Msun/yr]    (5)Infall_v [Msun/yr]    (6) Z_v    (7) G_v    (8) S_v 	(9) Rate_SNII')
-	#np.savetxt('output/Mass_i.dat', np.column_stack((ZA_sorted, Mass_i_v)), fmt=' '.join(['%5.i']*2 + ['%12.4e']*Mass_i_v[0,:].shape[0]),
-	#		   header = ' (0) elemZ,	(1) elemA,	(2) masses [Msun] of every isotope for every timestep')
-	#np.savetxt('output/X_i.dat', np.column_stack((ZA_sorted, Xi_v)), fmt=' '.join(['%5.i']*2 + ['%12.4e']*Xi_v[0,:].shape[0]),
-	#		   header = ' (0) elemZ,	(1) elemA,	(2) abundance mass ratios of every isotope for every timestep (normalized to solar, Asplund et al., 2009)')
+	np.savetxt('output/Mass_i.dat', np.column_stack((ZA_sorted, Mass_i_v)), fmt=' '.join(['%5.i']*2 + ['%12.4e']*Mass_i_v[0,:].shape[0]),
+			   header = ' (0) elemZ,	(1) elemA,	(2) masses [Msun] of every isotope for every timestep')
+	np.savetxt('output/X_i.dat', np.column_stack((ZA_sorted, Xi_v)), fmt=' '.join(['%5.i']*2 + ['%12.4e']*Xi_v[0,:].shape[0]),
+			   header = ' (0) elemZ,	(1) elemA,	(2) abundance mass ratios of every isotope for every timestep (normalized to solar, Asplund et al., 2009)')
 	aux.tic_count(string="Output saved in = ", tic=tic)
 	return None
