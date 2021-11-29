@@ -4,6 +4,7 @@ import scipy.integrate
 import scipy.misc as sm 
 import scipy.interpolate as interp
 from varname import varname
+import scipy.stats as ss
 
 import prep.inputs as INp
 IN = INp.Inputs()
@@ -98,7 +99,54 @@ class Auxiliary:
 		k4 = f(t+h, y+h*k3, i)
 		return y + h * (k1 + 2*k2 + 2*k3 + k4) / 6
 
+
 class Stellar_Lifetimes:
+	'''
+	Interpolation of Portinari+98 Table 14
+	
+	The first column of s_lifetimes_p98 identifies the stellar mass
+	All the other columns indicate the respective lifetimes, 
+	evaluated at different metallicities.
+	'''
+	def __init__(self):
+		self.Z_names = ['Z0004', 'Z008', 'Z02', 'Z05']
+		self.Z_binned = [0.0004, 0.008, 0.02, 0.05]
+		self.Z_bins = [0.001789, 0.012649, 0.031623] # log-avg'd Z_binned
+		self.s_mass = IN.s_lifetimes_p98['M']
+	
+	def interp_tau(self, idx):
+		tau = IN.s_lifetimes_p98[self.Z_names[idx]] / 1e9
+		return interp.interp1d(self.s_mass, tau)
+	def stellar_lifetimes(self):
+		return [self.interp_tau(ids) for ids in range(4)]
+		
+	def interp_M(self, idx):
+		tau = IN.s_lifetimes_p98[self.Z_names[idx]] / 1e9
+		return interp.interp1d(tau, self.s_mass)
+	def stellar_masses(self):
+		return [self.interp_M(idx) for idx in range(4)]
+	
+	def interp_stellar_lifetimes(self, metallicity):
+		'''Picks the tau(M) interpolation at the appropriate metallicity'''
+		Z_idx = np.digitize(metallicity, self.Z_bins)
+		return self.stellar_lifetimes()[Z_idx]
+
+	def interp_stellar_masses(self, metallicity):
+		'''Picks the M(tau) interpolation at the appropriate metallicity'''
+		Z_idx = np.digitize(metallicity, self.Z_bins)
+		return self.stellar_masses()[Z_idx]
+
+	def dMdtauM(self, metallicity, time_chosen, n=1):
+		'''
+		Computes the first order derivative of the M(tau) function
+		with respect to dtau, but multiplied by dtau/dt' = -1
+		'''
+		Z_idx = np.digitize(metallicity, self.Z_bins)
+		dMdtau_deriv = - sm.derivative(self.interp_stellar_masses(metallicity), time_chosen[1001:-1000], n=n) #time_chosen[501:-500], n=n) !!!!!!!
+		return ss.mode(dMdtau_deriv)[0][0]
+		
+
+class _Stellar_Lifetimes:
 	'''
 	Interpolation of stellar lifetime tables 
 	Portinari+98 Table 14
@@ -288,6 +336,12 @@ class Star_Formation_Rate:
 		''' Talbot & Arnett (1975)'''
 		return np.multiply(IN.nu[self.morphology]  * (Mgas[timestep_n])**(k) 
 		    / (Mtot[timestep_n])**(k-1), IN.SFR_rescaling)
+	
+	
+	def SFR_G(self, k=IN.k_SFR, G=[], Mtot=[], timestep_n=0): 
+		''' Talbot & Arnett (1975)'''
+		return np.multiply(IN.nu[self.morphology]  * (G[timestep_n])**(k))
+		    #/ (Mtot[timestep_n])**(k-1), IN.SFR_rescaling)
 	
 	def CSFR(self):
 		'''
