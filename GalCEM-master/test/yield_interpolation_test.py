@@ -1,11 +1,12 @@
+import os
+import pickle
 import numpy as np
 import pandas as pd
 import scipy.interpolate as interp
 from matplotlib import pyplot as plt
 from matplotlib import cm
-from util import mplsetup
+from test.util import mplsetup
 mplsetup()
-
 from prep.setup import *
 
 def interpolation(X,Y, kernel='linear'):
@@ -25,7 +26,7 @@ def pass_meshes(X, Y, model, Xindex=None, nticks=64):
     ymesh = yquery.reshape(x1mesh.shape)
     return xlim, ylim, x1mesh, x2mesh, ymesh, column_bool
 
-def plot_interpolation(X,Y, model, modelname, func):
+def plot_interpolation(X, Y, model, func, modelname=''):
     cmapc = [cm.plasma, cm.winter]
     color_scatter = ['k', 'r']
     fig,axs = plt.subplots(nrows=1,ncols=2,figsize=(15,7),subplot_kw={"projection": "3d"})
@@ -64,12 +65,12 @@ def interpolation_test(X,Y, model, func, modelname=' ', nticks=64):
     ymesh = yquery.reshape(x1mesh.shape)
     return None
 
-def run_test(X,Y,models):
+def run_test(X,Y, models, func):
     for i, val in enumerate(X):
         if val.shape[0] > 0:
             print(f'{i=}')
             interpolation_test(X[i].values, Y[i].values, models[i], 
-            lc18_test, modelname=f' Z={ZA_sorted[i,0]}, A={ZA_sorted[i,1]} ')
+            func, modelname=f' Z={ZA_sorted[i,0]}, A={ZA_sorted[i,1]} ')
     return None
 
 def lc18_test(i_elemZ, i_elemA, loc='input/yields/snii/lc18/tab_R', filename='lc18_pandas.csv',
@@ -119,6 +120,68 @@ def test_for_ZA_sorted(func):
             print('X is empty')
     return X, Y, models
 
-X_lc18, Y_lc18, models_lc18 = test_for_ZA_sorted(lc18_test)
-run_test(X_lc18, Y_lc18, models_lc18)
-X_k10, Y_k10, models_k10 = test_for_ZA_sorted(k10_test)
+def save_processed_dataframes(X_or_Y, ZA_sorted, name='X or Y', func=lc18_test, loc='input/yields/snii/lc18/tab_R'):
+    if name != 'models':
+        with open(f'{loc}/processed/{name}_{func.__name__}.csv', 'a') as f:
+            for i, val in enumerate(ZA_sorted):
+                f.write(f'\n\tZ = {val[0]}, \tA = {val[1]}\n')
+                X_or_Y[i].to_csv(f, sep='\t') 
+    elif name != 'models':
+        for i, val in enumerate(ZA_sorted):
+            with open(f'{loc}/processed/interp/{name}_Z{val[0]}A{val[1]}_{func.__name__}.pkl', 'wb') as f:
+                    pickle.dump(X_or_Y[i], f) 
+    return None
+
+def save_processed_yields(X, Y, models, func=lc18_test, loc='input/yields/snii/lc18/tab_R', **kwargs):
+    if not os.path.exists(f'{loc}/processed'):
+        os.makedirs(f'{loc}/processed')
+
+    if os.path.exists(f'{loc}/processed/X_{func.__name__}.csv'):
+        while True:
+            choice = input('Processed X yield file already exists. Overwrite? (y/n)\n')
+            if choice.lower() == 'y':
+                save_processed_dataframes(X, ZA_sorted, name='X', func=func, loc=loc)
+            elif choice.lower() == 'n':
+                break
+            else:
+                print('Not a valid choice. Pick "y" or "n".')
+                continue
+    else:
+        save_processed_dataframes(X, ZA_sorted, func=func, name='X', loc=loc)
+ 
+    if os.path.exists(f'{loc}/processed/Y_{func.__name__}.csv'):
+        while True:
+            choice = input('Processed Y yield file already exists. Overwrite? (y/n)\n')
+            if choice.lower() == 'y':
+                save_processed_dataframes(Y, ZA_sorted, name='Y', func=func, loc=loc)
+            elif choice.lower() == 'n':
+                break
+            else:
+                print('Not a valid choice. Pick "y" or "n".')
+                continue
+    else:
+        save_processed_dataframes(Y, ZA_sorted, func=func, name='Y', loc=loc)
+
+    if not os.path.exists(f'{loc}/processed/interp'):
+        os.makedirs(f'{loc}/processed/interp')
+    #while True:
+    #    choice: input('Processed models file already exists. Overwrite? (y/n)\n')
+    #    if choice.lower() == 'y':
+    #        save_processed_dataframes(models, ZA_sorted, name='models', func=func, loc=loc)
+    #    elif choice.lower() == 'n':
+    #        break
+    #    else:
+    #        print('Not a valid choice. Pick "y" or "n".')
+    #        continue     
+    #else:
+    save_processed_dataframes(models, ZA_sorted, name='models', func=func, loc=loc)
+    return None
+
+def read_processed_yields(ZA_sorted, loc='', func=None):
+    X, Y, models = [], [], []
+    return X, Y, models
+
+#X_lc18, Y_lc18, models_lc18 = test_for_ZA_sorted(lc18_test)
+#run_test(X_lc18, Y_lc18, models_lc18, lc18_test)
+#save_processed_yields(X_lc18, Y_lc18, models_lc18, func=lc18_test, loc='input/yields/snii/lc18/tab_R')
+#X_k10, Y_k10, models_k10 = test_for_ZA_sorted(k10_test)

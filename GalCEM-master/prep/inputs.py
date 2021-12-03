@@ -12,9 +12,9 @@ class Inputs:
         self.r = 8 # Compute around the solar neighborhood [kpc]
         self.k_SFR = 1
         # For SNIa
-        self.Ml_SNIa = 3 # Lower limit for total binary mass for SNIae [Msun]
+        self.Ml_SNIa = 3./2 # Lower limit for total binary mass for SNIae [Msun]
         self.Mu_SNIa = 12 # Upper limit for total binary mass for SNIae [Msun]
-        self.A = 0.035 # Fraction of white dwarfs that underwent a SNIa
+        self.A = 0.06 # Fraction of white dwarfs that underwent a SNIa
 
         self.Ml_LIMs = 0.6 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Mu_LIMs = 9 # [Msun] !!!!!!! temporary. Import from yield tables

@@ -70,18 +70,21 @@ Xi_v = IN.epsilon * np.ones((len(ZA_sorted), len(time_chosen)))	# Xi
 Z_v = IN.epsilon * np.ones(len(time_chosen)) # Metallicity 
 G_v = IN.epsilon * np.ones(len(time_chosen)) # G 
 S_v = IN.epsilon * np.ones(len(time_chosen)) # S = 1 - G 
+Rate_SNII = IN.epsilon * np.ones(len(time_chosen)) 
+Rate_LIMs = IN.epsilon * np.ones(len(time_chosen)) 
+Rate_SNIa = IN.epsilon * np.ones(len(time_chosen)) 
 
 """ create interpolation tables """
-def construct_Xi_Massive(i):
-    return isotope_class.construct_yield_Massive(yields_Massive_class, ZA_sorted, i)
-Xi_list = []
-for i in range(len(ZA_sorted)):
-    #Xi_list.append(interp.RBFInterpolation(construct_Xi_Massive(i)))
-    Xi_list.append(construct_Xi_Massive(i))
-Xi_Massive = Xi_list #np.array(Xi_list)
+#def construct_Xi_Massive(i):
+#    return isotope_class.construct_yield_Massive(yields_Massive_class, ZA_sorted, i)
+#Xi_list = []
+#for i in range(len(ZA_sorted)):
+#    #Xi_list.append(interp.RBFInterpolation(construct_Xi_Massive(i)))
+#    Xi_list.append(construct_Xi_Massive(i))
+#Xi_Massive = Xi_list #np.array(Xi_list)
 
-def construct_Xi_LIMs(i):
-    return isotope_class.construct_yield_LIMs(yields_LIMs_class, ZA_sorted, i)
+#def construct_Xi_LIMs(i):
+#    return isotope_class.construct_yield_LIMs(yields_LIMs_class, ZA_sorted, i)
 #Xi_list = []
 #for i in range(len(ZA_sorted)):
 #    Xi_list.append(construct_Xi_LIMs(i))
@@ -90,5 +93,5 @@ def construct_Xi_LIMs(i):
 #def construct_Xi_SNIa(i):
 #    return isotope_class.construct_yield_SNIa(yields_SNIa_class, ZA_sorted, i)
 
-def interpolation(Xi,Y):
-    return interp.RBFInterpolator(Xi,Y)
+#def interpolation(Xi,Y):
+#    return interp.RBFInterpolator(Xi,Y)
