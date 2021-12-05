@@ -53,6 +53,7 @@ ZA_all = np.vstack((ZA_LIMs, ZA_SNIa, ZA_Massive))
 """ Initialize Global tracked quantities """ 
 Infall_rate = infall(time_chosen)
 ZA_sorted = c_class.ZA_sorted(ZA_all) # [Z, A] VERY IMPORTANT! 321 isotopes with yields_SNIa_option = 'km20', 192 isotopes for 'i99' 
+ZA_sorted = ZA_sorted[1:,:]
 ZA_Symb_list = IN.periodic['elemSymb'][ZA_sorted[:,0]] # name of elements for all isotopes
 asplund3_percent = c_class.abund_percentage(c_class.asplund3_pd, ZA_sorted)
 #ZA_Symb_iso_list = np.asarray([ str(A) for A in IN.periodic['elemA'][ZA_sorted]])  # name of elements for all isotopes
