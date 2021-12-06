@@ -24,7 +24,7 @@ def SFR_tn(timestep_n):
 	'''
 	return SFR_class.SFR(Mgas=Mgas_v, Mtot=Mtot, timestep_n=timestep_n) # Function: SFR(Mgas)
 
-def pick_yields(channel_switch, ZA_Symb, n, stellar_mass_idx=None, metallicity_idx=None, vel_idx=IN.LC18_vel_idx):
+def _pick_yields(channel_switch, ZA_Symb, n, stellar_mass_idx=None, metallicity_idx=None, vel_idx=IN.LC18_vel_idx):
 	''' !!!!!!! this function must be edited if you import yields from other authors
 	channel_switch	[str] can be 'LIMs', 'Massive', or 'SNIa'
 	ZA_Symb			[str] is the element symbol, e.g. 'Na'
@@ -97,6 +97,7 @@ class Wi:
 		#print('SNIa channel')
 		self.SNIa_birthtime_grid, self.SNIa_lifetime_grid, self.SNIa_mass_grid = (
 				self.Wi_grid_class.grids(IN.Ml_SNIa, IN.Mu_SNIa))
+		self.yield_component_load = None
 		return None
 		
 	def grid_picker(self, channel_switch, grid_type):
@@ -113,7 +114,7 @@ class Wi:
 		SFR_interp = interp.interp1d(time_chosen[:self.age_idx+1], SFR_v[:self.age_idx+1], fill_value='extrapolate')
 		return SFR_interp(birthtime_grid)
 
-	def _Z_component(self, birthtime_grid):
+	def Z_component(self, birthtime_grid):
 		''' Returns the interpolated SFR vector computed at the birthtime grids'''
 		_Z_interp = interp.interp1d(time_chosen[:self.age_idx+1], Z_v[:self.age_idx+1], fill_value='extrapolate')
 		return _Z_interp(birthtime_grid)
@@ -129,43 +130,75 @@ class Wi:
 		if derlog == True:
 			return 0.5	
 				
-	def yield_component(self, channel_switch, ZA_Symb, vel_idx=IN.LC18_vel_idx):
+	def _yield_component(self, channel_switch, ZA_Symb, vel_idx=IN.LC18_vel_idx):
 		Yield_i_birthtime = pick_yields(channel_switch, ZA_Symb, vel_idx=vel_idx)
 		return Yield_i_birthtime
 		
-	def _yield_component(self, channel_switch, i, _Z_comp, mass_grid, vel_idx=IN.LC18_vel_idx):
-		#Yield_i_birthtime = pick_yields(channel_switch, ZA_Symb, vel_idx=vel_idx)
+	def yield_component(channel_switch, mass_grid, birthtime_grid, vel_idx=IN.LC18_vel_idx):
+		Z_comp = self.Z_component(birthtime_grid)
+		y = []
 		if channel_switch == 'Massive':
-			Xi = np.array([_Z_comp, vel_idx * np.ones(len(mass_grid)), mass_grid]).T
-			print(f'In yield_component: {i=}')
-			print(f'In yield_component: {Xi.shape=}')
-			return models_lc18[i](Xi)
+			#print(f'{vel_idx = } ')
+			X_sample = np.column_stack([Z_comp, vel_idx * np.ones(len(mass_grid)), mass_grid])
+			X, Y, models = X_lc18, Y_lc18, models_lc18
+		elif channel_switch == 'LIMs':
+			X_sample = np.column_stack([Z_comp, mass_grid])
+			X, Y, models = X_k10, k10, models_k10
 		else:
 			print(f'{channel_switch = } currently not included.')
 			pass
-		#elif channel_switch == 'LIMs':
-		#	Xi = 
-		#	return models_k10(Xi)#(mass_grid)
-		#elif channel_switch == 'SNIa':
-		#	idx = isotope_class.pick_by_Symb(yields_SNIa_class.elemZ, ZA_Symb)
-		#	return yields_SNIa_class.yields[idx]
-		#return Yield_i_birthtime
 
-	def mass_component(self, channel_switch, ZA_Symb, vel_idx=IN.LC18_vel_idx): #
+		for i, model in enumerate(models):
+			if model != None:
+				y.append(model(X_sample)) # !!!!!!! use asynchronicity to speed up the computation
+			else:
+				y.append(0.)
+		return np.array(y)
+
+	def mass_component(self, channel_switch, i, vel_idx=IN.LC18_vel_idx): #
 		''' Portinari+98, page 22, last eq. first column '''
 		mass_grid = self.grid_picker(channel_switch, 'mass')
 		lifetime_grid = self.grid_picker(channel_switch, 'lifetime')
-		IMF_comp = self.IMF_component(mass_grid)
-		return IMF_comp, IMF_comp * self.dMdtauM_component(np.log10(lifetime_grid)) #* self.yield_component(channel_switch, ZA_Symb, vel_idx=vel_idx) 
-	def _mass_component(self, channel_switch, i, _Z_comp, vel_idx=IN.LC18_vel_idx): #
-		''' Portinari+98, page 22, last eq. first column '''
-		mass_grid = self.grid_picker(channel_switch, 'mass')
-		lifetime_grid = self.grid_picker(channel_switch, 'lifetime')	
-		return (self.IMF_component(mass_grid) * self.dMdtauM_component(np.log10(lifetime_grid))
-		 		* self.yield_component(channel_switch, i, _Z_comp, mass_grid, vel_idx=vel_idx))
+		birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
+		IMF_comp = self.IMF_component(mass_grid) # overwrite continuously in __init__
+		#print(f'{vel_idx = } ')
+		return IMF_comp, IMF_comp * self.dMdtauM_component(np.log10(lifetime_grid)) #* self.yield_component(channel_switch, mass_grid, birthtime_grid, vel_idx=vel_idx) 
 
-	#def compute_iso(self, channel_switch, ZA_Symb, vel_idx=IN.LC18_vel_idx): #
-	def compute(self, channel_switch, ZA_Symb, vel_idx=IN.LC18_vel_idx): #
+	def compute(self, channel_switch, i, vel_idx=IN.LC18_vel_idx): #
+		'''Computes, using the Simpson rule, the integral Wi 
+		elements of eq. (34) Portinari+98 -- for stars that die at tn, for every i'''		
+		birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
+		SFR_comp = self.SFR_component(birthtime_grid)
+		SFR_comp[SFR_comp<0] = 0.
+		IMF_comp, mass_comp = self.mass_component(channel_switch, i, vel_idx=vel_idx)# 
+		integrand = np.multiply(SFR_comp, mass_comp)
+		#print(f"For compute, {birthtime_grid=}")
+		#print(f"For compute, {SFR_comp=}")
+		#print(f"For compute, {mass_comp=}")
+		#print(f"For compute, {IMF_comp=}")
+		#print(f"For compute, {integrand=}")
+		#integrand_rateSNII = np.multiply(SFR_comp, IMF_comp)
+		if len(self.grid_picker('Massive', 'birthtime')) > 0.:
+			rateSNII = self.compute_rate(channel_switch='Massive')
+		else:
+			rateSNII = IN.epsilon
+		if len(self.grid_picker('LIMs', 'birthtime')) > 0.:
+			rateLIMs = self.compute_rate(channel_switch='LIMs')
+		else:
+			rateLIMs = IN.epsilon
+		if len(self.grid_picker('SNIa', 'birthtime')) > 0.:
+			R_SNIa = self.compute_rateSNIa()
+		else:
+			R_SNIa = IN.epsilon
+		#print(f"For compute, {R_SNIa=}")
+		#if channel_switch == 'SNIa':
+		# 	integrand_SNIa, M1_min, M1_max = SNIa_FM1(self, M1)
+		#	return (1 - IN.A) * integr.simps(integrand) + IN.A * integr.simps(integrand_SNIa)
+		#else:
+		return integr.simps(integrand, x=birthtime_grid), rateSNII, R_SNIa, rateLIMs
+
+ 
+	def _compute(self, channel_switch, ZA_Symb, vel_idx=IN.LC18_vel_idx): #
 		'''Computes, using the Simpson rule, the integral Wi 
 		elements of eq. (34) Portinari+98 -- for stars that die at tn, for every i'''		
 		birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
@@ -201,7 +234,7 @@ class Wi:
 	#def compute():
 	#	''' Computes the vector to be added to Mass_i_v[:, tn] '''
 	#	return None
-	def _compute(self, channel_switch, vel_idx=IN.LC18_vel_idx):
+	def __compute(self, channel_switch, vel_idx=IN.LC18_vel_idx):
 		''' Computes the vector to be added to Mass_i_v[:, tn] '''	
 		mass_comp, integrand, integral = [], [], []
 		birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
@@ -283,7 +316,7 @@ class Evolution:
 	'''
 	Main GCE one-zone class 
 	'''
-	def f_RK4_Mi_Wi(self, t_n, y_n, n):
+	def f_RK4_Mi_Wi(self, t_n, y_n, n):#, i):
 		'''
 		Explicit general diff eq GCE function
 		INPUT
@@ -299,9 +332,8 @@ class Evolution:
 		if n <= 0:
 			return Infall_rate[n] * Xi_inf  - np.multiply(SFR_tn(n), Xi_v[:,n])
 		else:
-			#print(f"For compute, {time_chosen[:n]=}")
-			#print(f"For compute, {SFR_v[:n]=}")
-			Wi_val, rateSNII, rateSNIa, rateLIMs = Wi_class.compute("Massive", 'H')
+			#Wi_val, rateSNII, rateSNIa, rateLIMs = Wi_class.compute("Massive", i)
+			Wi_val, rateSNII, rateSNIa, rateLIMs = Wi_class._compute("Massive", 'H')
 			Rate_SNII[n] = rateSNII
 			Rate_SNIa[n] = rateSNIa
 			Rate_LIMs[n] = rateLIMs
@@ -337,6 +369,8 @@ class Evolution:
 			print(f'{n = }')
 			self.no_integral(n)		
 			Xi_v[:, n] = np.divide(Mass_i_v[:,n], Mgas_v[n]) 
+			#for i, pair in ZA_sorted:
+				#Mass_i_v[i, n+1] = aux.RK4(self.f_RK4_Mi_Wi, time_chosen[n], Mass_i_v[i,n], n, i, IN.nTimeStep)
 			Mass_i_v[:, n+1] = aux.RK4(self.f_RK4_Mi_Wi, time_chosen[n], Mass_i_v[:,n], n, IN.nTimeStep)
 			Z_v[n] = np.divide(np.sum(Mass_i_v[:,n]), Mgas_v[n])
 			#G_v[n] = np.divide(Mgas_v[n], Mtot[n])
