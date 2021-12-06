@@ -8,6 +8,7 @@ import prep.inputs as INp
 IN = INp.Inputs()
 import classes.morphology as morph
 import classes.yields as Y
+import test.yield_interpolation_test as yt 
 
 
 """ Setup """
@@ -75,7 +76,9 @@ Rate_SNII = IN.epsilon * np.ones(len(time_chosen))
 Rate_LIMs = IN.epsilon * np.ones(len(time_chosen)) 
 Rate_SNIa = IN.epsilon * np.ones(len(time_chosen)) 
 
-""" create interpolation tables """
+""" load yield tables """
+X_lc18, Y_lc18, models_lc18 = yt.load_processed_yields(func_name='lc18', loc='input/yields/snii/lc18/tab_R')
+X_k10, Y_k10, models_k10 = yt.load_processed_yields(func_name='k10', loc='input/yields/lims/k10')
 #def construct_Xi_Massive(i):
 #    return isotope_class.construct_yield_Massive(yields_Massive_class, ZA_sorted, i)
 #Xi_list = []

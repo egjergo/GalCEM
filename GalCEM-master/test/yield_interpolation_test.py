@@ -92,13 +92,15 @@ def lc18_test(i_elemZ, i_elemA, loc='input/yields/snii/lc18/tab_R', filename='lc
     df = df.apply(pd.to_numeric)
     X = df[id_vars+[var_name]]#.values
     Y = df[value_name]#.values
-    print(f'X header: {id_vars+[var_name]}')
-    print(f'Y header: {[value_name]}')
+    #print(f'X header: {id_vars+[var_name]}')
+    #print(f'Y header: {[value_name]}')
     return X, Y
 
 def k10_test(i_elemZ, i_elemA, loc='input/yields/lims/k10', filename='k10_pandas.csv',
               id_vars=['Z_ini'], var_name='mass_ini', value_name='yields'):
-    df = pd.read_csv(f'{loc}/{filename}', comment='#')
+    df_tot = pd.read_csv(f'{loc}/{filename}', comment='#')
+    df_al26 = df_tot.loc[df_tot["elemSymb"].astype(str) == 'al*6 ']
+    df = pd.concat([df_tot, df_al26]).drop_duplicates(keep=False)
     df = df.loc[(df['elemZ'] == i_elemZ) & (df['elemA'] == i_elemA)]
     X = df[id_vars+[var_name]]#.values
     Y = df[value_name]#.values
@@ -120,68 +122,42 @@ def test_for_ZA_sorted(func):
             print('X is empty')
     return X, Y, models
 
-def save_processed_dataframes(X_or_Y, ZA_sorted, name='X or Y', func=lc18_test, loc='input/yields/snii/lc18/tab_R'):
-    if name != 'models':
-        with open(f'{loc}/processed/{name}_{func.__name__}.csv', 'a') as f:
-            for i, val in enumerate(ZA_sorted):
-                f.write(f'\n\tZ = {val[0]}, \tA = {val[1]}\n')
-                X_or_Y[i].to_csv(f, sep='\t') 
-    elif name != 'models':
-        for i, val in enumerate(ZA_sorted):
-            with open(f'{loc}/processed/interp/{name}_Z{val[0]}A{val[1]}_{func.__name__}.pkl', 'wb') as f:
-                    pickle.dump(X_or_Y[i], f) 
+def save_processed_dataframes(X_or_Y_or_models, ZA_sorted, name='X or Y or models', func_name='lc18', loc='input/yields/snii/lc18/tab_R'):
+    with open(f'{loc}/processed/{name}_{func_name}.pkl', 'wb') as f:
+        pickle.dump(X_or_Y_or_models, f) 
     return None
 
-def save_processed_yields(X, Y, models, func=lc18_test, loc='input/yields/snii/lc18/tab_R', **kwargs):
+def save_processed_yields(X, Y, models, func_name='lc18', loc='input/yields/snii/lc18/tab_R'):
     if not os.path.exists(f'{loc}/processed'):
         os.makedirs(f'{loc}/processed')
 
-    if os.path.exists(f'{loc}/processed/X_{func.__name__}.csv'):
-        while True:
-            choice = input('Processed X yield file already exists. Overwrite? (y/n)\n')
-            if choice.lower() == 'y':
-                save_processed_dataframes(X, ZA_sorted, name='X', func=func, loc=loc)
-            elif choice.lower() == 'n':
-                break
-            else:
-                print('Not a valid choice. Pick "y" or "n".')
-                continue
-    else:
-        save_processed_dataframes(X, ZA_sorted, func=func, name='X', loc=loc)
- 
-    if os.path.exists(f'{loc}/processed/Y_{func.__name__}.csv'):
-        while True:
-            choice = input('Processed Y yield file already exists. Overwrite? (y/n)\n')
-            if choice.lower() == 'y':
-                save_processed_dataframes(Y, ZA_sorted, name='Y', func=func, loc=loc)
-            elif choice.lower() == 'n':
-                break
-            else:
-                print('Not a valid choice. Pick "y" or "n".')
-                continue
-    else:
-        save_processed_dataframes(Y, ZA_sorted, func=func, name='Y', loc=loc)
-
-    if not os.path.exists(f'{loc}/processed/interp'):
-        os.makedirs(f'{loc}/processed/interp')
-    #while True:
-    #    choice: input('Processed models file already exists. Overwrite? (y/n)\n')
-    #    if choice.lower() == 'y':
-    #        save_processed_dataframes(models, ZA_sorted, name='models', func=func, loc=loc)
-    #    elif choice.lower() == 'n':
-    #        break
-    #    else:
-    #        print('Not a valid choice. Pick "y" or "n".')
-    #        continue     
-    #else:
-    save_processed_dataframes(models, ZA_sorted, name='models', func=func, loc=loc)
+    df_list = ['X', 'Y', 'models']
+    df_dict = {'X': X, 'Y': Y, 'models': models}
+    for df_l in df_list:
+        if os.path.exists(f'{loc}/processed/{df_l}_{func_name}.pkl'):
+            while True:
+                choice = input('Processed X yield file already exists. Overwrite? (y/n)\n')
+                if choice.lower() == 'y':
+                    save_processed_dataframes(df_dict[df_l], ZA_sorted, name=df_l, func_name=func_name, loc=loc)
+                elif choice.lower() == 'n':
+                    break
+                else:
+                    print('Not a valid choice. Pick "y" or "n".')
+                    continue
+        else:
+            save_processed_dataframes(df_dict[df_l], ZA_sorted, name=df_l, func_name=func_name, loc=loc)
     return None
 
-def read_processed_yields(ZA_sorted, loc='', func=None):
-    X, Y, models = [], [], []
-    return X, Y, models
+def load_processed_yields(func_name='lc18', loc='input/yields/snii/lc18/tab_R'):
+    df_list = ['X', 'Y', 'models']
+    df_dict = {}
+    for df_l in df_list:
+        with open(f'{loc}/processed/{df_l}_{func_name}.pkl', 'rb') as pickle_file:
+            df_dict[df_l] = pickle.load(pickle_file)
+    return df_dict[df_list[0]], df_dict[df_list[1]], df_dict[df_list[2]]
 
 #X_lc18, Y_lc18, models_lc18 = test_for_ZA_sorted(lc18_test)
-#run_test(X_lc18, Y_lc18, models_lc18, lc18_test)
-#save_processed_yields(X_lc18, Y_lc18, models_lc18, func=lc18_test, loc='input/yields/snii/lc18/tab_R')
+##run_test(X_lc18, Y_lc18, models_lc18, lc18_test)
+#save_processed_yields(X_lc18, Y_lc18, models_lc18, func_name='lc18', loc='input/yields/snii/lc18/tab_R')
 #X_k10, Y_k10, models_k10 = test_for_ZA_sorted(k10_test)
+#save_processed_yields(X_k10, Y_k10, models_k10, func_name='k10', loc='input/yields/lims/k10')

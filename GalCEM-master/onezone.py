@@ -13,10 +13,7 @@ import classes.morphology as morph
 import classes.yields as Y
 import plots as plts
 from prep.setup import *
-import test.yield_interpolation_test as yt 
 
-X_lc18, Y_lc18, models_lc18 = yt.test_for_ZA_sorted(yt.lc18_test)
-#X_k10, Y_k10, models_k10 = yt.test_for_ZA_sorted(yt.k10_test)
 ''' GCE Classes and Functions'''
 
 def SFR_tn(timestep_n):
