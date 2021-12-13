@@ -94,3 +94,11 @@ def ZA_sorted_plot(cmap_name='magma_r', cbins=10): # angle = 2 * np.pi / np.arct
 	plt.show(block=False)
 	plt.savefig('./figures/test/tracked_elements.pdf')
 	return None
+
+
+def abundances():
+	fig, ax = plt.subplots(figsize =(11,5))
+	plt.tight_layout()
+	plt.show(block=False)
+	plt.savefig('./figures/test/elem_abundances.pdf')
+	return None

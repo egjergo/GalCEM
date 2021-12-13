@@ -27,8 +27,8 @@ IN = INp.Inputs()
 
 class Auxiliary:
 	def varname(self, var, dir=locals()):
-  		return [ key for key, val in dir.items() if id( val) == id( var)][0]
-  
+		return [ key for key, val in dir.items() if id( val) == id( var)][0]
+
 	def is_monotonic(self, arr):
 		print (f"for  {varname(arr)}") 
 		if all(arr[i] <= arr[i + 1] for i in range(len(arr) - 1)): 
@@ -237,20 +237,20 @@ class Infall:
 		return None
 	
 	def aInf(self):
-	    """
+		"""
 	    Computes the infall normalization constant
 	    
 	    USED IN:
 	    	inf() and SFR()
-	    """
-	    return np.divide(IN.M_inf[self.morphology], scipy.integrate.quad(self.infall_func(),
-						 self.time[0], IN.age_Galaxy)[0])
+		"""
+		return np.divide(IN.M_inf[self.morphology], scipy.integrate.quad(self.infall_func(),
+		                     self.time[0], IN.age_Galaxy)[0])
 
 	def inf(self):
-	    '''
+		'''
 	    Returns the infall array
 	    '''
-	    return lambda t: self.aInf() * self.infall_func()(t)
+		return lambda t: self.aInf() * self.infall_func()(t)
 	
 		
 

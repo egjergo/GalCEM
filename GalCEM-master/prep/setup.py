@@ -8,6 +8,7 @@ import prep.inputs as INp
 IN = INp.Inputs()
 import classes.morphology as morph
 import classes.yields as Y
+import test.yield_interpolation_test as yt 
 
 
 """ Setup """
@@ -53,6 +54,7 @@ ZA_all = np.vstack((ZA_LIMs, ZA_SNIa, ZA_Massive))
 """ Initialize Global tracked quantities """ 
 Infall_rate = infall(time_chosen)
 ZA_sorted = c_class.ZA_sorted(ZA_all) # [Z, A] VERY IMPORTANT! 321 isotopes with yields_SNIa_option = 'km20', 192 isotopes for 'i99' 
+ZA_sorted = ZA_sorted[1:,:]
 ZA_Symb_list = IN.periodic['elemSymb'][ZA_sorted[:,0]] # name of elements for all isotopes
 asplund3_percent = c_class.abund_percentage(c_class.asplund3_pd, ZA_sorted)
 #ZA_Symb_iso_list = np.asarray([ str(A) for A in IN.periodic['elemA'][ZA_sorted]])  # name of elements for all isotopes
@@ -74,7 +76,9 @@ Rate_SNII = IN.epsilon * np.ones(len(time_chosen))
 Rate_LIMs = IN.epsilon * np.ones(len(time_chosen)) 
 Rate_SNIa = IN.epsilon * np.ones(len(time_chosen)) 
 
-""" create interpolation tables """
+""" load yield tables """
+X_lc18, Y_lc18, models_lc18 = yt.load_processed_yields(func_name='lc18', loc='input/yields/snii/lc18/tab_R')
+X_k10, Y_k10, models_k10 = yt.load_processed_yields(func_name='k10', loc='input/yields/lims/k10')
 #def construct_Xi_Massive(i):
 #    return isotope_class.construct_yield_Massive(yields_Massive_class, ZA_sorted, i)
 #Xi_list = []
