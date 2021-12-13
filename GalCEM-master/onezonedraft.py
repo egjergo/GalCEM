@@ -153,7 +153,7 @@ class Wi:
 				y.append(model(X_sample)) # !!!!!!! use asynchronicity to speed up the computation
 			else:
 				y.append(0.)
-		return y # len consistent with ZA_sorted
+		return np.array(y) # len consistent with ZA_sorted
 
 	def mass_component(self, channel_switch, mass_grid, lifetime_grid): #
 		''' Portinari+98, page 22, last eq. first column '''
@@ -220,7 +220,7 @@ class Wi:
 		IMF_comp, mass_comp = self.mass_component(channel_switch, mass_grid, lifetime_grid)# 
 		#integrand = np.prod(np.vstack[SFR_comp, mass_comp, self.yield_load[i]])
 		integrand = np.prod(np.vstack([SFR_comp, mass_comp]), axis=0)
-		#return integr.simps(integrand, x=birthtime_grid)
+		#return integr.simps(integrand, x=birthtime_grid), rateSNII, R_SNIa, rateLIMs
 		return [integrand, birthtime_grid]
 
 
@@ -231,11 +231,11 @@ class Evolution:
     def __init__(self):
         return None
     	
-    def f_RK4(self, t_n, y_n, n, i=None):
+    def f_RK4(self, t_n, y_n, n):
         ''' Explicit general diff eq GCE function '''
         return Infall_rate[n] - SFR_tn(n)
 
-    def f_RK4_Mi_Wi(self, t_n, y_n, n):
+    def f_RK4_Mi_Wi(self, t_n, y_n, Wi_val_sum, n):#, i):
         '''
         Explicit general diff eq GCE function
         INPUT
@@ -246,47 +246,14 @@ class Evolution:
         Infall rate: [Msun/Gyr]
         SFR: [Msun/Gyr]
         '''
-        Wi_class = Wi(n)
         if n <= 0:
             val = Infall_rate[n] * Xi_inf  - np.multiply(SFR_tn(n), Xi_v[:,n])
         else:
-            rateSNII, rateLIMs, rateSNIa = Wi_class.compute_rates()
-            Wi_comp = Wi_class.compute("Massive") # Wi_comp = [integrand, birthrate]
-            Wi_val = []
-            for i, yields in enumerate(Wi_class.yield_load):
-                Wi_val.append(integr.simps(Wi_comp[0] * Wi_class.yield_load[i], x=Wi_comp[1]))
-            Rate_SNII[n] = rateSNII
-            Rate_SNIa[n] = rateSNIa
-            Rate_LIMs[n] = rateLIMs
-            val = Infall_rate[n] * Xi_inf  - np.multiply(SFR_tn(n), Xi_v[:,n]) + np.sum(Wi_val, axis=0)
+            val = Infall_rate[n] * Xi_inf  - np.multiply(SFR_tn(n), Xi_v[:,n]) + Wi_val_sum
             val[val<0] = 0. # !!!!!!! if negative set to zero
         return val
 	
-    def f_RK4_Mi_Wi_iso(self, t_n, y_n, n, **kwargs): #Wi_comp,
-        '''
-        Explicit general diff eq GCE function
-        INPUT
-        t_n		time_chosen[n]
-        y_n		dependent variable at n
-        n		index of the timestep
-        Functions:
-        Infall rate: [Msun/Gyr]
-        SFR: [Msun/Gyr]
-        '''
-        #Wi_class = Wi(n) #how can I pass this from evolve()? used in aux.RK4 
-        if n <= 0:
-            val = Infall_rate[n] * Xi_inf  - np.multiply(SFR_tn(n), Xi_v[:,n])
-        else:
-            Wi_comp = kwargs['Wi_comp']
-            Wi_class = kwargs['Wi_class']
-            i = kwargs['i']
-            Wi_val = integr.simps(Wi_comp[0] * Wi_class.yield_load[i], x=Wi_comp[1])
-            val = Infall_rate[n] * Xi_inf[i]  - SFR_v[n] * Xi_v[i,n] + Wi_val #+ np.sum(Wi_val, axis=0)
-            if val < 0.:
-                val = 0.
-        return val
-	
-    def phys_integral(self, n):
+    def no_integral(self, n):
         SFR_v[n] = SFR_tn(n)
         Mstar_v[n+1] = Mstar_v[n] + SFR_v[n] * IN.nTimeStep
         Mstar_test[n+1] = Mtot[n-1] - Mgas_v[n]
@@ -295,19 +262,21 @@ class Evolution:
     def evolve(self):
         for n in range(len(time_chosen[:idx_age_Galaxy])):
             print(f'{n = }')
-            self.phys_integral(n)		
-            Xi_v[:, n] = np.divide(Mass_i_v[:,n], Mgas_v[n])
-            if n > 0.: 
-                Wi_class = Wi(n)
-                rateSNII, rateLIMs, rateSNIa = Wi_class.compute_rates()
-                Rate_SNII[n] = rateSNII
-                Rate_SNIa[n] = rateSNIa
-                Rate_LIMs[n] = rateLIMs
-                Wi_comp = Wi_class.compute("Massive") # Wi_comp = [integrand, birthrate]
-                for i, pair in enumerate(ZA_sorted): 
-                	Mass_i_v[i, n+1] = aux.RK4(self.f_RK4_Mi_Wi_iso, time_chosen[n], Mass_i_v[i,n], 
-                                           n, IN.nTimeStep, Wi_class=Wi_class, i=i, Wi_comp=Wi_comp)
-            #Mass_i_v[:, n+1] = aux.RK4(self.f_RK4_Mi_Wi_iso, time_chosen[n], Mass_i_v[:,n], n, IN.nTimeStep)
+            self.no_integral(n)		
+            Xi_v[:, n] = np.divide(Mass_i_v[:,n], Mgas_v[n]) 
+            Wi_class = Wi(n)
+            rateSNII, rateLIMs, rateSNIa = Wi_class.compute_rates()
+            Rate_SNII[n] = rateSNII
+            Rate_SNIa[n] = rateSNIa
+            Rate_LIMs[n] = rateLIMs
+            Wi_comp = Wi_class.compute("Massive") # Wi_comp = [integrand, birthrate]
+            Wi_val = []
+            for i, yields in enumerate(Wi_class.yield_load):
+            	Wi_val.append(integr.simps(Wi_comp[0] * Wi_class.yield_load[i], x=Wi_comp[1]))
+			#for i, pair in ZA_sorted:
+				#Mass_i_v[i, n+1] = aux.RK4(self.f_RK4_Mi_Wi, time_chosen[n], Mass_i_v[i,n], n, i, IN.nTimeStep)
+            Wi_val_sum = np.sum(Wi_val, axis=0)
+            Mass_i_v[:, n+1] = aux.RK4(self.f_RK4_Mi_Wi, time_chosen[n], Mass_i_v[:,n], Wi_val_sum, n, IN.nTimeStep)
             Z_v[n] = np.divide(np.sum(Mass_i_v[:,n]), Mgas_v[n])
         Xi_v[:,-1] = np.divide(Mass_i_v[:,-1], Mgas_v[-1]) 
         return None
@@ -326,7 +295,7 @@ def main():
 	tic.append(time.process_time())
 	Evolution_class = Evolution()
 	Evolution_class.evolve()
-	plts.phys_integral_plot()
+	plts.no_integral_plot()
 	#Z_v = np.divide(np.sum(Mass_i_v[elemZ_for_metallicity:,:]), Mgas_v)
 	G_v = np.divide(Mgas_v, Mtot)
 	S_v = 1 - G_v
