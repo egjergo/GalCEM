@@ -71,6 +71,7 @@ def ZA_sorted_plot(cmap_name='magma_r', cbins=10): # angle = 2 * np.pi / np.arct
 	binning = np.digitize(z, np.linspace(0,9.*100/cbins,num=cbins-1))
 	percent_colors = [cmap_.colors[c] for c in binning]
 	fig, ax = plt.subplots(figsize =(11,5))
+	print(f"{type(ax)=}")
 	ax.grid(True, which='major', linestyle='--', linewidth=0.5, color='purple', alpha=0.5)
 	ax.grid(True, which='minor', linestyle=':', linewidth=0.5, color='purple', alpha=0.5)
 	ax.set_axisbelow(True)
@@ -96,9 +97,35 @@ def ZA_sorted_plot(cmap_name='magma_r', cbins=10): # angle = 2 * np.pi / np.arct
 	return None
 
 
-def abundances():
-	fig, ax = plt.subplots(figsize =(11,5))
-	plt.tight_layout()
-	plt.show(block=False)
-	plt.savefig('./figures/test/elem_abundances.pdf')
-	return None
+def abundances(figsiz = (40,20)):
+    Mass_i = np.loadtxt('./output/Mass_i.dat')
+    Masses = np.log10(Mass_i[:,2:])
+    phys = np.loadtxt('./output/phys.dat')
+    timex = phys[:,0]
+    Z = ZA_sorted[:,0]
+    A = ZA_sorted[:,1]
+    ncol = aux.find_nearest(np.power(np.arange(20),2), len(Z))
+    if len(ZA_sorted) > ncol:
+        nrow = ncol
+    else:
+        nrow = ncol + 1
+    print(f'{ncol=}, {type(ncol)=}')
+    print(f'{nrow=}, {type(nrow)=}')
+    fig, axs = plt.subplots(nrow, ncol, figsize =figsiz)#, sharex=True)
+    print(f"{type(axs)=}")
+    print(f"{len(axs)=}")
+    for i, ax in enumerate(axs.flat):
+        if i < len(Z):
+            print(f"{i=}")
+            print(f"{type(ax)=}")
+            ax.plot(timex, Masses[i])
+            ax.annotate(f"[{Z[i] = }, {A[i] = }]", xy=(0.05, 0.95), xycoords='axes fraction')
+            ax.set_xticklabels([])
+            ax.set_yticklabels([])
+            ax.set_ylim(-3.5, 3.5)
+            ax.set_xlim(0,13.8)
+    plt.tight_layout(rect = [0, 0, 1, .95])
+    plt.subplots_adjust(wspace=0., hspace=0.)
+    plt.show(block=False)
+    plt.savefig('./figures/test/elem_abundances.pdf')
+    return None

@@ -92,6 +92,7 @@ def lc18_test(i_elemZ, i_elemA, loc='input/yields/snii/lc18/tab_R', filename='lc
     df = df.apply(pd.to_numeric)
     X = df[id_vars+[var_name]]#.values
     Y = df[value_name]#.values
+    Y /= df['mass_ini']
     #print(f'X header: {id_vars+[var_name]}')
     #print(f'Y header: {[value_name]}')
     return X, Y

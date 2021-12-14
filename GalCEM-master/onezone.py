@@ -139,6 +139,7 @@ class Wi:
 		y = []
 		if channel_switch == 'Massive':
 			#print(f'{vel_idx = } ')
+			#print(f'{mass_grid=}')
 			X_sample = np.column_stack([Z_comp, vel_idx * np.ones(len_X), mass_grid])
 			X, Y, models = X_lc18, Y_lc18, models_lc18
 		elif channel_switch == 'LIMs':
@@ -153,6 +154,7 @@ class Wi:
 				y.append(model(X_sample)) # !!!!!!! use asynchronicity to speed up the computation
 			else:
 				y.append(0.)
+			#print(f'{y=}')
 		return y # len consistent with ZA_sorted
 
 	def mass_component(self, channel_switch, mass_grid, lifetime_grid): #
@@ -274,15 +276,53 @@ class Evolution:
         SFR: [Msun/Gyr]
         '''
         #Wi_class = Wi(n) #how can I pass this from evolve()? used in aux.RK4 
+        Wi_comp = kwargs['Wi_comp']
+        Wi_class = kwargs['Wi_class']
+        i = kwargs['i']
         if n <= 0:
-            val = Infall_rate[n] * Xi_inf  - np.multiply(SFR_tn(n), Xi_v[:,n])
+            val = Infall_rate[n] * Xi_inf[i]  - np.multiply(SFR_v[n], Xi_v[i,n])
         else:
-            Wi_comp = kwargs['Wi_comp']
-            Wi_class = kwargs['Wi_class']
-            i = kwargs['i']
             Wi_val = integr.simps(Wi_comp[0] * Wi_class.yield_load[i], x=Wi_comp[1])
-            val = Infall_rate[n] * Xi_inf[i]  - SFR_v[n] * Xi_v[i,n] + Wi_val #+ np.sum(Wi_val, axis=0)
+            infall_comp = Infall_rate[n] * Xi_inf[i]
+            sfr_comp = SFR_v[n] * Xi_v[i,n]
+            val = infall_comp  - sfr_comp + Wi_val #+ np.sum(Wi_val, axis=0)
+            if i == 19:
+                print(f'{n=}, {i=}, {infall_comp=}, {sfr_comp=}, {Wi_val=}')
+                print(f'{val=}')
             if val < 0.:
+                #print('val negative')
+                val = 0.
+        return val
+	
+    def _f_RK4_Mi_Wi_iso(self, t_n, y_n, n, **kwargs): #Wi_comp,
+        '''
+        Explicit general diff eq GCE function
+        INPUT
+        t_n		time_chosen[n]
+        y_n		dependent variable at n
+        n		index of the timestep
+        Functions:
+        Infall rate: [Msun/Gyr]
+        SFR: [Msun/Gyr]
+        '''
+        #Wi_class = Wi(n) #how can I pass this from evolve()? used in aux.RK4 
+        Wi_comp = kwargs['Wi_comp']
+        Wi_class = kwargs['Wi_class']
+        i = kwargs['i']
+        if n == 0:
+            val = Infall_rate[n] * Xi_inf[i] 
+        elif n==1:
+            val = Infall_rate[n-1] * Xi_inf[i]  - np.multiply(SFR_v[n], Xi_v[i,n])
+        elif n>=2:
+            Wi_val = integr.simps(Wi_comp[0] * Wi_class.yield_load[i], x=Wi_comp[1])
+            infall_comp = Infall_rate[n-2] * Xi_inf[i]
+            sfr_comp = SFR_v[n-1] * Xi_v[i,n-1]
+            val = infall_comp  - sfr_comp + Wi_val #+ np.sum(Wi_val, axis=0)
+            if i == 19:
+                print(f'{n=}, {i=}, {infall_comp=}, {sfr_comp=}, {Wi_val=}')
+                print(f'{val=}')
+            if val < 0.:
+                #print('val negative')
                 val = 0.
         return val
 	
@@ -305,9 +345,7 @@ class Evolution:
                 Rate_LIMs[n] = rateLIMs
                 Wi_comp = Wi_class.compute("Massive") # Wi_comp = [integrand, birthrate]
                 for i, pair in enumerate(ZA_sorted): 
-                	Mass_i_v[i, n+1] = aux.RK4(self.f_RK4_Mi_Wi_iso, time_chosen[n], Mass_i_v[i,n], 
-                                           n, IN.nTimeStep, Wi_class=Wi_class, i=i, Wi_comp=Wi_comp)
-            #Mass_i_v[:, n+1] = aux.RK4(self.f_RK4_Mi_Wi_iso, time_chosen[n], Mass_i_v[:,n], n, IN.nTimeStep)
+                    Mass_i_v[i, n+1] = aux.RK4(self.f_RK4_Mi_Wi_iso, time_chosen[n], Mass_i_v[i,n], n, IN.nTimeStep, Wi_class=Wi_class, i=i, Wi_comp=Wi_comp)
             Z_v[n] = np.divide(np.sum(Mass_i_v[:,n]), Mgas_v[n])
         Xi_v[:,-1] = np.divide(Mass_i_v[:,-1], Mgas_v[-1]) 
         return None
