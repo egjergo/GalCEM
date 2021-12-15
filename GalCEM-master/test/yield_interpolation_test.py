@@ -109,6 +109,15 @@ def k10_test(i_elemZ, i_elemA, loc='input/yields/lims/k10', filename='k10_pandas
     print(f'Y header: {[value_name]}')
     return X, Y
 
+def i99_test(i_elemZ, i_elemA, loc='input/yields/snia/i99', filename='table4.dat', value_name='CDD1'):
+    df = pd.read_csv(f'{loc}/{filename}', comment='#', sep='\t')
+    select = (df['elemZ'] == i_elemZ) & (df['elemA'] == i_elemA)
+    df_pick = df.loc[select]
+    if df_pick[value_name].empty:
+        return 0. 
+    else:
+        return df_pick[value_name].values[0]
+
 def test_for_ZA_sorted(func):
     X, Y, models = [], [], []
     for i, val in enumerate(ZA_sorted):
@@ -122,6 +131,13 @@ def test_for_ZA_sorted(func):
             models.append(None)
             print('X is empty')
     return X, Y, models
+
+def test_for_ZA_sorted_nomodel(func=i99_test):
+    '''For yields with no X dependence e.g. i99_test'''
+    yields = np.zeros(len(ZA_sorted))
+    for i, val in enumerate(ZA_sorted):
+        yields[i] = func(val[0], val[1])
+    return yields
 
 def save_processed_dataframes(X_or_Y_or_models, ZA_sorted, name='X or Y or models', func_name='lc18', loc='input/yields/snii/lc18/tab_R'):
     with open(f'{loc}/processed/{name}_{func_name}.pkl', 'wb') as f:

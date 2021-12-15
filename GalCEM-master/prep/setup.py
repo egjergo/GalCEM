@@ -55,9 +55,9 @@ ZA_all = np.vstack((ZA_LIMs, ZA_SNIa, ZA_Massive))
 Infall_rate = infall(time_chosen)
 ZA_sorted = c_class.ZA_sorted(ZA_all) # [Z, A] VERY IMPORTANT! 321 isotopes with yields_SNIa_option = 'km20', 192 isotopes for 'i99' 
 ZA_sorted = ZA_sorted[1:,:]
-ZA_Symb_list = IN.periodic['elemSymb'][ZA_sorted[:,0]] # name of elements for all isotopes
+ZA_symb_list = IN.periodic['elemSymb'][ZA_sorted[:,0]] # name of elements for all isotopes
 asplund3_percent = c_class.abund_percentage(c_class.asplund3_pd, ZA_sorted)
-#ZA_Symb_iso_list = np.asarray([ str(A) for A in IN.periodic['elemA'][ZA_sorted]])  # name of elements for all isotopes
+#ZA_symb_iso_list = np.asarray([ str(A) for A in IN.periodic['elemA'][ZA_sorted]])  # name of elements for all isotopes
 elemZ_for_metallicity = np.where(ZA_sorted[:,0]>2)[0][0] #  starting idx (int) that excludes H and He for the metallicity selection
 Mtot = np.insert(np.cumsum((Infall_rate[1:] + Infall_rate[:-1]) * IN.nTimeStep / 2), 0, IN.epsilon) # The total baryonic mass (i.e. the infall mass) is computed right away
 #Mtot_quad = [quad(infall, time_chosen[0], i)[0] for i in range(1,len(time_chosen)-1)] # slow loop, deprecate!!!!!!!
@@ -79,23 +79,29 @@ Rate_SNIa = IN.epsilon * np.ones(len(time_chosen))
 """ load yield tables """
 X_lc18, Y_lc18, models_lc18 = yt.load_processed_yields(func_name='lc18', loc='input/yields/snii/lc18/tab_R')
 X_k10, Y_k10, models_k10 = yt.load_processed_yields(func_name='k10', loc='input/yields/lims/k10')
-#def construct_Xi_Massive(i):
-#    return isotope_class.construct_yield_Massive(yields_Massive_class, ZA_sorted, i)
-#Xi_list = []
-#for i in range(len(ZA_sorted)):
-#    #Xi_list.append(interp.RBFInterpolation(construct_Xi_Massive(i)))
-#    Xi_list.append(construct_Xi_Massive(i))
-#Xi_Massive = Xi_list #np.array(Xi_list)
+#yields_SNIa = yt.test_for_ZA_sorted_nomodel()
 
-#def construct_Xi_LIMs(i):
-#    return isotope_class.construct_yield_LIMs(yields_LIMs_class, ZA_sorted, i)
-#Xi_list = []
-#for i in range(len(ZA_sorted)):
-#    Xi_list.append(construct_Xi_LIMs(i))
-#Xi_LIMs = Xi_list #np.array(Xi_list)
-
-#def construct_Xi_SNIa(i):
-#    return isotope_class.construct_yield_SNIa(yields_SNIa_class, ZA_sorted, i)
-
-#def interpolation(Xi,Y):
-#    return interp.RBFInterpolator(Xi,Y)
+def _pick_yields(channel_switch, ZA_Symb, n, stellar_mass_idx=None, metallicity_idx=None, vel_idx=IN.LC18_vel_idx):
+    ''' !!!!!!! this function must be edited if you import yields from other authors
+    channel_switch    [str] can be 'LIMs', 'Massive', or 'SNIa'
+    ZA_Symb            [str] is the element symbol, e.g. 'Na'
+    
+    'LIMs' requires metallicity_idx and stellar mass_idx
+    'Massive' requires metallicity_idx, stellar mass_idx, and vel_idx
+    'SNIa' and 'BBN' require None
+    '''
+    if channel_switch == 'LIMs':
+        if (stellar_mass_idx == None or metallicity_idx == None):
+            raise Exception('You must import the stellar mass and metallicity grids')
+        idx = isotope_class.pick_by_Symb(yields_LIMs_class.elemZ, ZA_Symb)
+        return yields_LIMs_class.yields[metallicity_idx][idx, stellar_mass_idx]
+    elif channel_switch == 'Massive':
+        if (stellar_mass_idx == None or metallicity_idx == None or vel_idx == None):
+            raise Exception('You must import the stellar mass, metallicity, and velocity grids')
+        metallicity_idx = np.digitize(Z_v[n], yields_Massive_class.metallicity_bins)
+        vel_idx = IN.LC18_vel_idx
+        idx = isotope_class.pick_by_Symb(yields_Massive_class.elemZ, ZA_Symb)
+        return idx#yields_Massive_class.yields[metallicity_idx, vel_idx, idx, stellar_mass_idx]
+    elif channel_switch == 'SNIa':
+        idx = isotope_class.pick_by_Symb(yields_SNIa_class.elemZ, ZA_Symb)
+        return yields_SNIa_class.yields[idx]

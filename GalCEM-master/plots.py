@@ -31,6 +31,7 @@ supported_cmap = ['Accent', 'Accent_r', 'Blues', 'Blues_r', 'BrBG', 'BrBG_r', 'B
 
 
 def phys_integral_plot():
+	plt.clf()
 	'''
 	Requires running "phys_integral()" in onezone.py beforehand.
 	'''
@@ -64,6 +65,7 @@ def phys_integral_plot():
 	
 
 def ZA_sorted_plot(cmap_name='magma_r', cbins=10): # angle = 2 * np.pi / np.arctan(0.4) !!!!!!!
+	plt.clf()
 	x = ZA_sorted[:,1]#- ZA_sorted[:,0]
 	y = ZA_sorted[:,0]
 	z = asplund3_percent
@@ -97,7 +99,8 @@ def ZA_sorted_plot(cmap_name='magma_r', cbins=10): # angle = 2 * np.pi / np.arct
 	return None
 
 
-def abundances(figsiz = (40,20)):
+def iso_evolution(figsiz = (40,15)):
+    #plt.clf()
     Mass_i = np.loadtxt('./output/Mass_i.dat')
     Masses = np.log10(Mass_i[:,2:])
     phys = np.loadtxt('./output/phys.dat')
@@ -109,23 +112,83 @@ def abundances(figsiz = (40,20)):
         nrow = ncol
     else:
         nrow = ncol + 1
-    print(f'{ncol=}, {type(ncol)=}')
-    print(f'{nrow=}, {type(nrow)=}')
     fig, axs = plt.subplots(nrow, ncol, figsize =figsiz)#, sharex=True)
-    print(f"{type(axs)=}")
-    print(f"{len(axs)=}")
     for i, ax in enumerate(axs.flat):
         if i < len(Z):
-            print(f"{i=}")
-            print(f"{type(ax)=}")
             ax.plot(timex, Masses[i])
-            ax.annotate(f"[{Z[i] = }, {A[i] = }]", xy=(0.05, 0.95), xycoords='axes fraction')
-            ax.set_xticklabels([])
-            ax.set_yticklabels([])
-            ax.set_ylim(-3.5, 3.5)
+            ax.annotate(f"{ZA_symb_list[i]}({Z[i]},{A[i]})", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=15, alpha=0.7)
+            ax.set_ylim(-7.5, 10.5)
             ax.set_xlim(0,13.8)
-    plt.tight_layout(rect = [0, 0, 1, .95])
+            ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
+            ax.tick_params(width = 1, length = 2, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
+            ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=1))
+            ax.tick_params(width = 1, length = 2, axis = 'y', which = 'minor', left = True, right = True, direction = 'in')
+            ax.xaxis.set_major_locator(ticker.MultipleLocator(base=5))
+            ax.tick_params(width = 1, length = 5, axis = 'x', which = 'major', bottom = True, top = True, direction = 'in')
+            ax.yaxis.set_major_locator(ticker.MultipleLocator(base=5))
+            ax.tick_params(width = 1, length = 5, axis = 'y', which = 'major', left = True, right = True, direction = 'in')
+        else:
+            fig.delaxes(ax)
+    for i in range(nrow):
+        for j in range(ncol):
+            if j != 0:
+                axs[i,j].set_yticklabels([])
+            if i != nrow-1:
+                axs[i,j].set_xticklabels([])
+    axs[nrow//2,0].set_ylabel(r'Masses [$M_{\odot}$]', fontsize = 20)
+    axs[nrow-1, ncol//2].set_xlabel('Age [Gyr]', fontsize = 20)
+    plt.tight_layout(rect = [0.02, 0, 1, 1])
     plt.subplots_adjust(wspace=0., hspace=0.)
     plt.show(block=False)
-    plt.savefig('./figures/test/elem_abundances.pdf')
+    plt.savefig('./figures/iso_evolution.pdf')
+    return None
+
+
+def iso_abundance(figsiz = (40,15), elem_idx=0): # elem_idx=99 is Fe56, elem_idx=0 is H.
+    #plt.clf()
+    Mass_i = np.loadtxt('./output/Mass_i.dat')
+    Masses = np.log10(np.divide(Mass_i[:,2:], Mass_i[elem_idx,2:]))
+    FeH = np.log10(np.divide(Mass_i[99,2:], Mass_i[0,2:])) 
+    Z = ZA_sorted[:,0]
+    A = ZA_sorted[:,1]
+    ncol = aux.find_nearest(np.power(np.arange(20),2), len(Z))
+    if len(ZA_sorted) > ncol:
+        nrow = ncol
+    else:
+        nrow = ncol + 1
+    fig, axs = plt.subplots(nrow, ncol, figsize =figsiz)#, sharex=True)
+    for i, ax in enumerate(axs.flat):
+        if i < len(Z):
+            ax.plot(FeH, Masses[i])
+            ax.annotate(f"{ZA_symb_list[i]}({Z[i]},{A[i]})", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=15, alpha=0.7)
+            ax.set_ylim(-15, 0.5)
+            ax.set_xlim(-11, 0.5)
+            ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
+            ax.tick_params(width = 1, length = 2, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
+            ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=1))
+            ax.tick_params(width = 1, length = 2, axis = 'y', which = 'minor', left = True, right = True, direction = 'in')
+            ax.xaxis.set_major_locator(ticker.MultipleLocator(base=5))
+            ax.tick_params(width = 1, length = 5, axis = 'x', which = 'major', bottom = True, top = True, direction = 'in')
+            ax.yaxis.set_major_locator(ticker.MultipleLocator(base=5))
+            ax.tick_params(width = 1, length = 5, axis = 'y', which = 'major', left = True, right = True, direction = 'in')
+        else:
+            fig.delaxes(ax)
+    for i in range(nrow):
+        for j in range(ncol):
+            if j != 0:
+                axs[i,j].set_yticklabels([])
+            if i != nrow-1:
+                axs[i,j].set_xticklabels([])
+    axs[nrow//2,0].set_ylabel('Absolute Abundances', fontsize = 20)
+    axs[nrow-1, ncol//2].set_xlabel('[Fe/H]', fontsize = 20)
+    plt.tight_layout(rect = [0.02, 0, 1, 1])
+    plt.subplots_adjust(wspace=0., hspace=0.)
+    plt.show(block=False)
+    plt.savefig('./figures/iso_abundance.pdf')
+    return None
+
+def elem_evolution(figsiz = (40,20)):
+    #ncol = aux.find_nearest(np.power(np.arange(20),2), len(np.max(Z)))
+    #    if i < len(np.max(Z)):
+    #plt.savefig('./figures/elem_evolution.pdf')
     return None

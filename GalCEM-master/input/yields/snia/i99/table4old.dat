@@ -1,5 +1,6 @@
 # Data from arXiv's LaTeX of Iwamoto et al. (1999) https://arxiv.org/abs/astro-ph/0002337 submit data manipulation bugs to GalacticCEM@gmail.com
-Species	elemZ	elemA	W7	W70	WDD1	WDD2	WDD3	CDD1	CDD2
+
+# (0) Species 	(1) elemZ 	(2) elemA	(3) W7 	(4) W70 	(5) WDD1 	(6) WDD2 	(7) WDD3 	(8) CDD1 	(9) CDD2
 Na  	11 	  22 	 1.73E-08 	 1.08E-08 	 2.66E-08 	 1.33E-08 	 3.04E-08 	 1.68E-08 	 9.64E-09
 Al  	13	  26	 4.93E-07 	 2.92E-08 	 4.61E-07 	 1.88E-07 	 1.64E-07 	 3.81E-07 	 2.32E-07
 Cl  	17 	  36	 2.58E-06 	 3.97E-10 	 1.25E-06 	 7.85E-07 	 4.89E-07 	 1.23E-06 	 7.35E-07
