@@ -6,19 +6,25 @@ X = pickle.load(open('input/yields/snii/lc18/tab_R/processed/X_lc18.pkl','rb'))
 Y = pickle.load(open('input/yields/snii/lc18/tab_R/processed/Y_lc18.pkl','rb'))
 models = pickle.load(open('input/yields/snii/lc18/tab_R/processed/models_lc18.pkl','rb'))
 
-indices = [19,99] # oxygen, iron56
+indices = [19,99]#,103] # oxygen, iron56, iron60
 ni = len(indices)
 velocities = X[0]['vel_ini'].unique().tolist()
-
 nv = len(velocities)
+
 fig,ax = pyplot.subplots(nrows=ni,ncols=nv,figsize=(5*nv,5*ni),subplot_kw={"projection": "3d"})
 
 for i,idx in enumerate(indices):
+    print(f'{i=}, {idx=}')
     model = models[idx]
+    print(f'{model=}')
     x = X[idx]
+    print(f'{x=}')
     data = x.copy()
+    print(f'{data=}')
     data['y'] = Y[idx]
+    print(f"{data['y']=}")
     data['yhat'] = model(x)
+    print(f"{data['yhat']=}")
     data['eps'] = np.abs(data['y']-data['yhat'])
     rmse = np.sqrt(np.mean(data['eps']**2))
     mae = np.mean(data['eps'])
@@ -26,9 +32,9 @@ for i,idx in enumerate(indices):
     for j,velocity in enumerate(velocities):
         dataj = data[data['vel_ini']==velocity]
         masses = dataj['mass_ini'].to_numpy()
-        logZs = np.log(dataj['Z_ini'].to_numpy())
-        logys = np.log(dataj['yhat'].to_numpy())
-        logyhats = np.log(dataj['yhat'].to_numpy())
+        logZs = np.log10(dataj['Z_ini'].to_numpy())
+        logys = np.log10(dataj['y'].to_numpy())
+        logyhats = np.log10(dataj['yhat'].to_numpy())
         n_mass = len(np.unique(masses))
         n_Z = len(np.unique(logZs))
         massgrid = masses.reshape((n_mass,n_Z))
