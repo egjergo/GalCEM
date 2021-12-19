@@ -98,7 +98,7 @@ def lc18_test(i_elemZ, i_elemA, loc='input/yields/snii/lc18/tab_R', filename='lc
     return X, Y
 
 def k10_test(i_elemZ, i_elemA, loc='input/yields/lims/k10', filename='k10_pandas.csv',
-              id_vars=['Z_ini'], var_name='mass_ini', value_name='yields'):
+              id_vars=['Z_ini'], var_name='mass_ini', value_name='Xi_avg'):
     df_tot = pd.read_csv(f'{loc}/{filename}', comment='#')
     df_al26 = df_tot.loc[df_tot["elemSymb"].astype(str) == 'al*6 ']
     df = pd.concat([df_tot, df_al26]).drop_duplicates(keep=False)
@@ -173,8 +173,10 @@ def load_processed_yields(func_name='lc18', loc='input/yields/snii/lc18/tab_R'):
             df_dict[df_l] = pickle.load(pickle_file)
     return df_dict[df_list[0]], df_dict[df_list[1]], df_dict[df_list[2]]
 
-#X_lc18, Y_lc18, models_lc18 = test_for_ZA_sorted(lc18_test)
-##run_test(X_lc18, Y_lc18, models_lc18, lc18_test)
-#save_processed_yields(X_lc18, Y_lc18, models_lc18, func_name='lc18', loc='input/yields/snii/lc18/tab_R')
-#X_k10, Y_k10, models_k10 = test_for_ZA_sorted(k10_test)
-#save_processed_yields(X_k10, Y_k10, models_k10, func_name='k10', loc='input/yields/lims/k10')
+
+#if __name__ == '__main__':
+    #X_lc18, Y_lc18, models_lc18 = test_for_ZA_sorted(lc18_test)
+    #save_processed_yields(X_lc18, Y_lc18, models_lc18, func_name='lc18', loc='input/yields/snii/lc18/tab_R')
+    #X_k10, Y_k10, models_k10 = test_for_ZA_sorted(k10_test)
+    #save_processed_yields(X_k10, Y_k10, models_k10, func_name='k10', loc='input/yields/lims/k10')
+    ##run_test(X_lc18, Y_lc18, models_lc18, lc18_test)

@@ -16,7 +16,7 @@ class IntegrationGrids_plot_test:
         self.colors = ['red', 'orange', 'black']
 
     def grid_picker(self, channel_switch, grid_type):
-	    return self.Wi_class.__dict__[channel_switch+'_'+grid_type+'_grid']
+        return self.Wi_class.__dict__[channel_switch+'_'+grid_type+'_grid']
 
     def integration_yields(self, channel_switch):
         fig = plt.figure(figsize=(10,7))
