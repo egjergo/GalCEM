@@ -80,7 +80,7 @@ def yield_interpolation_k10(indices,X,Y,nmesh,name):
         xquery = query_df[['logZ_ini','mass_ini']].to_numpy()
         logyhats = model(xquery)
         logyhats_mesh = logyhats.reshape(mass_mesh.shape)
-        ax[i].plot_surface(mass_mesh,logZ_mesh,logyhats_mesh,cmap=cm.Greys,alpha=0.9)
+        ax[i].plot_surface(mass_mesh,logZ_mesh,logyhats_mesh,cmap=cm.Greys,alpha=0.9,vmin=np.nanmin(logyhats_mesh), vmax=np.nanmax(logyhats_mesh))
         ax[i].scatter(dataj['mass_ini'],dataj['logZ_ini'],dataj['logy'],color='r',s=10)
         # metadata
         #ax[i].set_xlim(dataj['mass_ini'].min(),dataj['mass_ini'].max())
