@@ -1,54 +1,60 @@
+from scipy.interpolate import RBFInterpolator, LinearNDInterpolator, NearestNDInterpolator
 import numpy as np
+import pandas as pd
 import pickle
 from matplotlib import pyplot,cm
 
-X = pickle.load(open('input/yields/snii/lc18/tab_R/processed/X_lc18.pkl','rb'))
-Y = pickle.load(open('input/yields/snii/lc18/tab_R/processed/Y_lc18.pkl','rb'))
-models = pickle.load(open('input/yields/snii/lc18/tab_R/processed/models_lc18.pkl','rb'))
+def yield_interpolation(indices,X,Y,nmesh,name):
+    ni = len(indices)
+    velocities = X[0]['vel_ini'].unique().tolist()
+    nv = len(velocities)
+    fig,ax = pyplot.subplots(nrows=ni,ncols=nv,figsize=(5*nv,5*ni),subplot_kw={"projection": "3d"})
+    for i,idx in enumerate(indices):
+        data = X[idx].copy()
+        data['y'] = Y[idx].copy()
+        data['logy'] = np.log10(data['y'])
+        data['logZ_ini'] = np.log10(data['Z_ini'])
+        xdata = data[['logZ_ini','vel_ini','mass_ini']].to_numpy()
+        ydata = data['logy'].to_numpy()
+        model = LinearNDInterpolator(xdata,ydata,rescale=True,fill_value=np.nan) # https://docs.scipy.org/doc/scipy/reference/interpolate.html
+        data['logyhat'] = model(xdata)
+        data['yhat'] = 10**data['logyhat']
+        data['eps_abs'] = np.abs(data['y']-data['yhat'])
+        rmse = np.sqrt(np.mean(data['eps_abs']**2))
+        mae = np.mean(data['eps_abs'])
+        print('element %i \t\trmse = %-10.1e mae = %-10.1e'%(idx,rmse,mae))
+        for j,velocity in enumerate(velocities):
+            dataj = data[data['vel_ini']==velocity]
+            rmsej = np.sqrt(np.mean(dataj['eps_abs']**2))
+            maej = np.mean(dataj['eps_abs'])
+            print('\tvelocity %d\trmse = %-10.1e mae = %-10.1e'%(velocity,rmsej,maej))
+            mass_ticks = np.linspace(dataj['mass_ini'].min(),dataj['mass_ini'].max(),nmesh)
+            logZ_ticks = np.linspace(dataj['logZ_ini'].min(),dataj['logZ_ini'].max(),nmesh)
+            mass_mesh,logZ_mesh = np.meshgrid(mass_ticks,logZ_ticks)
+            query_df = pd.DataFrame({
+                'logZ_ini': logZ_mesh.flatten(),
+                'vel_ini': np.tile(velocity,mass_mesh.size),
+                'mass_ini': mass_mesh.flatten()})
+            xquery = query_df[['logZ_ini','vel_ini','mass_ini']].to_numpy()
+            logyhats = model(xquery)
+            logyhats_mesh = logyhats.reshape(mass_mesh.shape)
+            ax[i,j].plot_surface(mass_mesh,logZ_mesh,logyhats_mesh,cmap=cm.Greys,alpha=0.9)
+            ax[i,j].scatter(dataj['mass_ini'],dataj['logZ_ini'],dataj['logy'],color='r',s=10)
+            # metadata
+            ax[i,j].set_xlabel('mass_ini')
+            ax[i,j].set_ylabel('log10(Z_ini)')
+            ax[i,j].set_zlabel('log10(y)')
+            ax[i,j].set_title('element %d, velocity %d'%(idx,velocity))
+    fig.savefig('figures/test/yield_interpolant.%s.pdf'%name,format='pdf',bbox_inches='tight')
 
-indices = [19,99]#,103] # oxygen, iron56, iron60
-ni = len(indices)
-velocities = X[0]['vel_ini'].unique().tolist()
-nv = len(velocities)
+if __name__ == '__main__':
+    indices = [19,99] # oxygen, iron56
+    nmesh = 64    
+    
+    X = pickle.load(open('input/yields/snii/lc18/tab_R/processed/X_lc18.pkl','rb'))
+    Y = pickle.load(open('input/yields/snii/lc18/tab_R/processed/Y_lc18.pkl','rb'))
+    yield_interpolation(indices,X,Y,nmesh,name='snii.lc18.tab_R')
 
-fig,ax = pyplot.subplots(nrows=ni,ncols=nv,figsize=(5*nv,5*ni),subplot_kw={"projection": "3d"})
-
-for i,idx in enumerate(indices):
-    print(f'{i=}, {idx=}')
-    model = models[idx]
-    print(f'{model=}')
-    x = X[idx]
-    print(f'{x=}')
-    data = x.copy()
-    print(f'{data=}')
-    data['y'] = Y[idx]
-    print(f"{data['y']=}")
-    data['yhat'] = model(x)
-    print(f"{data['yhat']=}")
-    data['eps'] = np.abs(data['y']-data['yhat'])
-    rmse = np.sqrt(np.mean(data['eps']**2))
-    mae = np.mean(data['eps'])
-    print('element %i \t\trmse = %-10.1e mae = %-10.1e'%(idx,rmse,mae))
-    for j,velocity in enumerate(velocities):
-        dataj = data[data['vel_ini']==velocity]
-        masses = dataj['mass_ini'].to_numpy()
-        logZs = np.log10(dataj['Z_ini'].to_numpy())
-        logys = np.log10(dataj['y'].to_numpy())
-        logyhats = np.log10(dataj['yhat'].to_numpy())
-        n_mass = len(np.unique(masses))
-        n_Z = len(np.unique(logZs))
-        massgrid = masses.reshape((n_mass,n_Z))
-        logZgrid = logZs.reshape((n_mass,n_Z))
-        logyhatgrid = logyhats.reshape((n_mass,n_Z))
-        ax[i,j].plot_surface(massgrid,logZgrid,logyhatgrid,cmap=cm.Greys,alpha=0.95)
-        ax[i,j].scatter(masses,logZs,logys,color='r')
-        ax[i,j].set_xlabel('mass_ini')
-        ax[i,j].set_ylabel('log(Z_ini)')
-        ax[i,j].set_zlabel('log(y)')
-        ax[i,j].set_title('element %d, velocity %d'%(idx,velocity))
-        rmsej = np.sqrt(np.mean(dataj['eps']**2))
-        maej = np.mean(dataj['eps'])
-        print('\tvelocity %d\trmse = %-10.1e mae = %-10.1e'%(velocity,rmsej,maej))
-
-fig.savefig('figures/test/velocity_plots.pdf',format='pdf',bbox_inches='tight')
-
+    # X = pickle.load(open('input/yields/lims/k10/processed/X_k10.pkl','rb'))
+    # Y = pickle.load(open('input/yields/lims/k10/processed/Y_k10.pkl','rb'))
+    # yield_interpolation(indices,X,Y,nmesh,name='lims.k10')
