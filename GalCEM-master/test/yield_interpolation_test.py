@@ -165,14 +165,19 @@ def save_processed_yields(X, Y, models, func_name='lc18', loc='input/yields/snii
             save_processed_dataframes(df_dict[df_l], ZA_sorted, name=df_l, func_name=func_name, loc=loc)
     return None
 
-def load_processed_yields(func_name='lc18', loc='input/yields/snii/lc18/tab_R'):
-    df_list = ['X', 'Y', 'models']
+def load_processed_yields(func_name='lc18', loc='input/yields/snii/lc18/tab_R', df_list = ['X', 'Y', 'models']):
     df_dict = {}
     for df_l in df_list:
         with open(f'{loc}/processed/{df_l}_{func_name}.pkl', 'rb') as pickle_file:
             df_dict[df_l] = pickle.load(pickle_file)
     return df_dict[df_list[0]], df_dict[df_list[1]], df_dict[df_list[2]]
 
+def load_processed_yields_snia(func_name='lc18', loc='input/yields/snii/lc18/tab_R', df_list = ['X', 'Y', 'models']):
+    df_dict = {}
+    for df_l in df_list:
+        with open(f'{loc}/processed/{df_l}_{func_name}.pkl', 'rb') as pickle_file:
+            df_dict[df_l] = pickle.load(pickle_file)
+    return df_dict[df_list[0]]
 
 #if __name__ == '__main__':
     #X_lc18, Y_lc18, models_lc18 = test_for_ZA_sorted(lc18_test)
