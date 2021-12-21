@@ -233,9 +233,6 @@ class Evolution:
             Wi_val = []
             for i, yields in enumerate(Wi_class.yield_load):
                 Wi_val.append(integr.simps(Wi_comp[0] * Wi_class.yield_load[i], x=Wi_comp[1]))
-            #Rate_SNII[n] = rateSNII
-            #Rate_SNIa[n] = rateSNIa
-            #Rate_LIMs[n] = rateLIMs
             val = Infall_rate[n] * Xi_inf  - np.multiply(SFR_tn(n), Xi_v[:,n]) + np.sum(Wi_val, axis=0)
             val[val<0] = 0. # !!!!!!! if negative set to zero
         return val
@@ -254,26 +251,18 @@ class Evolution:
         #Wi_class = Wi(n) #how can I pass this from evolve()? used in aux.RK4 
         Wi_comps = kwargs['Wi_comp'] # [list of 2-array lists] #Wi_comps[0][0].shape=(155,)
         Wi_classes = kwargs['Wi_class'] # list of classes
-        #print(f'{type(Wi_comps)=}')
-        #print(f'{type(Wi_classes)=}')
-        #print(f'{type(Wi_comps[0])=}')
-        #print(f'{type(Wi_classes[0])=}')
-        #print(f'{Wi_comps[0][0].shape=}')
-        #print(f'{Wi_classes[0]=}')
+        Wi_SNIa = kwargs['Wi_SNIa']
         i = kwargs['i']
         if n <= 0:
             val = Infall_rate[n] * Xi_inf[i]  - np.multiply(SFR_v[n], Xi_v[i,n])
         else:
             Wi_vals = []
             for j in range(len(Wi_comps)):
-                #print(f'{Wi_comps[j]=}')
-                #print(f'{Wi_comps[j][0]=}')
-                #print(f'{Wi_comps[j][1]=}')
                 if len(Wi_comps[j][1]) > 0.:
                     Wi_vals.append(integr.simps(Wi_comps[j][0] * Wi_classes[j].yield_load[i], x=Wi_comps[j][1]))
             infall_comp = Infall_rate[n] * Xi_inf[i]
             sfr_comp = SFR_v[n] * Xi_v[i,n]
-            val = infall_comp  - sfr_comp + np.sum(Wi_vals) #+ np.sum(Wi_val, axis=0)
+            val = infall_comp  - sfr_comp + np.sum(Wi_vals) + Wi_SNIa #+ np.sum(Wi_val, axis=0)
             #if i == 19:
             #    print(f'{n=}, {i=}, {infall_comp=}, {sfr_comp=}, {Wi_val=}')
             #    print(f'{val=}')
@@ -296,6 +285,7 @@ class Evolution:
         #Wi_class = Wi(n) #how can I pass this from evolve()? used in aux.RK4 
         Wi_comps = kwargs['Wi_comp']
         Wi_classes = kwargs['Wi_class']
+        Wi_SNIa = kwargs['Wi_SNIa']
         i = kwargs['i']
         if n == 0:
             val = Infall_rate[n] * Xi_inf[i] 
@@ -310,12 +300,8 @@ class Evolution:
                     Wi_vals.append(0.)
             infall_comp = Infall_rate[n-2] * Xi_inf[i]
             sfr_comp = SFR_v[n-1] * Xi_v[i,n-1]
-            val = infall_comp  - sfr_comp + np.sum(Wi_vals) #+ np.sum(Wi_val, axis=0)
-            #if i == 19:
-            #    print(f'{n=}, {i=}, {infall_comp=}, {sfr_comp=}, {Wi_vals=}')
-            #    print(f'{val=}')
+            val = infall_comp  - sfr_comp + np.sum(Wi_vals) + Wi_SNIa #+ np.sum(Wi_val, axis=0)
             if val < 0.:
-                #print('val negative')
                 val = 0.
         return val
     
@@ -344,7 +330,8 @@ class Evolution:
                 Wi_comp_SNIa = rateSNIa  #Wi_class_SNIa.compute("SNIa")
                 Wi_comp = [Wi_comp_SNII, Wi_comp_LIMs]
                 for i, _ in enumerate(ZA_sorted): 
-                    Mass_i_v[i, n+1] = aux.RK4(self.f_RK4_Mi_Wi_iso, time_chosen[n], Mass_i_v[i,n], n, IN.nTimeStep, Wi_class=Wi_class, i=i, Wi_comp=Wi_comp)
+                    Wi_SNIa = rateSNIa * Y_i99[0][i]
+                    Mass_i_v[i, n+1] = aux.RK4(self.f_RK4_Mi_Wi_iso, time_chosen[n], Mass_i_v[i,n], n, IN.nTimeStep, Wi_class=[], i=i, Wi_comp=[], Wi_SNIa=Wi_SNIa)
             Z_v[n] = np.divide(np.sum(Mass_i_v[:,n]), Mgas_v[n])
         Xi_v[:,-1] = np.divide(Mass_i_v[:,-1], Mgas_v[-1]) 
         return None
