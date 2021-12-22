@@ -22,10 +22,10 @@ supported_cmap = ['Accent', 'Accent_r', 'Blues', 'Blues_r', 'BrBG', 'BrBG_r', 'B
 #cmap = cm.get_cmap(supported_cmap[-4], 10)
 plt.rcParams['xtick.major.size'], plt.rcParams['ytick.major.size'] = 10, 10
 plt.rcParams['xtick.minor.size'], plt.rcParams['ytick.minor.size'] = 7, 7
-plt.rcParams['xtick.major.width'], plt.rcParams['ytick.major.width'] = 2, 2
+plt.rcParams['xtick.major.width'], plt.rcParams['ytick.major.width'] = 1, 1
 plt.rcParams['xtick.minor.width'], plt.rcParams['ytick.minor.width'] = 1, 1
-plt.rcParams['xtick.labelsize'], plt.rcParams['ytick.labelsize'] = 15, 15
-plt.rcParams['axes.linewidth'] = 2
+plt.rcParams['xtick.labelsize'], plt.rcParams['ytick.labelsize'] = 10, 10
+plt.rcParams['axes.linewidth'] = 1
 
 supported_cmap = ['Accent', 'Accent_r', 'Blues', 'Blues_r', 'BrBG', 'BrBG_r', 'BuGn', 'BuGn_r', 'BuPu', 'BuPu_r', 'CMRmap', 'CMRmap_r', 'Dark2', 'Dark2_r', 'GnBu', 'GnBu_r', 'Greens', 'Greens_r', 'Greys', 'Greys_r', 'OrRd', 'OrRd_r', 'Oranges', 'Oranges_r', 'PRGn', 'PRGn_r', 'Paired', 'Paired_r', 'Pastel1', 'Pastel1_r', 'Pastel2', 'Pastel2_r', 'PiYG', 'PiYG_r', 'PuBu', 'PuBuGn', 'PuBuGn_r', 'PuBu_r', 'PuOr', 'PuOr_r', 'PuRd', 'PuRd_r', 'Purples', 'Purples_r', 'RdBu', 'RdBu_r', 'RdGy', 'RdGy_r', 'RdPu', 'RdPu_r', 'RdYlBu', 'RdYlBu_r', 'RdYlGn', 'RdYlGn_r', 'Reds', 'Reds_r', 'Set1', 'Set1_r', 'Set2', 'Set2_r', 'Set3', 'Set3_r', 'Spectral', 'Spectral_r', 'Wistia', 'Wistia_r', 'YlGn', 'YlGnBu', 'YlGnBu_r', 'YlGn_r', 'YlOrBr', 'YlOrBr_r', 'YlOrRd', 'YlOrRd_r', 'afmhot', 'afmhot_r', 'autumn', 'autumn_r', 'binary', 'binary_r', 'bone', 'bone_r', 'brg', 'brg_r', 'bwr', 'bwr_r', 'cividis', 'cividis_r', 'cool', 'cool_r', 'coolwarm', 'coolwarm_r', 'copper', 'copper_r', 'cubehelix', 'cubehelix_r', 'flag', 'flag_r', 'gist_earth', 'gist_earth_r', 'gist_gray', 'gist_gray_r', 'gist_heat', 'gist_heat_r', 'gist_ncar', 'gist_ncar_r', 'gist_rainbow', 'gist_rainbow_r', 'gist_stern', 'gist_stern_r', 'gist_yarg', 'gist_yarg_r', 'gnuplot', 'gnuplot2', 'gnuplot2_r', 'gnuplot_r', 'gray', 'gray_r', 'hot', 'hot_r', 'hsv', 'hsv_r', 'inferno', 'inferno_r', 'jet', 'jet_r', 'magma', 'magma_r', 'nipy_spectral', 'nipy_spectral_r', 'ocean', 'ocean_r', 'pink', 'pink_r', 'plasma', 'plasma_r', 'prism', 'prism_r', 'rainbow', 'rainbow_r', 'seismic', 'seismic_r', 'spring', 'spring_r', 'summer', 'summer_r', 'tab10', 'tab10_r', 'tab20', 'tab20_r', 'tab20b', 'tab20b_r', 'tab20c', 'tab20c_r', 'terrain', 'terrain_r', 'turbo', 'turbo_r', 'twilight', 'twilight_r', 'twilight_shifted', 'twilight_shifted_r', 'viridis', 'viridis_r', 'winter', 'winter_r']
 
@@ -99,7 +99,7 @@ def ZA_sorted_plot(cmap_name='magma_r', cbins=10): # angle = 2 * np.pi / np.arct
 	return None
 
 
-def iso_evolution(figsiz = (40,15)):
+def iso_evolution(figsiz = (25,10)):
     #plt.clf()
     Mass_i = np.loadtxt('./output/Mass_i.dat')
     Masses = np.log10(Mass_i[:,2:])
@@ -116,7 +116,7 @@ def iso_evolution(figsiz = (40,15)):
     for i, ax in enumerate(axs.flat):
         if i < len(Z):
             ax.plot(timex, Masses[i])
-            ax.annotate(f"{ZA_symb_list[i]}({Z[i]},{A[i]})", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=15, alpha=0.7)
+            ax.annotate(f"{ZA_symb_list[i]}({Z[i]},{A[i]})", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=10, alpha=0.7)
             ax.set_ylim(-7.5, 10.5)
             ax.set_xlim(0,13.8)
             ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
@@ -135,8 +135,8 @@ def iso_evolution(figsiz = (40,15)):
                 axs[i,j].set_yticklabels([])
             if i != nrow-1:
                 axs[i,j].set_xticklabels([])
-    axs[nrow//2,0].set_ylabel(r'Masses [$M_{\odot}$]', fontsize = 20)
-    axs[nrow-1, ncol//2].set_xlabel('Age [Gyr]', fontsize = 20)
+    axs[nrow//2,0].set_ylabel(r'Masses [$M_{\odot}$]', fontsize = 15)
+    axs[nrow-1, ncol//2].set_xlabel('Age [Gyr]', fontsize = 15)
     plt.tight_layout(rect = [0.02, 0, 1, 1])
     plt.subplots_adjust(wspace=0., hspace=0.)
     plt.show(block=False)
@@ -144,7 +144,7 @@ def iso_evolution(figsiz = (40,15)):
     return None
 
 
-def iso_abundance(figsiz = (40,15), elem_idx=103): # elem_idx=99 is Fe56, elem_idx=0 is H.
+def iso_abundance(figsiz = (25,10), elem_idx=103): # elem_idx=99 is Fe56, elem_idx=0 is H.
     #plt.clf()
     Mass_i = np.loadtxt('./output/Mass_i.dat')
     Masses = np.log10(np.divide(Mass_i[:,2:], Mass_i[elem_idx,2:]))
@@ -160,7 +160,7 @@ def iso_abundance(figsiz = (40,15), elem_idx=103): # elem_idx=99 is Fe56, elem_i
     for i, ax in enumerate(axs.flat):
         if i < len(Z):
             ax.plot(FeH, Masses[i])
-            ax.annotate(f"{ZA_symb_list[i]}({Z[i]},{A[i]})", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=15, alpha=0.7)
+            ax.annotate(f"{ZA_symb_list[i]}({Z[i]},{A[i]})", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=10, alpha=0.7)
             ax.set_ylim(-15, 0.5)
             ax.set_xlim(-11, 0.5)
             ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
@@ -179,8 +179,8 @@ def iso_abundance(figsiz = (40,15), elem_idx=103): # elem_idx=99 is Fe56, elem_i
                 axs[i,j].set_yticklabels([])
             if i != nrow-1:
                 axs[i,j].set_xticklabels([])
-    axs[nrow//2,0].set_ylabel('Absolute Abundances', fontsize = 20)
-    axs[nrow-1, ncol//2].set_xlabel('[Fe/H]', fontsize = 20)
+    axs[nrow//2,0].set_ylabel('Absolute Abundances', fontsize = 15)
+    axs[nrow-1, ncol//2].set_xlabel('[Fe/H]', fontsize = 15)
     plt.tight_layout(rect = [0.02, 0, 1, 1])
     plt.subplots_adjust(wspace=0., hspace=0.)
     plt.show(block=False)
