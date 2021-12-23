@@ -131,7 +131,7 @@ class Wi:
                     y.append(model(X_sample)) # !!!!!!! use asynchronicity to speed up the computation
                 else:
                     y.append(0.)
-        return y # len consistent with ZA_sorted
+        return 0.005 * np.ones(len(ZA_sorted)) #y # len consistent with ZA_sorted
 
     def mass_component(self, channel_switch, mass_grid, lifetime_grid): #
         ''' Portinari+98, page 22, last eq. first column '''
@@ -331,7 +331,7 @@ class Evolution:
                 Wi_comp = [Wi_comp_SNII, Wi_comp_LIMs]
                 for i, _ in enumerate(ZA_sorted): 
                     Wi_SNIa = rateSNIa * Y_i99[0][i]
-                    Mass_i_v[i, n+1] = aux.RK4(self.f_RK4_Mi_Wi_iso, time_chosen[n], Mass_i_v[i,n], n, IN.nTimeStep, Wi_class=[], i=i, Wi_comp=[], Wi_SNIa=Wi_SNIa)
+                    Mass_i_v[i, n+1] = aux.RK4(self.f_RK4_Mi_Wi_iso, time_chosen[n], Mass_i_v[i,n], n, IN.nTimeStep, Wi_class=Wi_class, i=i, Wi_comp=Wi_comp, Wi_SNIa=Wi_SNIa)
             Z_v[n] = np.divide(np.sum(Mass_i_v[:,n]), Mgas_v[n])
         Xi_v[:,-1] = np.divide(Mass_i_v[:,-1], Mgas_v[-1]) 
         return None
