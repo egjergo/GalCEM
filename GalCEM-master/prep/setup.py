@@ -77,8 +77,8 @@ Rate_LIMs = IN.epsilon * np.ones(len(time_chosen))
 Rate_SNIa = IN.epsilon * np.ones(len(time_chosen)) 
 
 """ load yield tables """
-X_lc18, Y_lc18, models_lc18 = yt.load_processed_yields(func_name='lc18', loc='input/yields/snii/lc18/tab_R')
-X_k10, Y_k10, models_k10 = yt.load_processed_yields(func_name='k10', loc='input/yields/lims/k10')
+X_lc18, Y_lc18 = yt.load_processed_yields(func_name='lc18', loc='input/yields/snii/lc18/tab_R')
+X_k10, Y_k10 = yt.load_processed_yields(func_name='k10', loc='input/yields/lims/k10')
 Y_i99 = yt.load_processed_yields_snia(func_name='i99', loc='input/yields/snia/i99', df_list='Y')
 
 def _pick_yields(channel_switch, ZA_Symb, n, stellar_mass_idx=None, metallicity_idx=None, vel_idx=IN.LC18_vel_idx):
