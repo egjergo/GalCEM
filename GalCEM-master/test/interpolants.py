@@ -1,8 +1,11 @@
+from numpy.core.shape_base import block
 from scipy.interpolate import LinearNDInterpolator, NearestNDInterpolator
 import numpy as np
 import pandas as pd
 import pickle
 from matplotlib import pyplot,cm
+
+from prep.setup import ZA_sorted
 
 class GalChemInterpolant(object):
     def __init__(self,dfx,dfy):
@@ -43,6 +46,8 @@ def fit_2d_interpolant(dfx,dfy,tag,test,y_log10_scaled,view_angle):
     x0mesh,x1mesh = np.meshgrid(x0_ticks,x1_ticks)
     xquery = np.hstack([x0mesh.reshape(-1,1),x1mesh.reshape(-1,1)])
     yquery = model(xquery)
+    print(f'{xquery=}')
+    print(f'{yquery=}')
     ymesh = yquery.reshape(x1mesh.shape)
     fig = pyplot.figure(figsize=(15,5))
     ax = fig.add_subplot(1,2,1,projection='3d')
@@ -59,6 +64,7 @@ def fit_2d_interpolant(dfx,dfy,tag,test,y_log10_scaled,view_angle):
     ax.set_xlabel(inputs[0])
     ax.set_ylabel(inputs[1])   
     fig.suptitle(tag)
+    pyplot.show(block=False)
     fig.savefig('figures/interpolants/%s.pdf'%name,format='pdf',bbox_inches='tight')    
 
 def fit_3d_interpolant(dfx,dfy,tag,test,y_log10_scaled,view_angle):
@@ -118,6 +124,7 @@ def fit_3d_interpolant(dfx,dfy,tag,test,y_log10_scaled,view_angle):
     fig.savefig('figures/interpolants/%s.pdf'%name,format='pdf',bbox_inches='tight') 
 
 if __name__ == '__main__':
+    '''
     df = pd.read_csv('input/starlifetime/portinari98table14.dat')
     df.columns = [name.replace('#M','mass').replace('Z=','') for name in df.columns]
     df = pd.melt(df,id_vars='mass',value_vars=list(df.columns[1:]),var_name='metallicity',value_name='lifetime_yr')
@@ -141,37 +148,53 @@ if __name__ == '__main__':
         y_log10_scaled = True,
         view_angle = -45)
     pickle.dump(log10_mass_interpolant,open('output/interpolants/log10_mass_interpolant.pkl','wb'))
-
+    '''
     dfxs = pickle.load(open('input/yields/lims/k10/processed/X.pkl','rb'))
     dfys = pickle.load(open('input/yields/lims/k10/processed/Y.pkl','rb'))
-    idxs = [19,99] # oxygen, iron56
+    idxs = np.arange(len(ZA_sorted)) # [11,19,99,103] # carbon12, oxygen, iron56, iron60
+    interpolants = []
     for idx in idxs:
-        df = dfxs[idx].copy()
-        df['log10_y'] = np.log10(dfys[idx])
-        df['log10_Z_ini'] = np.log10(df['Z_ini'])
-        tag = 'lims_%d'%idx
-        log10_yield_lims_interpolant = fit_2d_interpolant(
-            dfx = df[['log10_Z_ini','mass_ini']],
-            dfy = df['log10_y'],
-            tag = tag,
-            test = True,
-            y_log10_scaled = True,
-            view_angle = 135)
-        pickle.dump(log10_yield_lims_interpolant,open('output/interpolants/log10_yield_lims_interpolant.%d.pkl'%idx,'wb'))
-
+        print(f'{idx=}')
+        if dfxs[idx].empty:
+            interpolants.append(None)
+        else:
+            df = dfxs[idx].copy()
+            df['log10_y'] = np.log10(dfys[idx])
+            df['log10_Z_ini'] = np.log10(df['Z_ini'])
+            tag = 'k10_%d, Z=%d, A=%d'%(idx, ZA_sorted[idx,0], ZA_sorted[idx,1])
+            log10_yield_lims_interpolant = fit_2d_interpolant(
+                dfx = df[['log10_Z_ini','mass_ini']],
+                dfy = df['log10_y'],
+                tag = tag,
+                test = False,
+                y_log10_scaled = True,
+                view_angle = 135)
+            interpolants.append(log10_yield_lims_interpolant)
+            #pickle.dump(log10_yield_lims_interpolant,open('output/interpolants/log10_yield_lims_interpolant.%d.pkl'%idx,'wb'))
+    interpolants = np.array(interpolants, dtype='object') #, header = "dfx = df[['log10_Z_ini','mass_ini']], dfy = df['log10_mass_frac']"
+    pickle.dump(interpolants,open('output/interpolants/log10_yield_lims_interpolants.pkl','wb'))
+    '''
     dfxs = pickle.load(open('input/yields/snii/lc18/tab_R/processed/X.pkl','rb'))
     dfys = pickle.load(open('input/yields/snii/lc18/tab_R/processed/Y.pkl','rb'))
-    idxs = [19,99] # oxygen, iron56
+    idxs = np.arange(len(ZA_sorted)) # [11,19,99,103] # carbon12, oxygen, iron56, iron60
+    interpolants = []
     for idx in idxs:
-        df = dfxs[idx].copy()
-        df['log10_y'] = np.log10(dfys[idx])
-        df['log10_Z_ini'] = np.log10(df['Z_ini'])
-        tag = 'k10_%d'%idx
-        log10_yield_snii_interpolant = fit_3d_interpolant(
-            dfx = df[['log10_Z_ini','mass_ini','vel_ini']],
-            dfy = df['log10_y'],
-            tag = tag,
-            test = True,
-            y_log10_scaled = True,
-            view_angle = 135)
-        pickle.dump(log10_yield_snii_interpolant,open('output/interpolants/log10_yield_snii_interpolant.%d.pkl'%idx,'wb'))
+        if dfxs[idx].empty:
+            interpolants.append(None)
+        else:
+            df = dfxs[idx].copy()
+            df['log10_y'] = np.log10(dfys[idx])
+            df['log10_Z_ini'] = np.log10(df['Z_ini'])
+            tag = 'lc18_%d, Z=%d, A=%d'%(idx, ZA_sorted[idx,0], ZA_sorted[idx,1])
+            log10_yield_snii_interpolant = fit_3d_interpolant(
+                dfx = df[['log10_Z_ini','mass_ini','vel_ini']],
+                dfy = df['log10_y'],
+                tag = tag,
+                test = False,
+                y_log10_scaled = True,
+                view_angle = 135)
+            interpolants.append(log10_yield_snii_interpolant)
+            #pickle.dump(log10_yield_snii_interpolant,open('output/interpolants/log10_yield_snii_interpolant.%d.pkl'%idx,'wb'))
+    interpolants = np.array(interpolants, dtype='object') #, header="dfx = df[['log10_Z_ini','mass_ini','vel_ini']], dfy = df['log10_mass_frac']",
+    pickle.dump(interpolants,open('output/interpolants/log10_yield_snii_interpolant.pkl','wb'))
+    '''

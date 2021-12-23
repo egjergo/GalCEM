@@ -111,10 +111,10 @@ class Wi:
         else:  
             if channel_switch == 'Massive':
                 X_sample = np.column_stack([Z_comp, vel_idx * np.ones(len_X), mass_grid])
-                X, Y, models = X_lc18, Y_lc18, models_lc18
+                X, Y, models = X_lc18, Y_lc18#, models_lc18
             elif channel_switch == 'LIMs':
                 X_sample = np.column_stack([Z_comp, mass_grid])
-                X, Y, models = X_k10, Y_k10, models_k10
+                X, Y, models = X_k10, Y_k10#, models_k10
             else:
                 print(f'{channel_switch = } currently not included.')
                 pass
