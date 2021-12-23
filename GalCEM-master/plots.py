@@ -144,11 +144,11 @@ def iso_evolution(figsiz = (32,10)):
     return None
 
 
-def iso_abundance(figsiz = (32,10), elem_idx=0): # elem_idx=99 is Fe56, elem_idx=0 is H.
+def iso_abundance(figsiz = (32,10), elem_idx=103): # elem_idx=99 is Fe56, elem_idx=0 is H.
     #plt.clf()
     Mass_i = np.loadtxt('./output/Mass_i.dat')
     Masses = np.log10(np.divide(Mass_i[:,2:], Mass_i[elem_idx,2:]))
-    FeH = np.log10(np.divide(Mass_i[99,2:], Mass_i[0,2:])) 
+    XH = np.log10(np.divide(Mass_i[elem_idx,2:], Mass_i[0,2:])) 
     Z = ZA_sorted[:,0]
     A = ZA_sorted[:,1]
     ncol = aux.find_nearest(np.power(np.arange(20),2), len(Z))
@@ -159,7 +159,7 @@ def iso_abundance(figsiz = (32,10), elem_idx=0): # elem_idx=99 is Fe56, elem_idx
     fig, axs = plt.subplots(nrow, ncol, figsize =figsiz)#, sharex=True)
     for i, ax in enumerate(axs.flat):
         if i < len(Z):
-            ax.plot(FeH, Masses[i])
+            ax.plot(XH, Masses[i])
             ax.annotate(f"{ZA_symb_list[i]}({Z[i]},{A[i]})", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
             ax.set_ylim(-15, 0.5)
             ax.set_xlim(-11, 0.5)
@@ -180,7 +180,7 @@ def iso_abundance(figsiz = (32,10), elem_idx=0): # elem_idx=99 is Fe56, elem_idx
             if i != nrow-1:
                 axs[i,j].set_xticklabels([])
     axs[nrow//2,0].set_ylabel('Absolute Abundances', fontsize = 15)
-    axs[nrow-1, ncol//2].set_xlabel('[Fe/H]', fontsize = 15)
+    axs[nrow-1, ncol//2].set_xlabel(f'[{ZA_symb_list[elem_idx]}{A[elem_idx]}/H]', fontsize = 15)
     plt.tight_layout(rect = [0.02, 0, 1, 1])
     plt.subplots_adjust(wspace=0., hspace=0.)
     plt.show(block=False)
