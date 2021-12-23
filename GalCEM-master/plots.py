@@ -144,11 +144,15 @@ def iso_evolution(figsiz = (25,10)):
     return None
 
 
+<<<<<<< HEAD
 def iso_abundance(figsiz = (25,10), elem_idx=103): # elem_idx=99 is Fe56, elem_idx=0 is H.
+=======
+def iso_abundance(figsiz = (40,15), elem_idx=0): # elem_idx=99 is Fe56, elem_idx=0 is H.
+>>>>>>> parent of 5c67dfc (constant yields)
     #plt.clf()
     Mass_i = np.loadtxt('./output/Mass_i.dat')
     Masses = np.log10(np.divide(Mass_i[:,2:], Mass_i[elem_idx,2:]))
-    FeH = np.log10(np.divide(Mass_i[103,2:], Mass_i[0,2:])) 
+    FeH = np.log10(np.divide(Mass_i[99,2:], Mass_i[0,2:])) 
     Z = ZA_sorted[:,0]
     A = ZA_sorted[:,1]
     ncol = aux.find_nearest(np.power(np.arange(20),2), len(Z))
@@ -186,24 +190,6 @@ def iso_abundance(figsiz = (25,10), elem_idx=103): # elem_idx=99 is Fe56, elem_i
     plt.show(block=False)
     plt.savefig('./figures/iso_abundance.pdf')
     return None
-
-def iso_abundance_test(): # elem_idx=99 is Fe56, elem_idx=0 is H.
-    phys = np.loadtxt('./output/phys.dat')
-    Mass_i = np.loadtxt('./output/Mass_i.dat')
-    Mass_C = np.log10(Mass_i[11,2:])#, Mass_i[103,2:]))
-    Mass_O = np.log10(Mass_i[19,2:])#, Mass_i[103,2:]))
-    FeH = np.log10(Mass_i[103,2:])#, Mass_i[0,2:]))  
-    timex = phys[:,0]
-    fig, axs = plt.subplots(3, 1, figsize =(5,15))#, sharex=True)
-    axs[0].plot(timex, Mass_C)
-    axs[1].plot(timex, Mass_O)
-    axs[2].plot(timex, FeH)
-    plt.tight_layout(rect = [0., 0, 1, 1])
-    plt.subplots_adjust(wspace=0., hspace=0.)
-    plt.show(block=False)
-    plt.savefig('./figures/iso_abundance_test.pdf')
-    return None
-    
 
 def elem_evolution(figsiz = (40,20)):
     #ncol = aux.find_nearest(np.power(np.arange(20),2), len(np.max(Z)))
