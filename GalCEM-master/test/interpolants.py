@@ -1,5 +1,7 @@
+from numpy.core.numeric import NaN
 from numpy.core.shape_base import block
-from scipy.interpolate import LinearNDInterpolator, NearestNDInterpolator
+#from scipy.interpolate import LinearNDInterpolator, NearestNDInterpolator, RBFInterpolator
+import scipy.interpolate as interp
 import numpy as np
 import pandas as pd
 import pickle
@@ -13,13 +15,39 @@ class GalChemInterpolant(object):
         self.yname = str(dfy.name)
         x = dfx.to_numpy()
         y = dfy.to_numpy() 
-        self.linear_nd_interpolator = LinearNDInterpolator(x,y,rescale=True)
-        self.nearest_nd_interpolator = NearestNDInterpolator(x,y,rescale=True)
+        self.linear_nd_interpolator = interp.LinearNDInterpolator(x,y,rescale=True)
+        self.nearest_nd_interpolator = interp.NearestNDInterpolator(x,y,rescale=True)
     def __call__(self,dfx):
         x = dfx[self.xnames].to_numpy() if type(dfx)==pd.DataFrame else dfx
         yhat = self.linear_nd_interpolator(x)
         yhat[np.isnan(yhat)] = self.nearest_nd_interpolator(x[np.isnan(yhat)])
+        ysave = yhat.copy
         return yhat
+
+def interpolant_func(dfx,dfy):
+    yhat = interp.LinearNDInterpolator(dfx,dfy,rescale=True)
+    if yhat == NaN:
+        yhat = interp.NearestNDInterpolator(dfx,dfy,rescale=True)
+    return yhat
+
+#def call_model(x,y):
+#    if x.empty:
+#        return None
+#    else:
+#        return interpolant_func(x,y)
+
+def save_model(x,y):
+    models = []
+    for i,val in enumerate(ZA_sorted):
+        print(f'{i=}')
+        if x[i].empty:
+            print(f'{x[i]=}')
+            models.append(None)
+        else:
+            fit = interpolant_func(x[i],y[i])
+            models.append(fit)
+    # pickle.dump(model_k10,open('input/yields/lims/k10/processed/models.pkl','wb'))
+    return models
 
 def fit_2d_interpolant(dfx,dfy,tag,test,y_log10_scaled,view_angle):
     nticks = 64
