@@ -147,8 +147,11 @@ def iso_evolution(figsiz = (32,10)):
 def iso_abundance(figsiz = (32,10), elem_idx=103): # elem_idx=99 is Fe56, elem_idx=0 is H.
     #plt.clf()
     Mass_i = np.loadtxt('./output/Mass_i.dat')
-    Masses = np.log10(np.divide(Mass_i[:,2:], Mass_i[elem_idx,2:]))
-    XH = np.log10(np.divide(Mass_i[elem_idx,2:], Mass_i[0,2:])) 
+    #Masses = np.log10(np.divide(Mass_i[:,2:], Mass_i[elem_idx,2:]))
+    Fe = np.sum(Mass_i[97:104,7:],axis=0)
+    Masses = np.log10(np.divide(Mass_i[:,7:], Fe))
+    #XH = np.log10(np.divide(Mass_i[elem_idx,2:], Mass_i[0,2:])) 
+    XH = np.log10(np.divide(Fe, Mass_i[0,7:])) 
     Z = ZA_sorted[:,0]
     A = ZA_sorted[:,1]
     ncol = aux.find_nearest(np.power(np.arange(20),2), len(Z))
@@ -187,8 +190,48 @@ def iso_abundance(figsiz = (32,10), elem_idx=103): # elem_idx=99 is Fe56, elem_i
     plt.savefig('./figures/iso_abundance.pdf')
     return None
 
-def elem_evolution(figsiz = (40,20)):
-    #ncol = aux.find_nearest(np.power(np.arange(20),2), len(np.max(Z)))
-    #    if i < len(np.max(Z)):
-    #plt.savefig('./figures/elem_evolution.pdf')
+def elem_abundance(figsiz = (32,10)):
+    Mass_i = np.loadtxt('./output/Mass_i.dat')
+    Z_list = np.arange(np.min(ZA_sorted[:,0]), np.max(ZA_sorted[:,0])+1)
+    Z_symb_list = IN.periodic['elemSymb'][Z_list] # name of elements for all isotopes
+    Masses_i = []
+    for i,val in enumerate(Z_list):
+        Masses_i.append(np.sum(Mass_i[np.where(ZA_sorted[:,0]==i)[0], 5:], axis=0))
+    Fe = np.sum(Mass_i[97:104,5:],axis=0)
+    Masses = np.log10(np.divide(Masses_i, Fe))
+    XH = np.log10(np.divide(Fe, Mass_i[0,5:])) 
+    ncol = aux.find_nearest(np.power(np.arange(20),2), len(Z_list))
+    if len(Z_list) > ncol:
+        nrow = ncol
+    else:
+        nrow = ncol + 1
+    fig, axs = plt.subplots(nrow, ncol, figsize =figsiz)#, sharex=True)
+    for i, ax in enumerate(axs.flat):
+        if i < len(Z_list):
+            ax.plot(XH, Masses[i+1])
+            ax.annotate(f"{Z_symb_list[i+1]}", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
+            ax.set_ylim(-15, 5)
+            ax.set_xlim(-11, -2)
+            ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
+            ax.tick_params(width = 1, length = 2, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
+            ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=1))
+            ax.tick_params(width = 1, length = 2, axis = 'y', which = 'minor', left = True, right = True, direction = 'in')
+            ax.xaxis.set_major_locator(ticker.MultipleLocator(base=5))
+            ax.tick_params(width = 1, length = 5, axis = 'x', which = 'major', bottom = True, top = True, direction = 'in')
+            ax.yaxis.set_major_locator(ticker.MultipleLocator(base=5))
+            ax.tick_params(width = 1, length = 5, axis = 'y', which = 'major', left = True, right = True, direction = 'in')
+        else:
+            fig.delaxes(ax)
+    for i in range(nrow):
+        for j in range(ncol):
+            if j != 0:
+                axs[i,j].set_yticklabels([])
+            if i != nrow-1:
+                axs[i,j].set_xticklabels([])
+    axs[nrow//2,0].set_ylabel('Absolute Abundances', fontsize = 15)
+    axs[nrow-1, ncol//2].set_xlabel(f'[Fe/H]', fontsize = 15)
+    plt.tight_layout(rect = [0.02, 0, 1, 1])
+    plt.subplots_adjust(wspace=0., hspace=0.)
+    plt.show(block=False)
+    plt.savefig('./figures/elem_abundance.pdf')
     return None

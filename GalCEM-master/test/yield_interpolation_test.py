@@ -97,6 +97,53 @@ def lc18_test(i_elemZ, i_elemA, loc='input/yields/snii/lc18/tab_R', filename='lc
     #print(f'Y header: {[value_name]}')
     return X, Y
 
+def lc18_imfavgd_massfrac(x,y, vel_idx=IN.LC18_vel_idx):
+    if x.empty:
+        return [], []
+    else:
+        select = (x['vel_ini'] == vel_idx)
+        x = x.loc[select]
+        y = y.loc[select]
+        Zini_lc18 = x['Z_ini'].unique()
+        log10Zini = np.log10(Zini_lc18)
+        mean = (log10Zini[1:] + log10Zini[:-1]) /2
+        Zini_digitize = np.power(10,mean)
+        Mini_lc18 = x['mass_ini'].unique()
+        IMF_weights = IMF(Mini_lc18)
+        denom = integr.simps(IMF_weights, x=Mini_lc18)
+        averaged = []
+        for z,val in enumerate(Zini_lc18):
+            select = (x['Z_ini'] == val)
+            y_sel = y.loc[select]
+            prod = np.multiply(IMF_weights, y_sel)
+            integral = integr.simps(prod, x=Mini_lc18)
+            averaged.append(np.divide(integral, denom))
+        #Z_idx = np.digitize(metallicity, Zini_digitize)
+        return averaged, Zini_digitize
+
+def k10_imfavgd_massfrac(x,y):
+    if x.empty:
+        return [], []
+    else:
+        Zini_k10 = x['Z_ini'].unique()
+        log10Zini = np.log10(Zini_k10)
+        mean = (log10Zini[1:] + log10Zini[:-1]) /2
+        Zini_digitize = np.power(10,mean)
+        Mini_k10 = x['mass_ini'].unique()
+        IMF_weights = IMF(Mini_k10)
+        denom = integr.simps(IMF_weights, x=Mini_k10)
+        averaged = []
+        for z,val in enumerate(Zini_k10):
+            select = (x['Z_ini'] == val)
+            x_sel = x.loc[select]
+            Mass_sel = x_sel['mass_ini']
+            y_sel = y.loc[select]
+            prod = np.multiply(IMF(Mass_sel), y_sel)
+            integral = integr.simps(prod, x=Mass_sel)
+            averaged.append(np.divide(integral, denom))
+        #Z_idx = np.digitize(metallicity, Zini_digitize)
+        return averaged, Zini_digitize
+
 def k10_test(i_elemZ, i_elemA, loc='input/yields/lims/k10', filename='k10_pandas.csv',
               id_vars=['Z_ini'], var_name='mass_ini', value_name='Xi_avg'):
     df_tot = pd.read_csv(f'{loc}/{filename}', comment='#')

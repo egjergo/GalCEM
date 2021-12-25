@@ -33,7 +33,7 @@ infall = infall_class.inf()
 
 SFR_class = morph.Star_Formation_Rate(IN.SFR_option, IN.custom_SFR)
 IMF_class = morph.Initial_Mass_Function(Ml, Mu, IN.IMF_option, IN.custom_IMF)
-IMF = IMF_class.IMF() # Function @ input stellar mass
+IMF = IMF_class.IMF() #() # Function @ input stellar mass
 
 isotope_class = Y.Isotopes()
 yields_LIMs_class = Y.Yields_LIMs()
@@ -77,8 +77,8 @@ Rate_LIMs = IN.epsilon * np.ones(len(time_chosen))
 Rate_SNIa = IN.epsilon * np.ones(len(time_chosen)) 
 
 """ load yield tables """
-X_lc18, Y_lc18, models_lc18 = yt.load_processed_yields(func_name='lc18', loc='input/yields/snii/lc18/tab_R', df_list=['X', 'Y', 'models'])
-X_k10, Y_k10, models_k10 = yt.load_processed_yields(func_name='k10', loc='input/yields/lims/k10', df_list=['X', 'Y', 'models'])
+X_lc18, Y_lc18, models_lc18, averaged_lc18 = yt.load_processed_yields(func_name='lc18', loc='input/yields/snii/lc18/tab_R', df_list=['X', 'Y', 'models', 'avgmassfrac'])
+X_k10, Y_k10, models_k10, averaged_k10 = yt.load_processed_yields(func_name='k10', loc='input/yields/lims/k10', df_list=['X', 'Y', 'models', 'avgmassfrac'])
 Y_i99 = yt.load_processed_yields_snia(func_name='i99', loc='input/yields/snia/i99', df_list='Y')
 
 def test_fit(x,y,model, y_log10_scaled=False):
