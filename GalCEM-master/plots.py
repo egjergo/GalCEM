@@ -155,7 +155,7 @@ def iso_abundance(figsiz = (32,10), elem_idx=103): # elem_idx=99 is Fe56, elem_i
     Z = ZA_sorted[:,0]
     A = ZA_sorted[:,1]
     ncol = aux.find_nearest(np.power(np.arange(20),2), len(Z))
-    if len(ZA_sorted) > ncol:
+    if len(ZA_sorted) < ncol:
         nrow = ncol
     else:
         nrow = ncol + 1
@@ -190,28 +190,47 @@ def iso_abundance(figsiz = (32,10), elem_idx=103): # elem_idx=99 is Fe56, elem_i
     plt.savefig('./figures/iso_abundance.pdf')
     return None
 
-def elem_abundance(figsiz = (32,10)):
+def elem_abundance(figsiz = (32,10), c=5):
     Mass_i = np.loadtxt('./output/Mass_i.dat')
-    Z_list = np.arange(np.min(ZA_sorted[:,0]), np.max(ZA_sorted[:,0])+1)
+    Z_list = np.unique(ZA_sorted[:,0])
     Z_symb_list = IN.periodic['elemSymb'][Z_list] # name of elements for all isotopes
+    solar_norm_H = c_class.solarA09_vs_H_bymass[Z_list]
+    solar_norm_Fe = c_class.solarA09_vs_Fe_bymass[Z_list]
+    #for i,val in enumerate(Z_list):
+    #    print(np.where(ZA_sorted[:,0]==val)[0])
+    #    print(f'{val=}')
+    #    print(f'{Z_list[i]=}')
+    #    print(Z_symb_list[i])
     Masses_i = []
+    Masses2_i = []
+    Fe = np.sum(Mass_i[np.where(ZA_sorted[:,0]==26)[0], c:], axis=0)
+    H = np.sum(Mass_i[np.where(ZA_sorted[:,0]==1)[0], c:], axis=0)
     for i,val in enumerate(Z_list):
-        Masses_i.append(np.sum(Mass_i[np.where(ZA_sorted[:,0]==i)[0], 5:], axis=0))
-    Fe = np.sum(Mass_i[97:104,5:],axis=0)
+        print(f'{i=}')
+        print(f'{val=}')
+        print(f'{Z_list[i]=}')
+        mass = np.sum(Mass_i[np.where(ZA_sorted[:,0]==val)[0], c:], axis=0)
+        Masses2_i.append(np.log10(np.divide(mass,Fe)) - solar_norm_Fe[np.where(Z_list==val)[0]])
+        Masses_i.append(mass)
     Masses = np.log10(np.divide(Masses_i, Fe))
-    XH = np.log10(np.divide(Fe, Mass_i[0,5:])) 
+    Masses2 = np.array(Masses2_i) 
+    FeH = np.log10(np.divide(Fe, H)) - solar_norm_H[np.where(Z_list==26)[0]]
     ncol = aux.find_nearest(np.power(np.arange(20),2), len(Z_list))
-    if len(Z_list) > ncol:
+    if len(Z_list) < ncol:
         nrow = ncol
     else:
         nrow = ncol + 1
     fig, axs = plt.subplots(nrow, ncol, figsize =figsiz)#, sharex=True)
     for i, ax in enumerate(axs.flat):
         if i < len(Z_list):
-            ax.plot(XH, Masses[i+1])
-            ax.annotate(f"{Z_symb_list[i+1]}", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
-            ax.set_ylim(-15, 5)
-            ax.set_xlim(-11, -2)
+            ax.plot(FeH, Masses[i], color='blue')
+            ax.plot(FeH, Masses2[i], color='orange')
+            ax.annotate(f"{Z_list[i]}{Z_symb_list[i]}", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
+            ax.set_ylim(-6, 6)
+            #ax.set_ylim(-1.5, 1.5)
+            #ax.set_xlim(-11, -2)
+            #ax.set_xlim(-6.5, 0.5)
+            ax.set_xlim(-8.5, 0.5)
             ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
             ax.tick_params(width = 1, length = 2, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
             ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=1))
@@ -230,8 +249,8 @@ def elem_abundance(figsiz = (32,10)):
                 axs[i,j].set_xticklabels([])
     axs[nrow//2,0].set_ylabel('Absolute Abundances', fontsize = 15)
     axs[nrow-1, ncol//2].set_xlabel(f'[Fe/H]', fontsize = 15)
-    plt.tight_layout(rect = [0.02, 0, 1, 1])
-    plt.subplots_adjust(wspace=0., hspace=0.)
+    fig.tight_layout(rect = [0.03, 0, 1, 1])
+    fig.subplots_adjust(wspace=0., hspace=0.)
     plt.show(block=False)
     plt.savefig('./figures/elem_abundance.pdf')
     return None

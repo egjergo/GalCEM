@@ -18,6 +18,9 @@ class Inputs:
 
         self.Ml_LIMs = 0.6 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Mu_LIMs = 9 # [Msun] !!!!!!! temporary. Import from yield tables
+        self.Ml_NSM = 9 # [Msun] !!!!!!! temporary. Import from yield tables
+        self.Mu_NSM = 50 # [Msun] !!!!!!! temporary. Import from yield tables
+        self.A_NSM = 0.03 #0.06 # Fraction of white dwarfs that underwent a SNIa
         self.Ml_Massive = 10 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Mu_Massive = 120 # [Msun] !!!!!!! temporary. Import from yield tables
 

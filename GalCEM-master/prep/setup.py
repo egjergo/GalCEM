@@ -75,6 +75,7 @@ S_v = IN.epsilon * np.ones(len(time_chosen)) # S = 1 - G
 Rate_SNII = IN.epsilon * np.ones(len(time_chosen)) 
 Rate_LIMs = IN.epsilon * np.ones(len(time_chosen)) 
 Rate_SNIa = IN.epsilon * np.ones(len(time_chosen)) 
+Rate_NSM = IN.epsilon * np.ones(len(time_chosen)) 
 
 """ load yield tables """
 X_lc18, Y_lc18, models_lc18, averaged_lc18 = yt.load_processed_yields(func_name='lc18', loc='input/yields/snii/lc18/tab_R', df_list=['X', 'Y', 'models', 'avgmassfrac'])

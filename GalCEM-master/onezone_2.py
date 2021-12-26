@@ -45,6 +45,9 @@ class Wi_grid:
         lifetime_grid = lifetime_class.interp_stellar_lifetimes(self.metallicity)(mass_grid) #np.power(10, lifetime_class.interp_stellar_lifetimes(mass_grid, self.metallicity))#np.column_stack([mass_grid, self.metallicity * np.ones(len(mass_grid))])))
         birthtime_grid = time_chosen[self.age_idx] - lifetime_grid 
         positive_idx = np.where(birthtime_grid > 0.)
+        #print(f"For grids, {mass_grid[positive_idx]=}")
+        #print(f"For grids, {lifetime_grid[positive_idx]=}")
+        #print(f"For grids, {birthtime_grid[positive_idx]=}")
         return birthtime_grid[positive_idx], lifetime_grid[positive_idx], mass_grid[positive_idx]
 
             
@@ -71,6 +74,8 @@ class Wi:
         #print('SNIa channel')
         self.SNIa_birthtime_grid, self.SNIa_lifetime_grid, self.SNIa_mass_grid = (
                 self.Wi_grid_class.grids(IN.Ml_SNIa, IN.Mu_SNIa))
+        self.NSM_birthtime_grid, self.NSM_lifetime_grid, self.NSM_mass_grid = (
+                self.Wi_grid_class.grids(IN.Ml_NSM, IN.Mu_NSM))
         self.yield_load = None
         return None
         
@@ -103,8 +108,8 @@ class Wi:
             return lifetime_class.dMdtauM(np.log10(lifetime_grid), self.metallicity*np.ones(len(lifetime_grid)))#(lifetime_grid)
         if derlog == True:
             return 0.5    
-        
-    def yield_array(self, channel_switch, mass_grid, birthtime_grid, vel_idx=IN.LC18_vel_idx):
+ 
+    def _yield_array(self, channel_switch, mass_grid, birthtime_grid, vel_idx=IN.LC18_vel_idx):
         len_X = len(mass_grid)
         Z_comp = Z_v[self.age_idx] * np.ones(len_X) #self.Z_component(birthtime_grid)
         y = []
@@ -124,7 +129,9 @@ class Wi:
             
             for i, model in enumerate(models):
                 if model != None:
+                    #print(f'{channel_switch=}, \t{i=}')
                     fit = model(X_sample)
+                    #print(f"{len(fit)=}")
                     y.append(fit) # !!!!!!! use asynchronicity to speed up the computation
                 else:
                     y.append(np.zeros(len_X))
@@ -144,6 +151,9 @@ class Wi:
         SFR_comp[SFR_comp<0] = 0.
         IMF_comp = self.IMF_component(mass_grid)
         integrand = np.multiply(SFR_comp, IMF_comp)
+        #print(f"For compute_rateSNII, {SFR_comp=}")
+        #print(f"For compute_rateSNII, {IMF_comp=}")
+        #print(f"For compute_rateSNII, {integrand=}")
         return integr.simps(integrand, x=mass_grid)
     
     def compute_rateSNIa(self, channel_switch='SNIa'):
@@ -154,6 +164,9 @@ class Wi:
         #M1_max = IN.Mu_SNIa
         nu_min = np.max([0.5, np.max(np.divide(mass_grid, IN.Mu_SNIa))])
         nu_max = np.min([1, np.min(np.divide(mass_grid, IN.Ml_SNIa))])
+        #print(f'{nu_min = },\t {nu_max=}')
+        #print(f'nu_min = 0.5,\t nu_max= 1.0')
+        #nu_test = np.linspace(nu_min, nu_max, num=len(mass_grid))
         nu_test = np.linspace(0.5, 1, num=len(mass_grid))
         IMF_v = np.divide(mass_grid, nu_test)
         int_SNIa = f_nu(nu_test) * self.IMF_component(IMF_v)
@@ -172,10 +185,14 @@ class Wi:
         else:
             rateLIMs = IN.epsilon
         if len(self.grid_picker('SNIa', 'birthtime')) > 0.:
-            R_SNIa = self.compute_rateSNIa()
+            R_SNIa = IN.A_SNIa * self.compute_rateSNIa()
         else:
             R_SNIa = IN.epsilon
-        return rateSNII, rateLIMs, R_SNIa
+        if len(self.grid_picker('NSM', 'birthtime')) > 0.:
+            R_NSM = IN.A_NSM * self.compute_rate(channel_switch='NSM')
+        else:
+            R_NSM = IN.epsilon
+        return rateSNII, rateLIMs, R_SNIa, R_NSM
 
     def compute(self, channel_switch, vel_idx=IN.LC18_vel_idx): 
         '''Computes, using the Simpson rule, the integral Wi 
@@ -183,7 +200,6 @@ class Wi:
         mass_grid = self.grid_picker(channel_switch, 'mass')
         lifetime_grid = self.grid_picker(channel_switch, 'lifetime')        
         birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
-        #self.yield_load = self.yield_array(channel_switch, mass_grid, birthtime_grid, vel_idx=vel_idx)
         SFR_comp = self.SFR_component(birthtime_grid)
         SFR_comp[SFR_comp<0] = 0.
         IMF_comp, mass_comp = self.mass_component(channel_switch, mass_grid, lifetime_grid)# 
@@ -215,9 +231,7 @@ class Evolution:
         Infall rate: [Msun/Gyr]
         SFR: [Msun/Gyr]
         '''
-        #Wi_class = Wi(n) #how can I pass this from evolve()? used in aux.RK4 
         Wi_comps = kwargs['Wi_comp'] # [list of 2-array lists] #Wi_comps[0][0].shape=(155,)
-        #Wi_class = kwargs['Wi_class'] # list of classes
         Wi_SNIa = kwargs['Wi_SNIa']
         i = kwargs['i']
         yields = kwargs['yields']
@@ -226,11 +240,11 @@ class Evolution:
             val = Infall_rate[n] * Xi_inf[i]  - np.multiply(SFR_v[n], Xi_v[i,n])
         else:
             Wi_vals = []
-            for j in range(len(Wi_comps)):
-                if len(Wi_comps[j][1]) > 0.:
-                    integrand = Wi_comps[j][0] * yields[j]
-                    integral = integr.simps(integrand, x=Wi_comps[j][1])
-                    Wi_vals.append(integral)
+            for j,val in enumerate(Wi_comps):
+                if len(val[1]) > 0.:
+                    #print(f'{channel_switch[j]}, {ZA_sorted[i]}')
+                    #file1.write(f'{channel_switch[j]}, {ZA_sorted[i]}\n') 
+                    Wi_vals.append(integr.simps(val[0] * yields[j], x=val[1]))
             infall_comp = Infall_rate[n] * Xi_inf[i]
             sfr_comp = SFR_v[n] * Xi_v[i,n]
             val = infall_comp  - sfr_comp + np.sum(Wi_vals) + Wi_SNIa #+ np.sum(Wi_val, axis=0)
@@ -248,27 +262,32 @@ class Evolution:
     def evolve(self):
         for n in range(len(time_chosen[:idx_age_Galaxy])):
             print(f'{n = }')
+            file1.write(f'{n = }\n')
             self.phys_integral(n)        
             Xi_v[:, n] = np.divide(Mass_i_v[:,n], Mgas_v[n])
             if n > 0.: 
                 Wi_class = Wi(n)
-                #Wi_class_LIMs = Wi(n) # I need the repeated class definition because of the yield_load fix !!!!!!!
-                #Wi_class_SNIa = Wi(n)
-                #Wi_class = [Wi_class_SNII, Wi_class_LIMs]
-                rateSNII, rateLIMs, rateSNIa = Wi_class.compute_rates()
-                Rate_SNII[n] = rateSNII
-                Rate_SNIa[n] = rateSNIa
-                Rate_LIMs[n] = rateLIMs
-                Wi_comp_SNII = Wi_class.compute("Massive") # Wi_comp = [integrand, birthrate]
-                Wi_comp_LIMs = Wi_class.compute("LIMs")
-                #Wi_comp_SNIa = rateSNIa  #Wi_class_SNIa.compute("SNIa")
-                Wi_comp = [Wi_comp_SNII]#, Wi_comp_LIMs]
-                yield_SNII = Wi_class.yield_array('Massive', Wi_class.Massive_mass_grid, Wi_class.Massive_birthtime_grid)
-                yield_LIMs = Wi_class.yield_array('LIMs', Wi_class.LIMs_mass_grid, Wi_class.LIMs_birthtime_grid)
+                Rate_SNII[n], Rate_LIMs[n], Rate_SNIa[n], Rate_NSM[n] = Wi_class.compute_rates()
+                Wi_comp = [Wi_class.compute("Massive"), Wi_class.compute("LIMs")]
+                #yield_SNII = Wi_class.yield_array('Massive', Wi_class.Massive_mass_grid, Wi_class.Massive_birthtime_grid)
+                #yield_LIMs = Wi_class.yield_array('LIMs', Wi_class.LIMs_mass_grid, Wi_class.LIMs_birthtime_grid)
                 for i, _ in enumerate(ZA_sorted): 
-                    Wi_SNIa = rateSNIa * Y_i99[0][i]
-                    yields = [yield_SNII[i]]#, yield_LIMs[i]]
-                    Mass_i_v[i, n+1] = aux.RK4(self.solve_integral, time_chosen[n], Mass_i_v[i,n], n, IN.nTimeStep, Wi_class=Wi_class, i=i, Wi_comp=Wi_comp, Wi_SNIa=Wi_SNIa, yields=yields)
+                    file1.write(f'{i=}\n')
+                    Wi_SNIa = Rate_SNIa[n] * Y_i99[0][i]
+                    Wi_NSM = Rate_NSM[n] * Y_sk16[0][i]
+                    Wi_binaries = np.sum([Wi_SNIa, Wi_NSM])
+                    if X_lc18[i].empty:
+                        yields_lc18 = 0.
+                    else:
+                        idx_SNII = np.digitize(Z_v[n-1], averaged_lc18[i][1])
+                        yields_lc18 = averaged_lc18[i][0][idx_SNII]
+                    if X_k10[i].empty:
+                        yields_k10 = 0.
+                    else:
+                        idx_LIMs = np.digitize(Z_v[n-1], averaged_k10[i][1])
+                        yields_k10 = averaged_k10[i][0][idx_LIMs]
+                    yields = [yields_lc18, yields_k10]
+                    Mass_i_v[i, n+1] = aux.RK4(self.solve_integral, time_chosen[n], Mass_i_v[i,n], n, IN.nTimeStep, i=i, Wi_comp=Wi_comp, Wi_SNIa=Wi_binaries, yields=yields)
             Z_v[n] = np.divide(np.sum(Mass_i_v[:,n]), Mgas_v[n])
         Xi_v[:,-1] = np.divide(Mass_i_v[:,-1], Mgas_v[-1]) 
         return None
@@ -285,6 +304,8 @@ print(f'Package lodaded in {1e0*(package_loading_time)} seconds.')
 
 def main():
     tic.append(time.process_time())
+    global file1 
+    file1 = open("output/Terminal_output.txt", "w")
     Evolution_class = Evolution()
     Evolution_class.evolve()
     aux.tic_count(string="Computation time", tic=tic)
@@ -302,6 +323,7 @@ def main():
     aux.tic_count(string="Output saved in", tic=tic)
     print('Plotting...')
     plts.phys_integral_plot()
+    file1.close()
     aux.tic_count(string="Plots saved in", tic=tic)
     return None
 
