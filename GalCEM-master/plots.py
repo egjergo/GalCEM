@@ -247,7 +247,7 @@ def elem_abundance(figsiz = (32,10), c=5):
                 axs[i,j].set_yticklabels([])
             if i != nrow-1:
                 axs[i,j].set_xticklabels([])
-    axs[nrow//2,0].set_ylabel('Absolute Abundances', fontsize = 15)
+    axs[nrow//2,0].set_ylabel('[X/Fe]', fontsize = 15)
     axs[nrow-1, ncol//2].set_xlabel(f'[Fe/H]', fontsize = 15)
     fig.tight_layout(rect = [0.03, 0, 1, 1])
     fig.subplots_adjust(wspace=0., hspace=0.)
