@@ -274,8 +274,8 @@ class Evolution:
                 for i, _ in enumerate(ZA_sorted): 
                     file1.write(f'{i=}\n')
                     Wi_SNIa = Rate_SNIa[n] * Y_i99[0][i]
-                    Wi_NSM = Rate_NSM[n] * Y_sk16[0][i]
-                    Wi_binaries = np.sum([Wi_SNIa, Wi_NSM])
+                    #Wi_NSM = Rate_NSM[n] * Y_sk16[0][i]
+                    Wi_binaries = np.sum([Wi_SNIa])#, Wi_NSM])
                     if X_lc18[i].empty:
                         yields_lc18 = 0.
                     else:
