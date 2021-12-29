@@ -144,7 +144,7 @@ def iso_evolution(figsiz = (32,10)):
     return None
 
 
-def iso_abundance(figsiz = (32,10), elem_idx=103): # elem_idx=99 is Fe56, elem_idx=0 is H.
+def iso_abundance(figsiz = (32,10), elem_idx=99): # elem_idx=99 is Fe56, elem_idx=0 is H.
     #plt.clf()
     Mass_i = np.loadtxt('./output/Mass_i.dat')
     #Masses = np.log10(np.divide(Mass_i[:,2:], Mass_i[elem_idx,2:]))
@@ -224,13 +224,16 @@ def elem_abundance(figsiz = (32,10), c=5):
     for i, ax in enumerate(axs.flat):
         if i < len(Z_list):
             ax.plot(FeH, Masses[i], color='blue')
-            ax.plot(FeH, Masses2[i], color='orange')
+            ax.plot(FeH, Masses2[i], color='orange', linewidth=2)
+            ax.axhline(y=0, color='grey', linestyle='--', linewidth=1, alpha=0.5)
+            ax.axvline(x=0, color='grey', linestyle='--', linewidth=1, alpha=0.5)
             ax.annotate(f"{Z_list[i]}{Z_symb_list[i]}", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
             ax.set_ylim(-6, 6)
+            #ax.set_ylim(-2, 2)
             #ax.set_ylim(-1.5, 1.5)
             #ax.set_xlim(-11, -2)
-            #ax.set_xlim(-6.5, 0.5)
-            ax.set_xlim(-8.5, 0.5)
+            ax.set_xlim(-6.5, 0.5)
+            #ax.set_xlim(-8.5, 0.5)
             ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
             ax.tick_params(width = 1, length = 2, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
             ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=1))

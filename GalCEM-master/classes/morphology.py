@@ -17,11 +17,11 @@ IN = INp.Inputs()
 "      contributions by individual yields      "
 "                                              "
 " LIST OF CLASSES:                             "
-"    __         Auxiliary                          "
-"    __         Stellar_Lifetimes                  "
-"    __        Infall                             "
-"    __        Initial_Mass_Function              "
-"    __        Star_Formation_Rate                "
+"    __        Auxiliary                       "
+"    __        Stellar_Lifetimes               "
+"    __        Infall                          "
+"    __        Initial_Mass_Function           "
+"    __        Star_Formation_Rate             "
 "                                              "
 """"""""""""""""""""""""""""""""""""""""""""""""
 
@@ -282,7 +282,7 @@ class Initial_Mass_Function:
         self.option = option
         self.custom = custom_IMF
     
-    def Salpeter55(self, plaw=1.35):
+    def Salpeter55(self, plaw=IN.Salpeter_IMF_Plaw):
         return lambda Mstar: Mstar ** (-(1 + plaw))
         
     def Kroupa03(self):#, C = 0.31): #if m <= 0.5: lambda m: 0.58 * (m ** -0.30)/m

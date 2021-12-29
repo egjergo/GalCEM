@@ -74,8 +74,8 @@ def fit_2d_interpolant(dfx,dfy,tag,test,y_log10_scaled,view_angle):
     x0mesh,x1mesh = np.meshgrid(x0_ticks,x1_ticks)
     xquery = np.hstack([x0mesh.reshape(-1,1),x1mesh.reshape(-1,1)])
     yquery = model(xquery)
-    print(f'{xquery=}')
-    print(f'{yquery=}')
+    #print(f'{xquery=}')
+    #print(f'{yquery=}')
     ymesh = yquery.reshape(x1mesh.shape)
     fig = pyplot.figure(figsize=(15,5))
     ax = fig.add_subplot(1,2,1,projection='3d')
@@ -194,13 +194,13 @@ if __name__ == '__main__':
                 dfx = df[['log10_Z_ini','mass_ini']],
                 dfy = df['log10_y'],
                 tag = tag,
-                test = False,
+                test = True,
                 y_log10_scaled = True,
                 view_angle = 135)
             interpolants.append(log10_yield_lims_interpolant)
             #pickle.dump(log10_yield_lims_interpolant,open('output/interpolants/log10_yield_lims_interpolant.%d.pkl'%idx,'wb'))
     interpolants = np.array(interpolants, dtype='object') #, header = "dfx = df[['log10_Z_ini','mass_ini']], dfy = df['log10_mass_frac']"
-    pickle.dump(interpolants,open('output/interpolants/log10_yield_lims_interpolants.pkl','wb'))
+    #pickle.dump(interpolants,open('output/interpolants/log10_yield_lims_interpolants.pkl','wb'))
     '''
     dfxs = pickle.load(open('input/yields/snii/lc18/tab_R/processed/X.pkl','rb'))
     dfys = pickle.load(open('input/yields/snii/lc18/tab_R/processed/Y.pkl','rb'))

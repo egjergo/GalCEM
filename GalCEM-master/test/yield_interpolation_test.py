@@ -3,6 +3,7 @@ import pickle
 import numpy as np
 import pandas as pd
 import scipy.interpolate as interp
+import scipy.integrate as integr
 from matplotlib import pyplot as plt
 from matplotlib import cm
 from test.util import mplsetup
@@ -156,8 +157,8 @@ def k10_test(i_elemZ, i_elemA, loc='input/yields/lims/k10', filename='k10_pandas
     print(f'Y header: {[value_name]}')
     return X, Y
 
-def i99_test(i_elemZ, i_elemA, loc='input/yields/snia/i99', filename='table4.dat', value_name='CDD1'):
-    df = pd.read_csv(f'{loc}/{filename}', comment='#', sep='\t')
+def i99_test(i_elemZ, i_elemA, loc='input/yields/snia/i99', filename='table3.csv', value_name='WDD2'):
+    df = pd.read_csv(f'{loc}/{filename}', comment='#', sep=',')
     select = (df['elemZ'] == i_elemZ) & (df['elemA'] == i_elemA)
     df_pick = df.loc[select]
     if df_pick[value_name].empty:

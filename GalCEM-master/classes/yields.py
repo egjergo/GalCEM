@@ -231,14 +231,14 @@ class Yields_SNIa(Yields):
 			
 		if self.option == 'i99':
 			yd = 'input/yields/snia/i99/'
-			self.tables = np.genfromtxt(yd + 'table4.dat', 
-						 names=['elemName','elemZ','elemA', 'Y_W7', 'Y_W70', 
-						 		'Y_WDD1', 'Y_WDD2', 'Y_WDD3', 'Y_CDD1', 'Y_CDD2'], 
-						 dtype=[('elemName', '<U5'), ('elemZ', '<i8'), 
-						 ('elemA', '<i8'), ('Y_W7','<f8'), ('Y_W70','<f8'), 
-						 ('Y_WDD1','<f8'), ('Y_WDD2','<f8'), ('Y_WDD3','<f8'), 
-						 ('Y_CDD1','<f8'), ('Y_CDD2','<f8')])
-			self.yields = self.tables['Y_CDD1'] 
+			self.tables = np.genfromtxt(yd + 'table3.csv', skip_header=1, delimiter=',',
+   			            names=['elemZ','elemA', 'elemSymb', 'TypeII', 
+                                'W7', 'W70', 'WDD1', 'WDD2', 'WDD3', 'CDD1', 'CDD2'],
+						dtype=[('elemZ', '<i8'), ('elemA', '<i8'), ('elemSymb', '<U5'),
+						 ('TypeII','<f8'), ('W7','<f8'), ('W70','<f8'), 
+						 ('WDD1','<f8'), ('WDD2','<f8'), ('WDD3','<f8'), 
+						 ('CDD1','<f8'), ('CDD2','<f8')])
+			self.yields = self.tables['WDD2'] 
 			self.elemA = self.tables['elemA']
 			self.elemZ = self.tables['elemZ']
 

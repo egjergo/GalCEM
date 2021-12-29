@@ -267,7 +267,7 @@ class Evolution:
                 #yield_LIMs = Wi_class.yield_array('LIMs', Wi_class.LIMs_mass_grid, Wi_class.LIMs_birthtime_grid)
                 for i, _ in enumerate(ZA_sorted): 
                     file1.write(f'{i=}\n')
-                    Wi_SNIa = Rate_SNIa[n] * Y_i99[0][i]
+                    Wi_SNIa = Rate_SNIa[n] * Y_i99[i]
                     if X_lc18[i].empty:
                         yields_lc18 = 0.
                     else:
@@ -321,6 +321,7 @@ def main():
 
 def plots():
     tic.append(time.process_time())
+    plts.elem_abundance()
     plts.iso_evolution()
     plts.iso_abundance()
     aux.tic_count(string="Plots saved in", tic=tic)
