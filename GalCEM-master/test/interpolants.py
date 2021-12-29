@@ -52,7 +52,7 @@ def save_model(x,y):
 def fit_2d_interpolant(dfx,dfy,tag,test,y_log10_scaled,view_angle):
     nticks = 64
     sepfrac = 0.1
-    interpolant = model = GalChemInterpolant(dfx,dfy) # https://docs.scipy.org/doc/scipy/reference/interpolate.html
+    interpolant = GalChemInterpolant(dfx,dfy) # https://docs.scipy.org/doc/scipy/reference/interpolate.html
     if not test: return interpolant
     inputs,output = list(dfx.columns),str(dfy.name)
     name = '%s.%s'%(tag,output)
@@ -73,7 +73,7 @@ def fit_2d_interpolant(dfx,dfy,tag,test,y_log10_scaled,view_angle):
     x1_ticks = np.linspace(x1min-sepfrac*x1_sep,x1max+sepfrac*x1_sep,nticks)
     x0mesh,x1mesh = np.meshgrid(x0_ticks,x1_ticks)
     xquery = np.hstack([x0mesh.reshape(-1,1),x1mesh.reshape(-1,1)])
-    yquery = model(xquery)
+    yquery = interpolant(xquery)
     #print(f'{xquery=}')
     #print(f'{yquery=}')
     ymesh = yquery.reshape(x1mesh.shape)
@@ -98,7 +98,7 @@ def fit_2d_interpolant(dfx,dfy,tag,test,y_log10_scaled,view_angle):
 def fit_3d_interpolant(dfx,dfy,tag,test,y_log10_scaled,view_angle):
     nticks = 64
     sepfrac = 0.1
-    interpolant = model = GalChemInterpolant(dfx,dfy) # https://docs.scipy.org/doc/scipy/reference/interpolate.html
+    interpolant = GalChemInterpolant(dfx,dfy) # https://docs.scipy.org/doc/scipy/reference/interpolate.html
     if not test: return interpolant
     inputs,output = list(dfx.columns),str(dfy.name)
     name = '%s.%s'%(tag,output)
@@ -131,7 +131,7 @@ def fit_3d_interpolant(dfx,dfy,tag,test,y_log10_scaled,view_angle):
         x1_ticks = np.linspace(x1min-sepfrac*x1_sep,x1max+sepfrac*x1_sep,nticks)
         x0mesh,x1mesh = np.meshgrid(x0_ticks,x1_ticks)
         xquery = np.hstack([x0mesh.reshape(-1,1),x1mesh.reshape(-1,1),np.tile(k,(x0mesh.size ,1))])
-        yquery = model(xquery)
+        yquery = interpolant(xquery)
         ymesh = yquery.reshape(x1mesh.shape)
         ax = fig.add_subplot(n_keys,2,1+2*j,projection='3d')
         surf = ax.plot_surface(x0mesh,x1mesh,ymesh,cmap=cm.Greys,alpha=.9,vmin=ymesh.min(),vmax=ymesh.max())
