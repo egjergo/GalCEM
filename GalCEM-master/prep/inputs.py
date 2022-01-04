@@ -21,8 +21,11 @@ class Inputs:
         self.Ml_NSM = 9 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Mu_NSM = 50 # [Msun] !!!!!!! temporary. Import from yield tables
         self.A_NSM = 0.03 #0.06 # Fraction of white dwarfs that underwent a SNIa
+        self.A_collapsars = 0.05 #0.06 # Fraction of white dwarfs that underwent a SNIa
         self.Ml_Massive = 10 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Mu_Massive = 120 # [Msun] !!!!!!! temporary. Import from yield tables
+        self.Ml_collapsars = 9 # [Msun] !!!!!!! temporary. Import from yield tables
+        self.Mu_collapsars = 120 # [Msun] !!!!!!! temporary. Import from yield tables
 
         self.nTimeStep = 0.01 # Picked to smooth the mapping between stellar masses and lifetimes
         self.numTimeStep = 2000 # Like FM
