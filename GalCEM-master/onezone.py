@@ -42,7 +42,7 @@ class Wi_grid:
         They are converted to lifetimes by integr_lim() in integration_grid()
         '''
         mass_grid = np.geomspace(Ml_lim, Mu_lim, num = IN.num_MassGrid)
-        lifetime_grid = lifetime_class.interp_stellar_lifetimes(self.metallicity)(mass_grid) #np.power(10, lifetime_class.interp_stellar_lifetimes(mass_grid, self.metallicity))#np.column_stack([mass_grid, self.metallicity * np.ones(len(mass_grid))])))
+        lifetime_grid = lifetime_class.interp_stellar_lifetimes(0.06)(mass_grid) #np.power(10, lifetime_class.interp_stellar_lifetimes(mass_grid, self.metallicity))#np.column_stack([mass_grid, self.metallicity * np.ones(len(mass_grid))])))
         birthtime_grid = time_chosen[self.age_idx] - lifetime_grid 
         positive_idx = np.where(birthtime_grid > 0.)
         #print(f"For grids, {mass_grid[positive_idx]=}")
