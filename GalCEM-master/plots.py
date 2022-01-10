@@ -20,12 +20,8 @@ supported_cmap = ['Accent', 'Accent_r', 'Blues', 'Blues_r', 'BrBG', 'BrBG_r', 'B
 #nodes = [0.0, 0.4, 0.8, 1.0]
 #cmap2 = colors.LinearSegmentedColormap.from_list("mycmap", list(zip(nodes, mycolors)))
 #cmap = cm.get_cmap(supported_cmap[-4], 10)
-plt.rcParams['xtick.major.size'], plt.rcParams['ytick.major.size'] = 10, 10
-plt.rcParams['xtick.minor.size'], plt.rcParams['ytick.minor.size'] = 7, 7
-plt.rcParams['xtick.major.width'], plt.rcParams['ytick.major.width'] = 2, 2
-plt.rcParams['xtick.minor.width'], plt.rcParams['ytick.minor.width'] = 1, 1
-plt.rcParams['xtick.labelsize'], plt.rcParams['ytick.labelsize'] = 10, 10
-plt.rcParams['axes.linewidth'] = 1
+from test.util import mplsetup
+mplsetup()
 
 supported_cmap = ['Accent', 'Accent_r', 'Blues', 'Blues_r', 'BrBG', 'BrBG_r', 'BuGn', 'BuGn_r', 'BuPu', 'BuPu_r', 'CMRmap', 'CMRmap_r', 'Dark2', 'Dark2_r', 'GnBu', 'GnBu_r', 'Greens', 'Greens_r', 'Greys', 'Greys_r', 'OrRd', 'OrRd_r', 'Oranges', 'Oranges_r', 'PRGn', 'PRGn_r', 'Paired', 'Paired_r', 'Pastel1', 'Pastel1_r', 'Pastel2', 'Pastel2_r', 'PiYG', 'PiYG_r', 'PuBu', 'PuBuGn', 'PuBuGn_r', 'PuBu_r', 'PuOr', 'PuOr_r', 'PuRd', 'PuRd_r', 'Purples', 'Purples_r', 'RdBu', 'RdBu_r', 'RdGy', 'RdGy_r', 'RdPu', 'RdPu_r', 'RdYlBu', 'RdYlBu_r', 'RdYlGn', 'RdYlGn_r', 'Reds', 'Reds_r', 'Set1', 'Set1_r', 'Set2', 'Set2_r', 'Set3', 'Set3_r', 'Spectral', 'Spectral_r', 'Wistia', 'Wistia_r', 'YlGn', 'YlGnBu', 'YlGnBu_r', 'YlGn_r', 'YlOrBr', 'YlOrBr_r', 'YlOrRd', 'YlOrRd_r', 'afmhot', 'afmhot_r', 'autumn', 'autumn_r', 'binary', 'binary_r', 'bone', 'bone_r', 'brg', 'brg_r', 'bwr', 'bwr_r', 'cividis', 'cividis_r', 'cool', 'cool_r', 'coolwarm', 'coolwarm_r', 'copper', 'copper_r', 'cubehelix', 'cubehelix_r', 'flag', 'flag_r', 'gist_earth', 'gist_earth_r', 'gist_gray', 'gist_gray_r', 'gist_heat', 'gist_heat_r', 'gist_ncar', 'gist_ncar_r', 'gist_rainbow', 'gist_rainbow_r', 'gist_stern', 'gist_stern_r', 'gist_yarg', 'gist_yarg_r', 'gnuplot', 'gnuplot2', 'gnuplot2_r', 'gnuplot_r', 'gray', 'gray_r', 'hot', 'hot_r', 'hsv', 'hsv_r', 'inferno', 'inferno_r', 'jet', 'jet_r', 'magma', 'magma_r', 'nipy_spectral', 'nipy_spectral_r', 'ocean', 'ocean_r', 'pink', 'pink_r', 'plasma', 'plasma_r', 'prism', 'prism_r', 'rainbow', 'rainbow_r', 'seismic', 'seismic_r', 'spring', 'spring_r', 'summer', 'summer_r', 'tab10', 'tab10_r', 'tab20', 'tab20_r', 'tab20b', 'tab20b_r', 'tab20c', 'tab20c_r', 'terrain', 'terrain_r', 'turbo', 'turbo_r', 'twilight', 'twilight_r', 'twilight_shifted', 'twilight_shifted_r', 'viridis', 'viridis_r', 'winter', 'winter_r']
 
@@ -207,73 +203,53 @@ def iso_abundance(figsiz = (32,10), elem_idx=99): # elem_idx=99 is Fe56, elem_id
     plt.savefig('./figures/iso_abundance.pdf')
     return None
 
-def elem_abundance(figsiz = (32,10), c=5):
-    Mass_i = np.loadtxt('./output/Mass_i_fiducial.dat')
-    Mass_i_lowIMF = np.loadtxt('./output/Mass_i_IMF1pt2.dat')
-    Mass_i_highIMF = np.loadtxt('./output/Mass_i_IMF1pt7.dat')
-    Mass_i_lowSFR = np.loadtxt('./output/Mass_i_fiducial.dat')
-    Mass_i_highSFR = np.loadtxt('./output/Mass_i_k_SFR_2.dat')
-    Z_list = np.unique(ZA_sorted[:,0])
-    Z_symb_list = IN.periodic['elemSymb'][Z_list] # name of elements for all isotopes
+def extract_normalized_abundances(Z_list, Mass_i_loc='output/Mass_i.dat', c=5):
     solar_norm_H = c_class.solarA09_vs_H_bymass[Z_list]
     solar_norm_Fe = c_class.solarA09_vs_Fe_bymass[Z_list]
-    #for i,val in enumerate(Z_list):
-    #    print(np.where(ZA_sorted[:,0]==val)[0])
-    #    print(f'{val=}')
-    #    print(f'{Z_list[i]=}')
-    #    print(Z_symb_list[i])
-    Masses_i = []
-    Masses2_i = []
-    Masses_lowIMF = []
-    Masses_highIMF = []
-    Masses_lowSFR = []
-    Masses_highSFR = []
-    Fe = Mass_i[99, c:] #np.sum(Mass_i[np.where(ZA_sorted[:,0]==26)[0], c:], axis=0)
+    Mass_i = np.loadtxt(Mass_i_loc)
+    #Fe = np.sum(Mass_i[np.intersect1d(np.where(ZA_sorted[:,0]==26)[0], np.where(ZA_sorted[:,1]==56)[0]), c:], axis=0)
+    Fe = np.sum(Mass_i[np.where(ZA_sorted[:,0]==26)[0], c:], axis=0)
     H = np.sum(Mass_i[np.where(ZA_sorted[:,0]==1)[0], c:], axis=0)
-    for i,val in enumerate(Z_list):
-        print(f'{i=}')
-        print(f'{val=}')
-        print(f'{Z_list[i]=}')
-        mass = np.sum(Mass_i[np.where(ZA_sorted[:,0]==val)[0], c:], axis=0)
-        Masses2_i.append(np.log10(np.divide(mass,Fe)) - solar_norm_Fe[np.where(Z_list==val)[0]])
-        mass_lowIMF = np.sum(Mass_i_lowIMF[np.where(ZA_sorted[:,0]==val)[0], c:], axis=0)
-        Masses_lowIMF.append(np.log10(np.divide(mass_lowIMF,Fe)) - solar_norm_Fe[np.where(Z_list==val)[0]])
-        mass_highIMF = np.sum(Mass_i_highIMF[np.where(ZA_sorted[:,0]==val)[0], c:], axis=0)
-        Masses_highIMF.append(np.log10(np.divide(mass_highIMF,Fe)) - solar_norm_Fe[np.where(Z_list==val)[0]])
-        mass_lowSFR = np.sum(Mass_i_lowSFR[np.where(ZA_sorted[:,0]==val)[0], c:], axis=0)
-        Masses_lowSFR.append(np.log10(np.divide(mass_lowSFR,Fe)) - solar_norm_Fe[np.where(Z_list==val)[0]])
-        mass_highSFR = np.sum(Mass_i_highSFR[np.where(ZA_sorted[:,0]==val)[0], c:], axis=0)
-        Masses_highSFR.append(np.log10(np.divide(mass_highSFR,Fe)) - solar_norm_Fe[np.where(Z_list==val)[0]])
-        Masses_i.append(mass)
-    Masses = np.log10(np.divide(Masses_i, Fe))
-    Masses2 = np.array(Masses2_i) 
-    Masses2_lowIMF = np.array(Masses_lowIMF) 
-    Masses2_highIMF = np.array(Masses_highIMF) 
-    Masses2_lowSFR = np.array(Masses_lowSFR) 
-    Masses2_highSFR = np.array(Masses_highSFR) 
     FeH = np.log10(np.divide(Fe, H)) - solar_norm_H[np.where(Z_list==26)[0]]
+    abund_i = []
+    for i,val in enumerate(Z_list):
+        mass = np.sum(Mass_i[np.where(ZA_sorted[:,0]==val)[0], c:], axis=0)
+        abund_i.append(np.log10(np.divide(mass,Fe)) - solar_norm_Fe[np.where(Z_list==val)[0]])
+    normalized_abundances = np.array(abund_i)
+    return normalized_abundances, FeH
+
+def elem_abundance(figsiz = (32,10), c=5, setylim = (-6, 6), setxlim=(-6.5, 0.5)):
+    Z_list = np.unique(ZA_sorted[:,0])
     ncol = aux.find_nearest(np.power(np.arange(20),2), len(Z_list))
     if len(Z_list) < ncol:
         nrow = ncol
     else:
         nrow = ncol + 1
+    Z_symb_list = IN.periodic['elemSymb'][Z_list] # name of elements for all isotopes
+    
+    normalized_abundances, FeH = extract_normalized_abundances(Z_list, Mass_i_loc='output/baseline/Mass_i.dat', c=c)
+    normalized_abundances_lowZ, FeH_lowZ = extract_normalized_abundances(Z_list, Mass_i_loc='output/lifetimeZ0003/Mass_i.dat', c=c)
+    normalized_abundances_highZ, FeH_highZ = extract_normalized_abundances(Z_list, Mass_i_loc='output/lifetimeZ06/Mass_i.dat', c=c)
+    normalized_abundances_lowIMF, FeH_lowIMF = extract_normalized_abundances(Z_list, Mass_i_loc='output/Mass_i_IMF1pt2.dat', c=c)
+    normalized_abundances_highIMF, FeH_highIMF = extract_normalized_abundances(Z_list, Mass_i_loc='output/Mass_i_IMF1pt7.dat', c=c)
+    normalized_abundances_lowSFR, FeH_lowSFR = extract_normalized_abundances(Z_list, Mass_i_loc='output/Mass_i_fiducial.dat', c=c)
+    normalized_abundances_highSFR, FeH_highSFR = extract_normalized_abundances(Z_list, Mass_i_loc='output/Mass_i_k_SFR_2.dat', c=c)
+    
     fig, axs = plt.subplots(nrow, ncol, figsize =figsiz)#, sharex=True)
     for i, ax in enumerate(axs.flat):
         if i < len(Z_list):
             #ax.plot(FeH, Masses[i], color='blue')
-            ax.plot(FeH, Masses2[i], color='orange', linewidth=2)
-            ax.fill_between(FeH, Masses2_lowIMF[i], Masses2_highIMF[i], alpha=0.2, color='blue')
-            ax.fill_between(FeH, Masses2_lowSFR[i], Masses2_highSFR[i], alpha=0.2, color='red')
+            #ax.plot(FeH, Masses2[i], color='orange', linewidth=2)
+            ax.fill_between(FeH, normalized_abundances_lowIMF[i], normalized_abundances_highIMF[i], alpha=0.2, color='blue')
+            ax.fill_between(FeH, normalized_abundances_lowSFR[i], normalized_abundances_highSFR[i], alpha=0.2, color='red')
+            ax.plot(FeH, normalized_abundances[i], color='red', alpha=0.3)
+            ax.plot(FeH_lowZ, normalized_abundances_lowZ[i], color='red', linestyle=':', alpha=0.3)
+            ax.plot(FeH_highZ, normalized_abundances_highZ[i], color='red', linestyle='--', alpha=0.3)
             ax.axhline(y=0, color='grey', linestyle='--', linewidth=1, alpha=0.5)
             ax.axvline(x=0, color='grey', linestyle='--', linewidth=1, alpha=0.5)
             ax.annotate(f"{Z_list[i]}{Z_symb_list[i]}", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
-            ax.set_ylim(-6, 6)
-            #ax.set_ylim(-2, 2)
-            #ax.set_ylim(-1.5, 1.5)
-            #ax.set_xlim(-11, -2)
-            #ax.set_xlim(-6.5, 0.5)
-            ax.set_xlim(-4.5, 0.5)
-            #ax.set_xlim(-8.5, 0.5)
+            ax.set_ylim(setylim) #(-2, 2) #(-1.5, 1.5)
+            ax.set_xlim(setxlim) #(-11, -2) #(-8.5, 0.5)
             ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
             ax.tick_params(width = 1, length = 2, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
             ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=1))
