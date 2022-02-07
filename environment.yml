@@ -35,4 +35,3 @@ dependencies:
     - scipy==1.7.1
     - six==1.16.0
     - threadpoolctl==3.0.0
-prefix: /Users/alegresor/miniconda3/envs/gce
