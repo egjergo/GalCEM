@@ -128,7 +128,6 @@ class OneZone:
                 header = ' (0) elemZ,    (1) elemA,    (2) abundance mass ratios of every isotope for every timestep (normalized to solar, Asplund et al., 2009)')
         self.aux.tic_count(string="Output saved in", tic=self.tic)
         self.file1.close()
-        self.aux.tic_count(string="Plots saved in", tic=self.tic)
     
     def f_RK4(self, t_n, y_n, n, i=None):
         # Explicit general diff eq GCE function
@@ -223,6 +222,7 @@ class OneZone:
     def phys_integral_plot(self, logAge=False):
         # Requires running "phys_integral()" in onezone.py beforehand
         from matplotlib import pyplot as plt
+        plt.style.use(self._dir+'/galcem.mplstyle')
         phys = np.loadtxt(self._dir_out + 'phys.dat')
         time_chosen = phys[:,0]
         Mtot = phys[:,1]
@@ -268,8 +268,8 @@ class OneZone:
         plt.savefig(self._dir_out_figs + 'total_physical.pdf')
 
     def ZA_sorted_plot(self, cmap_name='magma_r', cbins=10): # angle = 2 * np.pi / np.arctan(0.4) !!!!!!!
-        from matplotlib import pyplot as plt
-        from matplotlib import cm
+        from matplotlib import cm,pyplot as plt
+        plt.style.use(self._dir+'/galcem.mplstyle')
         import matplotlib.colors as colors
         import matplotlib.ticker as ticker
         x = self.ZA_sorted[:,1]#- ZA_sorted[:,0]
@@ -304,6 +304,7 @@ class OneZone:
 
     def iso_evolution(self, figsize=(32,10)):
         from matplotlib import pyplot as plt
+        plt.style.use(self._dir+'/galcem.mplstyle')
         import matplotlib.ticker as ticker
         Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
         Masses = np.log10(Mass_i[:,2:])
@@ -348,6 +349,7 @@ class OneZone:
 
     def iso_abundance(self, figsize=(32,10), elem_idx=99): # elem_idx=99 is Fe56, elem_idx=0 is H.
         from matplotlib import pyplot as plt
+        plt.style.use(self._dir+'/galcem.mplstyle')
         import matplotlib.ticker as ticker
         Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
         #Masses = np.log10(np.divide(Mass_i[:,2:], Mass_i[elem_idx,2:]))
@@ -409,6 +411,7 @@ class OneZone:
 
     def elem_abundance(self, figsiz = (32,10), c=5, setylim = (-6, 6), setxlim=(-6.5, 0.5)):
         from matplotlib import pyplot as plt
+        plt.style.use(self._dir+'/galcem.mplstyle')
         import matplotlib.ticker as ticker
         Z_list = np.unique(self.ZA_sorted[:,0])
         ncol = self.aux.find_nearest(np.power(np.arange(20),2), len(Z_list))
@@ -466,6 +469,7 @@ class OneZone:
 
     def lifetimeratio_test_plot(self,colormap='Paired'):
         from matplotlib import pyplot as plt
+        plt.style.use(self._dir+'/galcem.mplstyle')
         fig, ax = plt.subplots(1,1, figsize=(7,5))
         divid05 = np.divide(self.IN.s_lifetimes_p98['Z05'], self.IN.s_lifetimes_p98['Z0004'])
         divid02 = np.divide(self.IN.s_lifetimes_p98['Z02'], self.IN.s_lifetimes_p98['Z0004'])
