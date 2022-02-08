@@ -1,2 +1,6 @@
-import galcem as gc
-from galcem.onezone import main
+from galcem.prep.inputs import Inputs
+from galcem.onezone import OneZone
+
+inputs = Inputs()
+oz = OneZone(inputs)
+oz.main()
