@@ -2,12 +2,12 @@
 import time
 import numpy as np
 import scipy.integrate as integr
-import scipy.interpolate as interp
 import os
 import pickle
 
-from . import morphology as morph
-from . import yields as Y
+from .morphology import Auxiliary,Stellar_Lifetimes,Infall,Star_Formation_Rate,Initial_Mass_Function
+from .yields import Isotopes,Yields_LIMs,Yields_Massive,Yields_SNIa,Yields_BBN,Concentrations
+from .util import Wi
 
 class OneZone:
     """
@@ -15,12 +15,16 @@ class OneZone:
     
     In (Input): an Input configuration instance 
     """
-    def __init__(self, IN):
+    def __init__(self, IN, outdir = 'output/testrun/'):
+        self._dir_out = outdir if outdir[-1]=='/' else outdir+'/'
+        self._dir_out_figs = self._dir_out + 'figs/'
+        if not os.path.exists(self._dir_out): os.mkdir(self._dir_out)
+        if not os.path.exists(self._dir_out_figs): os.mkdir(self._dir_out_figs)
         self.tic = []
         self.tic.append(time.process_time())
         self.IN = IN
-        self.aux = morph.Auxiliary()
-        self.lifetime_class = morph.Stellar_Lifetimes(self.IN)
+        self.aux = Auxiliary()
+        self.lifetime_class = Stellar_Lifetimes(self.IN)
         # Setup
         Ml = self.lifetime_class.s_mass[0] # Lower limit stellar masses [Msun] 
         Mu = self.lifetime_class.s_mass[-1] # Upper limit stellar masses [Msun]
@@ -33,33 +37,33 @@ class OneZone:
         self.idx_age_Galaxy = self.aux.find_nearest(self.time_chosen, self.IN.age_Galaxy)
         # Surface density for the disk. The bulge goes as an inverse square law
         surf_density_Galaxy = self.IN.sd / np.exp(self.IN.r / self.IN.Reff[self.IN.morphology]) #sigma(t_G) before eq(7) not used so far !!!!!!!
-        infall_class = morph.Infall(self.IN, morphology=self.IN.morphology, time=self.time_chosen)
+        infall_class = Infall(self.IN, morphology=self.IN.morphology, time=self.time_chosen)
         infall = infall_class.inf()
-        self.SFR_class = morph.Star_Formation_Rate(self.IN, self.IN.SFR_option, self.IN.custom_SFR)
-        IMF_class = morph.Initial_Mass_Function(Ml, Mu, self.IN, self.IN.IMF_option, self.IN.custom_IMF)
+        self.SFR_class = Star_Formation_Rate(self.IN, self.IN.SFR_option, self.IN.custom_SFR)
+        IMF_class = Initial_Mass_Function(Ml, Mu, self.IN, self.IN.IMF_option, self.IN.custom_IMF)
         self.IMF = IMF_class.IMF() #() # Function @ input stellar mass
         # Initialize Yields
-        isotope_class = Y.Isotopes(self.IN)
-        self.yields_LIMs_class = Y.Yields_LIMs(self.IN)
+        isotope_class = Isotopes(self.IN)
+        self.yields_LIMs_class = Yields_LIMs(self.IN)
         self.yields_LIMs_class.import_yields()
-        yields_Massive_class = Y.Yields_Massive(self.IN)
+        yields_Massive_class = Yields_Massive(self.IN)
         yields_Massive_class.import_yields()
-        self.yields_SNIa_class = Y.Yields_SNIa(self.IN)
+        self.yields_SNIa_class = Yields_SNIa(self.IN)
         self.yields_SNIa_class.import_yields()
-        yields_BBN_class = Y.Yields_BBN(self.IN)
+        yields_BBN_class = Yields_BBN(self.IN)
         yields_BBN_class.import_yields()
         # Initialize ZA_all
-        c_class = Y.Concentrations(self.IN)
-        ZA_LIMs = c_class.extract_ZA_pairs_LIMs(self.yields_LIMs_class)
-        ZA_SNIa = c_class.extract_ZA_pairs_SNIa(self.yields_SNIa_class)
-        ZA_Massive = c_class.extract_ZA_pairs_Massive(yields_Massive_class)
+        self.c_class = Concentrations(self.IN)
+        ZA_LIMs = self.c_class.extract_ZA_pairs_LIMs(self.yields_LIMs_class)
+        ZA_SNIa = self.c_class.extract_ZA_pairs_SNIa(self.yields_SNIa_class)
+        ZA_Massive = self.c_class.extract_ZA_pairs_Massive(yields_Massive_class)
         ZA_all = np.vstack((ZA_LIMs, ZA_SNIa, ZA_Massive))
         # Initialize Global tracked quantities
         self.Infall_rate = infall(self.time_chosen)
-        self.ZA_sorted = c_class.ZA_sorted(ZA_all) # [Z, A] VERY IMPORTANT! 321 isotopes with yields_SNIa_option = 'km20', 192 isotopes for 'i99' 
+        self.ZA_sorted = self.c_class.ZA_sorted(ZA_all) # [Z, A] VERY IMPORTANT! 321 isotopes with yields_SNIa_option = 'km20', 192 isotopes for 'i99' 
         self.ZA_sorted = self.ZA_sorted[1:,:]
-        ZA_symb_list = self.IN.periodic['elemSymb'][self.ZA_sorted[:,0]] # name of elements for all isotopes
-        asplund3_percent = c_class.abund_percentage(c_class.asplund3_pd, self.ZA_sorted)
+        self.ZA_symb_list = self.IN.periodic['elemSymb'][self.ZA_sorted[:,0]] # name of elements for all isotopes
+        self.asplund3_percent = self.c_class.abund_percentage(self.c_class.asplund3_pd, self.ZA_sorted)
         #ZA_symb_iso_list = np.asarray([ str(A) for A in self.IN.periodic['elemA'][self.ZA_sorted]])  # name of elements for all isotopes
         elemZ_for_metallicity = np.where(self.ZA_sorted[:,0]>2)[0][0] #  starting idx (int) that excludes H and He for the metallicity selection
         self.Mtot = np.insert(np.cumsum((self.Infall_rate[1:] + self.Infall_rate[:-1]) * self.IN.nTimeStep / 2), 0, self.IN.epsilon) # The total baryonic mass (i.e. the infall mass) is computed right away
@@ -108,19 +112,19 @@ class OneZone:
         Run the OneZone program
         """
         self.tic.append(time.process_time())
-        self.file1 = open("output/Terminal_output.txt", "w")
+        self.file1 = open(self._dir_out + "Terminal_output.txt", "w")
         self.evolve()
         self.aux.tic_count(string="Computation time", tic=self.tic)
         #Z_v = np.divide(np.sum(self.Mass_i_v[elemZ_for_metallicity:,:]), Mgas_v)
         G_v = np.divide(self.Mgas_v, self.Mtot)
         S_v = 1 - G_v
         print("Saving the output...")
-        np.savetxt('output/phys.dat', np.column_stack((self.time_chosen, self.Mtot, self.Mgas_v,
+        np.savetxt(self._dir_out + 'phys.dat', np.column_stack((self.time_chosen, self.Mtot, self.Mgas_v,
                 self.Mstar_v, self.SFR_v/1e9, self.Infall_rate/1e9, self.Z_v, G_v, S_v, self.Rate_SNII, self.Rate_SNIa, self.Rate_LIMs)), fmt='%-12.4e', #SFR is divided by 1e9 to get the /Gyr to /yr conversion 
                 header = ' (0) time_chosen [Gyr]    (1) Mtot [Msun]    (2) Mgas_v [Msun]    (3) Mstar_v [Msun]    (4) SFR_v [Msun/yr]    (5)Infall_v [Msun/yr]    (6) Z_v    (7) G_v    (8) S_v     (9) Rate_SNII     (10) Rate_SNIa     (11) Rate_LIMs')
-        np.savetxt('output/Mass_i.dat', np.column_stack((self.ZA_sorted, self.Mass_i_v)), fmt=' '.join(['%5.i']*2 + ['%12.4e']*self.Mass_i_v[0,:].shape[0]),
+        np.savetxt(self._dir_out +  'Mass_i.dat', np.column_stack((self.ZA_sorted, self.Mass_i_v)), fmt=' '.join(['%5.i']*2 + ['%12.4e']*self.Mass_i_v[0,:].shape[0]),
                 header = ' (0) elemZ,    (1) elemA,    (2) masses [Msun] of every isotope for every timestep')
-        np.savetxt('output/X_i.dat', np.column_stack((self.ZA_sorted, self.Xi_v)), fmt=' '.join(['%5.i']*2 + ['%12.4e']*self.Xi_v[0,:].shape[0]),
+        np.savetxt(self._dir_out +  'X_i.dat', np.column_stack((self.ZA_sorted, self.Xi_v)), fmt=' '.join(['%5.i']*2 + ['%12.4e']*self.Xi_v[0,:].shape[0]),
                 header = ' (0) elemZ,    (1) elemA,    (2) abundance mass ratios of every isotope for every timestep (normalized to solar, Asplund et al., 2009)')
         self.aux.tic_count(string="Output saved in", tic=self.tic)
         print('Plotting...')
@@ -205,179 +209,297 @@ class OneZone:
         # Returns:
         #     [function]: [SFR as a function of Mgas]
         return self.SFR_class.SFR(Mgas=self.Mgas_v, Mtot=self.Mtot, timestep_n=timestep_n) # Function: SFR(Mgas)
+    
+    # Plotting
+    def plots(self):
+        from matplotlib import cm
+        import matplotlib.pylab as plt
+        import matplotlib.colors as colors
+        import matplotlib.ticker as ticker
+        #cmap = cm.get_cmap('plasma', 100)
+        supported_cmap = ['Accent', 'Accent_r', 'Blues', 'Blues_r', 'BrBG', 'BrBG_r', 'BuGn', 'BuGn_r', 'BuPu', 'BuPu_r', 'CMRmap', 'CMRmap_r', 'Dark2', 'Dark2_r', 'GnBu', 'GnBu_r', 'Greens', 'Greens_r', 'Greys', 'Greys_r', 'OrRd', 'OrRd_r', 'Oranges', 'Oranges_r', 'PRGn', 'PRGn_r', 'Paired', 'Paired_r', 'Pastel1', 'Pastel1_r', 'Pastel2', 'Pastel2_r', 'PiYG', 'PiYG_r', 'PuBu', 'PuBuGn', 'PuBuGn_r', 'PuBu_r', 'PuOr', 'PuOr_r', 'PuRd', 'PuRd_r', 'Purples', 'Purples_r', 'RdBu', 'RdBu_r', 'RdGy', 'RdGy_r', 'RdPu', 'RdPu_r', 'RdYlBu', 'RdYlBu_r', 'RdYlGn', 'RdYlGn_r', 'Reds', 'Reds_r', 'Set1', 'Set1_r', 'Set2', 'Set2_r', 'Set3', 'Set3_r', 'Spectral', 'Spectral_r', 'Wistia', 'Wistia_r', 'YlGn', 'YlGnBu', 'YlGnBu_r', 'YlGn_r', 'YlOrBr', 'YlOrBr_r', 'YlOrRd', 'YlOrRd_r', 'afmhot', 'afmhot_r', 'autumn', 'autumn_r', 'binary', 'binary_r', 'bone', 'bone_r', 'brg', 'brg_r', 'bwr', 'bwr_r', 'cividis', 'cividis_r', 'cool', 'cool_r', 'coolwarm', 'coolwarm_r', 'copper', 'copper_r', 'cubehelix', 'cubehelix_r', 'flag', 'flag_r', 'gist_earth', 'gist_earth_r', 'gist_gray', 'gist_gray_r', 'gist_heat', 'gist_heat_r', 'gist_ncar', 'gist_ncar_r', 'gist_rainbow', 'gist_rainbow_r', 'gist_stern', 'gist_stern_r', 'gist_yarg', 'gist_yarg_r', 'gnuplot', 'gnuplot2', 'gnuplot2_r', 'gnuplot_r', 'gray', 'gray_r', 'hot', 'hot_r', 'hsv', 'hsv_r', 'inferno', 'inferno_r', 'jet', 'jet_r', 'magma', 'magma_r', 'nipy_spectral', 'nipy_spectral_r', 'ocean', 'ocean_r', 'pink', 'pink_r', 'plasma', 'plasma_r', 'prism', 'prism_r', 'rainbow', 'rainbow_r', 'seismic', 'seismic_r', 'spring', 'spring_r', 'summer', 'summer_r', 'tab10', 'tab10_r', 'tab20', 'tab20_r', 'tab20b', 'tab20b_r', 'tab20c', 'tab20c_r', 'terrain', 'terrain_r', 'turbo', 'turbo_r', 'twilight', 'twilight_r', 'twilight_shifted', 'twilight_shifted_r', 'viridis', 'viridis_r', 'winter', 'winter_r']
+        #mycolors = ["darkorange", "gold", "lawngreen", "lightseagreen"]
+        #nodes = [0.0, 0.4, 0.8, 1.0]
+        #cmap2 = colors.LinearSegmentedColormap.from_list("mycmap", list(zip(nodes, mycolors)))
+        #cmap = cm.get_cmap(supported_cmap[-4], 10)
 
+        supported_cmap = ['Accent', 'Accent_r', 'Blues', 'Blues_r', 'BrBG', 'BrBG_r', 'BuGn', 'BuGn_r', 'BuPu', 'BuPu_r', 'CMRmap', 'CMRmap_r', 'Dark2', 'Dark2_r', 'GnBu', 'GnBu_r', 'Greens', 'Greens_r', 'Greys', 'Greys_r', 'OrRd', 'OrRd_r', 'Oranges', 'Oranges_r', 'PRGn', 'PRGn_r', 'Paired', 'Paired_r', 'Pastel1', 'Pastel1_r', 'Pastel2', 'Pastel2_r', 'PiYG', 'PiYG_r', 'PuBu', 'PuBuGn', 'PuBuGn_r', 'PuBu_r', 'PuOr', 'PuOr_r', 'PuRd', 'PuRd_r', 'Purples', 'Purples_r', 'RdBu', 'RdBu_r', 'RdGy', 'RdGy_r', 'RdPu', 'RdPu_r', 'RdYlBu', 'RdYlBu_r', 'RdYlGn', 'RdYlGn_r', 'Reds', 'Reds_r', 'Set1', 'Set1_r', 'Set2', 'Set2_r', 'Set3', 'Set3_r', 'Spectral', 'Spectral_r', 'Wistia', 'Wistia_r', 'YlGn', 'YlGnBu', 'YlGnBu_r', 'YlGn_r', 'YlOrBr', 'YlOrBr_r', 'YlOrRd', 'YlOrRd_r', 'afmhot', 'afmhot_r', 'autumn', 'autumn_r', 'binary', 'binary_r', 'bone', 'bone_r', 'brg', 'brg_r', 'bwr', 'bwr_r', 'cividis', 'cividis_r', 'cool', 'cool_r', 'coolwarm', 'coolwarm_r', 'copper', 'copper_r', 'cubehelix', 'cubehelix_r', 'flag', 'flag_r', 'gist_earth', 'gist_earth_r', 'gist_gray', 'gist_gray_r', 'gist_heat', 'gist_heat_r', 'gist_ncar', 'gist_ncar_r', 'gist_rainbow', 'gist_rainbow_r', 'gist_stern', 'gist_stern_r', 'gist_yarg', 'gist_yarg_r', 'gnuplot', 'gnuplot2', 'gnuplot2_r', 'gnuplot_r', 'gray', 'gray_r', 'hot', 'hot_r', 'hsv', 'hsv_r', 'inferno', 'inferno_r', 'jet', 'jet_r', 'magma', 'magma_r', 'nipy_spectral', 'nipy_spectral_r', 'ocean', 'ocean_r', 'pink', 'pink_r', 'plasma', 'plasma_r', 'prism', 'prism_r', 'rainbow', 'rainbow_r', 'seismic', 'seismic_r', 'spring', 'spring_r', 'summer', 'summer_r', 'tab10', 'tab10_r', 'tab20', 'tab20_r', 'tab20b', 'tab20b_r', 'tab20c', 'tab20c_r', 'terrain', 'terrain_r', 'turbo', 'turbo_r', 'twilight', 'twilight_r', 'twilight_shifted', 'twilight_shifted_r', 'viridis', 'viridis_r', 'winter', 'winter_r']
 
-class Wi_grid:
-    # birthtime grid for Wi integral
-    def __init__(self, metallicity, age_idx, IN, lifetime_class, time_chosen):
-        self.metallicity = metallicity #* np.ones(IN.num_MassGrid) # !!!!!!!
-        self.age_idx = age_idx
-        self.IN = IN
-        self.lifetime_class = lifetime_class
-        self.time_chosen = time_chosen
-
-    def grids(self, Ml_lim, Mu_lim):
-        # Ml_lim and Mu_lim are mass limits
-        # They are converted to lifetimes by integr_lim() in integration_grid()
-        mass_grid = np.geomspace(Ml_lim, Mu_lim, num = self.IN.num_MassGrid)
-        lifetime_grid = self.lifetime_class.interp_stellar_lifetimes(0.06)(mass_grid) #np.power(10, self.lifetime_class.interp_stellar_lifetimes(mass_grid, self.metallicity))#np.column_stack([mass_grid, self.metallicity * np.ones(len(mass_grid))])))
-        birthtime_grid = self.time_chosen[self.age_idx] - lifetime_grid 
-        positive_idx = np.where(birthtime_grid > 0.)
-        #print(f"For grids, {mass_grid[positive_idx]=}")
-        #print(f"For grids, {lifetime_grid[positive_idx]=}")
-        #print(f"For grids, {birthtime_grid[positive_idx]=}")
-        return birthtime_grid[positive_idx], lifetime_grid[positive_idx], mass_grid[positive_idx]
-
-            
-class Wi:
-    # Solves each integration item by integrating over birthtimes.
-    # Input upper and lower mass limits (to be mapped onto birthtimes)
-    # Gyr_age    (t)     is the Galactic age
-    # birthtime (t')     is the stellar birthtime
-    # lifetime (tau)    is the stellar lifetime
-    def __init__(self, age_idx, IN, lifetime_class, time_chosen, Z_v, SFR_v, IMF, yields_SNIa_class, models_lc18, models_k10, ZA_sorted):
-        self.IN = IN
-        self.lifetime_class = lifetime_class
-        self.time_chosen = time_chosen
-        self.Z_v = Z_v
-        self.SFR_v = SFR_v
-        self.IMF = IMF
-        self.yields_SNIa_class = yields_SNIa_class
-        self.models_lc18 = models_lc18
-        self.models_k10 = models_k10
-        self.ZA_sorted = ZA_sorted
-        self.metallicity = self.Z_v[age_idx]
-        self.age_idx = age_idx
-        self.Wi_grid_class = Wi_grid(self.metallicity, self.age_idx, self.IN, lifetime_class, self.time_chosen)
-        #print('Massive channel')
-        self.Massive_birthtime_grid, self.Massive_lifetime_grid, self.Massive_mass_grid = self.Wi_grid_class.grids(self.IN.Ml_Massive, self.IN.Mu_Massive)
-        #print('LIMs channel')
-        self.LIMs_birthtime_grid, self.LIMs_lifetime_grid, self.LIMs_mass_grid = self.Wi_grid_class.grids(self.IN.Ml_LIMs, self.IN.Mu_LIMs) # !!!!!!! you should subtract SNIa fraction
-        #print('SNIa channel')
-        self.SNIa_birthtime_grid, self.SNIa_lifetime_grid, self.SNIa_mass_grid = self.Wi_grid_class.grids(self.IN.Ml_SNIa, self.IN.Mu_SNIa)
-        self.yield_load = None
+        self.tic.append(time.process_time())
+        self.phys_integral_plot()
+        self.ZA_sorted_plot()
+        self.iso_evolution()
+        self.iso_abundance()
+        self.elem_abundance()
+        self.lifetimeratio_test_plot()
+        self.aux.tic_count(string="Plots saved in", tic=self.tic)
         
-    def grid_picker(self, channel_switch, grid_type):
-        # Selects e.g. "self.LIMs_birthtime_grid"
-        # channel_switch:        can be 'LIMs', 'SNIa', 'Massive'
-        # grid_type:            can be 'birthtime', 'lifetime', 'mass' 
-        return self.__dict__[channel_switch+'_'+grid_type+'_grid']
-    
-    def SFR_component(self, birthtime_grid):
-        # Returns the interpolated SFR vector computed at the birthtime grids
-        SFR_interp = interp.interp1d(self.time_chosen[:self.age_idx+1], self.SFR_v[:self.age_idx+1], fill_value='extrapolate')
-        return SFR_interp(birthtime_grid)
+    def phys_integral_plot(self, logAge=False):
+        # Requires running "phys_integral()" in onezone.py beforehand
+        from matplotlib import pyplot as plt
+        phys = np.loadtxt(self._dir_out + 'phys.dat')
+        time_chosen = phys[:,0]
+        Mtot = phys[:,1]
+        Mgas_v = phys[:,2]
+        Mstar_v = phys[:,3]
+        SFR_v = phys[:,4]
+        Infall_rate = phys[:,5] 
+        Z_v = phys[:,6]
+        G_v = phys[:,7]
+        S_v = phys[:,8] 
+        Rate_SNII = phys[:,9]
+        Rate_SNIa = phys[:,10]
+        Rate_LIMs = phys[:,11]
+        fig = plt.figure(figsize =(7, 5))
+        ax = fig.add_subplot(111)
+        ax2 = ax.twinx()
+        time_plot = time_chosen
+        if logAge == True:
+            time_plot = np.log10(time_chosen)
+        ax.hlines(self.IN.M_inf[self.IN.morphology], 0, self.IN.age_Galaxy, label=r'$M_{gal,f}$', linewidth = 1, linestyle = '-.')
+        ax.semilogy(time_plot, Mtot, label=r'$M_{tot}$', linewidth=2)
+        ax.semilogy(time_plot, Mstar_v, label= r'$M_{star}$', linewidth=2)
+        ax.semilogy(time_plot, Mgas_v, label= r'$M_{gas}$', linewidth=2)
+        ax.semilogy(time_plot, Mstar_v + Mgas_v, label= r'$M_g + M_s$', linestyle = '--')
+        ax.semilogy(time_plot, self.Mstar_test, label= r'$M_{star,t}$', linewidth=2, linestyle = ':')
+        ax2.semilogy(time_plot, Infall_rate, label= r'Infall', color = 'cyan', linestyle='-', linewidth=3)
+        ax2.semilogy(time_plot, SFR_v, label= r'SFR', color = 'blue', linestyle='--', linewidth=3)
+        ax2.semilogy(time_plot, np.divide(Rate_SNII,1e9), label= r'SNII', color = 'black', linestyle=':', linewidth=3)
+        ax2.semilogy(time_plot, np.divide(Rate_SNIa,1e9), label= r'SNIa', color = 'gray', linestyle=':', linewidth=3)
+        ax2.semilogy(time_plot, np.divide(Rate_LIMs,1e9), label= r'LIMs', color = 'magenta', linestyle=':', linewidth=3)
+        if not logAge:
+            ax.set_xlim(0,13.8)
+        ax.set_ylim(1e6, 1e11)
+        ax2.set_ylim(1e-2, 1e2)
+        ax.set_xlabel(r'Age [Gyr]', fontsize = 15)
+        ax.set_ylabel(r'Masses [$M_{\odot}$]', fontsize = 15)
+        ax2.set_ylabel(r'Rates [$M_{\odot}/yr$]', fontsize = 15)
+        ax.set_title(r'$f_{SFR} = $ %.2f' % (self.IN.SFR_rescaling), fontsize=15)
+        ax.legend(fontsize=15, loc='lower left', ncol=2, frameon=True, framealpha=0.8)
+        ax2.legend(fontsize=15, loc='lower right', ncol=1, frameon=False)
+        plt.tight_layout()
+        plt.show(block=False)
+        plt.savefig(self._dir_out_figs + 'total_physical.pdf')
 
-    def Z_component(self, birthtime_grid):
-        # Returns the interpolated SFR vector computed at the birthtime grids
-        _Z_interp = interp.interp1d(self.time_chosen[:self.age_idx+1], self.Z_v[:self.age_idx+1], fill_value='extrapolate')
-        return _Z_interp(birthtime_grid)
+    def ZA_sorted_plot(self, cmap_name='magma_r', cbins=10): # angle = 2 * np.pi / np.arctan(0.4) !!!!!!!
+        from matplotlib import pyplot as plt
+        from matplotlib import cm
+        import matplotlib.colors as colors
+        import matplotlib.ticker as ticker
+        x = self.ZA_sorted[:,1]#- ZA_sorted[:,0]
+        y = self.ZA_sorted[:,0]
+        z = self.asplund3_percent
+        cmap_ = cm.get_cmap(cmap_name, cbins)
+        binning = np.digitize(z, np.linspace(0,9.*100/cbins,num=cbins-1))
+        percent_colors = [cmap_.colors[c] for c in binning]
+        fig, ax = plt.subplots(figsize =(11,5))
+        print(f"{type(ax)=}")
+        ax.grid(True, which='major', linestyle='--', linewidth=0.5, color='purple', alpha=0.5)
+        ax.grid(True, which='minor', linestyle=':', linewidth=0.5, color='purple', alpha=0.5)
+        ax.set_axisbelow(True)
+        smap = ax.scatter(x,y, marker='s', alpha=0.95, edgecolors='none', s=5, cmap=cmap_name, c=percent_colors) 
+        smap.set_clim(0, 100)
+        norm = colors.Normalize(vmin=0, vmax=100)
+        cb = fig.colorbar(cm.ScalarMappable(norm=norm, cmap=cmap_name), orientation='vertical', pad=0.0)
+        cb.set_label(label=r'Isotope $\odot$ abundance %', fontsize=17)
+        ax.set_ylabel(r'Proton (Atomic) Number Z', fontsize=20)
+        ax.set_xlabel(r'Atomic Mass $A$', fontsize=20)
+        ax.set_title(r'Tracked isotopes', fontsize=20)
+        ax.xaxis.set_major_locator(ticker.MultipleLocator(20))
+        ax.yaxis.set_major_locator(ticker.MultipleLocator(20))
+        ax.xaxis.set_minor_locator(ticker.MultipleLocator(5))
+        ax.yaxis.set_minor_locator(ticker.MultipleLocator(5))
+        ax.tick_params(width = 2, length = 10)
+        ax.tick_params(width = 1, length = 5, which = 'minor')
+        ax.set_xlim(np.min(x)-2.5, np.max(x)+2.5)
+        ax.set_ylim(np.min(y)-2.5, np.max(y)+2.5)
+        plt.tight_layout()
+        plt.show(block=False)
+        plt.savefig(self._dir_out_figs + 'tracked_elements.pdf')
 
-    def IMF_component(self, mass_grid):
-        # Returns the IMF vector computed at the mass grids
-        return self.IMF(mass_grid)
-    
-    def dMdtauM_component(self, lifetime_grid, derlog=None): #!!!!!!!
-        # computes the derivative of M(tauM) w.r.t. tauM
-        derlog = self.IN.derlog if derlog is None else derlog
-        if derlog == False:
-            return self.lifetime_class.dMdtauM(np.log10(lifetime_grid), self.metallicity*np.ones(len(lifetime_grid)))#(lifetime_grid)
-        if derlog == True:
-            return 0.5    
- 
-    def _yield_array(self, channel_switch, mass_grid, birthtime_grid, vel_idx=None):
-        vel_idx = self.IN.LC18_vel_idx if vel_idx is None else vel_idx
-        len_X = len(mass_grid)
-        Z_comp = self.Z_v[self.age_idx] * np.ones(len_X) #self.Z_component(birthtime_grid)
-        y = []
-        if channel_switch == 'SNIa': 
-            y = self.yields_SNIa_class
-        else:  
-            if channel_switch == 'Massive':
-                X_sample = np.column_stack([Z_comp, vel_idx * np.ones(len_X), mass_grid])
-                models = self.models_lc18
-            elif channel_switch == 'LIMs':
-                Z_comp /= self.IN.solar_metallicity
-                X_sample = np.column_stack([Z_comp, mass_grid])
-                models = self.models_k10
+    def iso_evolution(self, figsize=(32,10)):
+        from matplotlib import pyplot as plt
+        import matplotlib.ticker as ticker
+        Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
+        Masses = np.log10(Mass_i[:,2:])
+        phys = np.loadtxt(self._dir_out + 'phys.dat')
+        timex = phys[:,0]
+        Z = self.ZA_sorted[:,0]
+        A = self.ZA_sorted[:,1]
+        ncol = self.aux.find_nearest(np.power(np.arange(20),2), len(Z))
+        if len(self.ZA_sorted) > ncol:
+            nrow = ncol
+        else:
+            nrow = ncol + 1
+        fig, axs = plt.subplots(nrow, ncol, figsize=figsize)#, sharex=True)
+        for i, ax in enumerate(axs.flat):
+            if i < len(Z):
+                ax.plot(timex, Masses[i])
+                ax.annotate(f"{self.ZA_symb_list[i]}({Z[i]},{A[i]})", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
+                ax.set_ylim(-7.5, 10.5)
+                ax.set_xlim(0,13.8)
+                ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
+                ax.tick_params(width = 1, length = 2, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
+                ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=1))
+                ax.tick_params(width = 1, length = 2, axis = 'y', which = 'minor', left = True, right = True, direction = 'in')
+                ax.xaxis.set_major_locator(ticker.MultipleLocator(base=5))
+                ax.tick_params(width = 1, length = 5, axis = 'x', which = 'major', bottom = True, top = True, direction = 'in')
+                ax.yaxis.set_major_locator(ticker.MultipleLocator(base=5))
+                ax.tick_params(width = 1, length = 5, axis = 'y', which = 'major', left = True, right = True, direction = 'in')
             else:
-                print(f'{channel_switch = } currently not included.')
-                pass
-            
-            for i, model in enumerate(models):
-                if model != None:
-                    #print(f'{channel_switch=}, \t{i=}')
-                    fit = model(X_sample)
-                    #print(f"{len(fit)=}")
-                    y.append(fit) # !!!!!!! use asynchronicity to speed up the computation
-                else:
-                    y.append(np.zeros(len_X))
-        return 0.005 * np.ones(len(self.ZA_sorted)) #y # len consistent with ZA_sorted
+                fig.delaxes(ax)
+        for i in range(nrow):
+            for j in range(ncol):
+                if j != 0:
+                    axs[i,j].set_yticklabels([])
+                if i != nrow-1:
+                    axs[i,j].set_xticklabels([])
+        axs[nrow//2,0].set_ylabel(r'Masses [$M_{\odot}$]', fontsize = 15)
+        axs[nrow-1, ncol//2].set_xlabel('Age [Gyr]', fontsize = 15)
+        plt.tight_layout(rect = [0.02, 0, 1, 1])
+        plt.subplots_adjust(wspace=0., hspace=0.)
+        plt.show(block=False)
+        plt.savefig(self._dir_out_figs + 'iso_evolution.pdf')
 
-    def mass_component(self, channel_switch, mass_grid, lifetime_grid): #
-        # Portinari+98, page 22, last eq. first column
-        birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
-        IMF_comp = self.IMF_component(mass_grid) # overwrite continuously in __init__
-        return IMF_comp, IMF_comp * self.dMdtauM_component(np.log10(lifetime_grid)) 
+    def iso_abundance(self, figsize=(32,10), elem_idx=99): # elem_idx=99 is Fe56, elem_idx=0 is H.
+        from matplotlib import pyplot as plt
+        import matplotlib.ticker as ticker
+        Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
+        #Masses = np.log10(np.divide(Mass_i[:,2:], Mass_i[elem_idx,2:]))
+        Fe = np.sum(Mass_i[97:104,7:],axis=0)
+        Masses = np.log10(np.divide(Mass_i[:,7:], Fe))
+        #XH = np.log10(np.divide(Mass_i[elem_idx,2:], Mass_i[0,2:])) 
+        XH = np.log10(np.divide(Fe, Mass_i[0,7:])) 
+        Z = self.ZA_sorted[:,0]
+        A = self.ZA_sorted[:,1]
+        ncol = self.aux.find_nearest(np.power(np.arange(20),2), len(Z))
+        if len(self.ZA_sorted) < ncol:
+            nrow = ncol
+        else:
+            nrow = ncol + 1
+        fig, axs = plt.subplots(nrow, ncol, figsize=figsize)#, sharex=True)
+        for i, ax in enumerate(axs.flat):
+            if i < len(Z):
+                ax.plot(XH, Masses[i])
+                ax.annotate(f"{self.ZA_symb_list[i]}({Z[i]},{A[i]})", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
+                ax.set_ylim(-15, 0.5)
+                ax.set_xlim(-11, 0.5)
+                ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
+                ax.tick_params(width = 1, length = 2, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
+                ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=1))
+                ax.tick_params(width = 1, length = 2, axis = 'y', which = 'minor', left = True, right = True, direction = 'in')
+                ax.xaxis.set_major_locator(ticker.MultipleLocator(base=5))
+                ax.tick_params(width = 1, length = 5, axis = 'x', which = 'major', bottom = True, top = True, direction = 'in')
+                ax.yaxis.set_major_locator(ticker.MultipleLocator(base=5))
+                ax.tick_params(width = 1, length = 5, axis = 'y', which = 'major', left = True, right = True, direction = 'in')
+            else:
+                fig.delaxes(ax)
+        for i in range(nrow):
+            for j in range(ncol):
+                if j != 0:
+                    axs[i,j].set_yticklabels([])
+                if i != nrow-1:
+                    axs[i,j].set_xticklabels([])
+        axs[nrow//2,0].set_ylabel('Absolute Abundances', fontsize = 15)
+        axs[nrow-1, ncol//2].set_xlabel(f'[{self.ZA_symb_list[elem_idx]}{A[elem_idx]}/H]', fontsize = 15)
+        plt.tight_layout(rect = [0.02, 0, 1, 1])
+        plt.subplots_adjust(wspace=0., hspace=0.)
+        plt.show(block=False)
+        plt.savefig(self._dir_out_figs + 'iso_abundance.pdf')
 
-    def compute_rate(self, channel_switch='Massive'):
-        # Computes the Type II SNae rate 
-        birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
-        mass_grid = self.grid_picker(channel_switch, 'mass')
-        SFR_comp = self.SFR_component(birthtime_grid)
-        SFR_comp[SFR_comp<0] = 0.
-        IMF_comp = self.IMF_component(mass_grid)
-        integrand = np.multiply(SFR_comp, IMF_comp)
-        #print(f"For compute_rateSNII, {SFR_comp=}")
-        #print(f"For compute_rateSNII, {IMF_comp=}")
-        #print(f"For compute_rateSNII, {integrand=}")
-        return integr.simps(integrand, x=mass_grid)
-    
-    def compute_rateSNIa(self, channel_switch='SNIa'):
-        birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
-        mass_grid = self.grid_picker(channel_switch, 'mass')
-        f_nu = lambda nu: 24 * (1 - nu)**2
-        #M1_min = 0.5 * IN.Ml_SNIa
-        #M1_max = IN.Mu_SNIa
-        nu_min = np.max([0.5, np.max(np.divide(mass_grid, self.IN.Mu_SNIa))])
-        nu_max = np.min([1, np.min(np.divide(mass_grid, self.IN.Ml_SNIa))])
-        #print(f'{nu_min = },\t {nu_max=}')
-        #print(f'nu_min = 0.5,\t nu_max= 1.0')
-        #nu_test = np.linspace(nu_min, nu_max, num=len(mass_grid))
-        nu_test = np.linspace(0.5, 1, num=len(mass_grid))
-        IMF_v = np.divide(mass_grid, nu_test)
-        int_SNIa = f_nu(nu_test) * self.IMF_component(IMF_v)
-        F_SNIa = integr.simps(int_SNIa, x=nu_test)    
-        SFR_comp = self.SFR_component(birthtime_grid)
-        integrand = np.multiply(SFR_comp, F_SNIa)
-        return integr.simps(integrand, x=birthtime_grid)
- 
-    def compute_rates(self):
-        if len(self.grid_picker('Massive', 'birthtime')) > 0.:
-            rateSNII = self.compute_rate(channel_switch='Massive')
-        else:
-            rateSNII = self.IN.epsilon
-        if len(self.grid_picker('LIMs', 'birthtime')) > 0.:
-            rateLIMs = self.compute_rate(channel_switch='LIMs')
-        else:
-            rateLIMs = self.IN.epsilon
-        if len(self.grid_picker('SNIa', 'birthtime')) > 0.:
-            R_SNIa = self.IN.A_SNIa * self.compute_rateSNIa()
-        else:
-            R_SNIa = self.IN.epsilon
-        return rateSNII, rateLIMs, R_SNIa
+    def extract_normalized_abundances(self, Z_list, Mass_i_loc, c=5):
+        solar_norm_H = self.c_class.solarA09_vs_H_bymass[Z_list]
+        solar_norm_Fe = self.c_class.solarA09_vs_Fe_bymass[Z_list]
+        Mass_i = np.loadtxt(Mass_i_loc)
+        #Fe = np.sum(Mass_i[np.intersect1d(np.where(ZA_sorted[:,0]==26)[0], np.where(ZA_sorted[:,1]==56)[0]), c:], axis=0)
+        Fe = np.sum(Mass_i[np.where(self.ZA_sorted[:,0]==26)[0], c:], axis=0)
+        H = np.sum(Mass_i[np.where(self.ZA_sorted[:,0]==1)[0], c:], axis=0)
+        FeH = np.log10(np.divide(Fe, H)) - solar_norm_H[np.where(Z_list==26)[0]]
+        abund_i = []
+        for i,val in enumerate(Z_list):
+            mass = np.sum(Mass_i[np.where(self.ZA_sorted[:,0]==val)[0], c:], axis=0)
+            abund_i.append(np.log10(np.divide(mass,Fe)) - solar_norm_Fe[np.where(Z_list==val)[0]])
+        normalized_abundances = np.array(abund_i)
+        return normalized_abundances, FeH
 
-    def compute(self, channel_switch, vel_idx=None):
-        # Computes, using the Simpson rule, the integral Wi 
-        # elements of eq. (34) Portinari+98 -- for stars that die at tn, for every i
-        vel_idx = self.IN.LC18_vel_idx if vel_idx is None else vel_idx
-        mass_grid = self.grid_picker(channel_switch, 'mass')
-        lifetime_grid = self.grid_picker(channel_switch, 'lifetime')        
-        birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
-        SFR_comp = self.SFR_component(birthtime_grid)
-        SFR_comp[SFR_comp<0] = 0.
-        IMF_comp, mass_comp = self.mass_component(channel_switch, mass_grid, lifetime_grid)# 
-        #integrand = np.prod(np.vstack[SFR_comp, mass_comp, self.yield_load[i]])
-        integrand = np.prod(np.vstack([SFR_comp, mass_comp]), axis=0)
-        #return integr.simps(integrand, x=birthtime_grid)
-        return [integrand, birthtime_grid]
+    def elem_abundance(self, figsiz = (32,10), c=5, setylim = (-6, 6), setxlim=(-6.5, 0.5)):
+        from matplotlib import pyplot as plt
+        import matplotlib.ticker as ticker
+        Z_list = np.unique(self.ZA_sorted[:,0])
+        ncol = self.aux.find_nearest(np.power(np.arange(20),2), len(Z_list))
+        if len(Z_list) < ncol:
+            nrow = ncol
+        else:
+            nrow = ncol + 1
+        Z_symb_list = self.IN.periodic['elemSymb'][Z_list] # name of elements for all isotopes
+        
+        normalized_abundances, FeH = self.extract_normalized_abundances(Z_list, Mass_i_loc=self._dir_out + 'baseline/Mass_i.dat', c=c)
+        normalized_abundances_lowZ, FeH_lowZ = self.extract_normalized_abundances(Z_list, Mass_i_loc=self._dir_out + 'lifetimeZ0003/Mass_i.dat', c=c)
+        normalized_abundances_highZ, FeH_highZ = self.extract_normalized_abundances(Z_list, Mass_i_loc=self._dir_out + 'lifetimeZ06/Mass_i.dat', c=c)
+        normalized_abundances_lowIMF, FeH_lowIMF = self.extract_normalized_abundances(Z_list, Mass_i_loc=self._dir_out + 'Mass_i_IMF1pt2.dat', c=c)
+        normalized_abundances_highIMF, FeH_highIMF = self.extract_normalized_abundances(Z_list, Mass_i_loc=self._dir_out + 'Mass_i_IMF1pt7.dat', c=c)
+        normalized_abundances_lowSFR, FeH_lowSFR = self.extract_normalized_abundances(Z_list, Mass_i_loc=self._dir_out + 'Mass_i_fiducial.dat', c=c)
+        normalized_abundances_highSFR, FeH_highSFR = self.extract_normalized_abundances(Z_list, Mass_i_loc=self._dir_out + 'Mass_i_k_SFR_2.dat', c=c)
+        
+        fig, axs = plt.subplots(nrow, ncol, figsize =figsiz)#, sharex=True)
+        for i, ax in enumerate(axs.flat):
+            if i < len(Z_list):
+                #ax.plot(FeH, Masses[i], color='blue')
+                #ax.plot(FeH, Masses2[i], color='orange', linewidth=2)
+                ax.fill_between(FeH, normalized_abundances_lowIMF[i], normalized_abundances_highIMF[i], alpha=0.2, color='blue')
+                ax.fill_between(FeH, normalized_abundances_lowSFR[i], normalized_abundances_highSFR[i], alpha=0.2, color='red')
+                ax.plot(FeH, normalized_abundances[i], color='red', alpha=0.3)
+                ax.plot(FeH_lowZ, normalized_abundances_lowZ[i], color='red', linestyle=':', alpha=0.3)
+                ax.plot(FeH_highZ, normalized_abundances_highZ[i], color='red', linestyle='--', alpha=0.3)
+                ax.axhline(y=0, color='grey', linestyle='--', linewidth=1, alpha=0.5)
+                ax.axvline(x=0, color='grey', linestyle='--', linewidth=1, alpha=0.5)
+                ax.annotate(f"{Z_list[i]}{Z_symb_list[i]}", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
+                ax.set_ylim(setylim) #(-2, 2) #(-1.5, 1.5)
+                ax.set_xlim(setxlim) #(-11, -2) #(-8.5, 0.5)
+                ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
+                ax.tick_params(width = 1, length = 2, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
+                ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=1))
+                ax.tick_params(width = 1, length = 2, axis = 'y', which = 'minor', left = True, right = True, direction = 'in')
+                ax.xaxis.set_major_locator(ticker.MultipleLocator(base=5))
+                ax.tick_params(width = 1, length = 5, axis = 'x', which = 'major', bottom = True, top = True, direction = 'in')
+                ax.yaxis.set_major_locator(ticker.MultipleLocator(base=5))
+                ax.tick_params(width = 1, length = 5, axis = 'y', which = 'major', left = True, right = True, direction = 'in')
+            else:
+                fig.delaxes(ax)
+        for i in range(nrow):
+            for j in range(ncol):
+                if j != 0:
+                    axs[i,j].set_yticklabels([])
+                if i != nrow-1:
+                    axs[i,j].set_xticklabels([])
+        axs[nrow//2,0].set_ylabel('[X/Fe]', fontsize = 15)
+        axs[nrow-1, ncol//2].set_xlabel(f'[Fe/H]', fontsize = 15)
+        fig.tight_layout(rect = [0.03, 0, 1, 1])
+        fig.subplots_adjust(wspace=0., hspace=0.)
+        plt.show(block=False)
+        plt.savefig(self._dir_out_figs + 'elem_abundance.pdf')
+
+    def lifetimeratio_test_plot(self,colormap='Paired'):
+        from matplotlib import pyplot as plt
+        fig, ax = plt.subplots(1,1, figsize=(7,5))
+        divid05 = np.divide(self.IN.s_lifetimes_p98['Z05'], self.IN.s_lifetimes_p98['Z0004'])
+        divid02 = np.divide(self.IN.s_lifetimes_p98['Z02'], self.IN.s_lifetimes_p98['Z0004'])
+        divid008 = np.divide(self.IN.s_lifetimes_p98['Z008'], self.IN.s_lifetimes_p98['Z0004'])
+        ax.semilogx(self.IN.s_lifetimes_p98['M'], divid05, color='blue', label='Z = 0.05')
+        ax.semilogx(self.IN.s_lifetimes_p98['M'], divid02, color='blue', linestyle='--', label='Z = 0.02')
+        ax.semilogx(self.IN.s_lifetimes_p98['M'], divid008, color='blue', linestyle=':', label='Z = 0.008')
+        ax.hlines(1, 0.6,120, color='orange', label='ratio=1')
+        ax.vlines(3, 0.75,2.6, color='red', label=r'$3 M_{\odot}$')
+        ax.vlines(6, 0.75,2.6, color='red', alpha=0.6, linestyle='--', label=r'$6 M_{\odot}$')
+        ax.vlines(9, 0.75,2.6, color='red', alpha=0.3, linestyle = ':', label=r'$9 M_{\odot}$')
+        cm = plt.cm.get_cmap(colormap)
+        sc=ax.scatter(self.IN.s_lifetimes_p98['M'], divid05, c=np.log10(self.IN.s_lifetimes_p98['Z05']), cmap=cm, s=50)
+        sc=ax.scatter(self.IN.s_lifetimes_p98['M'], divid02, c=np.log10(self.IN.s_lifetimes_p98['Z05']), cmap=cm, s=50)
+        sc=ax.scatter(self.IN.s_lifetimes_p98['M'], divid008, c=np.log10(self.IN.s_lifetimes_p98['Z05']), cmap=cm, s=50)
+        fig.colorbar(sc, label=r'$\tau(M_*)$')
+        ax.legend(loc='best', frameon=False, fontsize=13)
+        ax.set_ylabel(r'$\tau(X)/\tau(Z=0.0004)$', fontsize=15)
+        ax.set_xlabel('Mass', fontsize=15)
+        ax.set_ylim(0.81,1.95)
+        fig.tight_layout()
+        plt.savefig(self._dir_out_figs + 'tauratio.pdf')

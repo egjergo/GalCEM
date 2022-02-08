@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
+import os
 # Romano+10 uses Portinari's code, with Kroupa+03 and the two-infall model
 # So far, I'm using Salpeter+55 for the IMF. Also check the Schmidt power exponent
-import os
 
 class Inputs:
     """
