@@ -1,4 +1,4 @@
-""" I only achieve simplicity with enormous effort (Clarice Lispector) """
+# I only achieve simplicity with enormous effort (Clarice Lispector)
 import time
 import numpy as np
 import scipy.integrate as integr
@@ -10,13 +10,18 @@ from . import morphology as morph
 from . import yields as Y
 
 class OneZone:
-    def __init__(self, inputs):
+    """
+    OneZone class
+    
+    In (Input): an Input configuration instance 
+    """
+    def __init__(self, IN):
         self.tic = []
         self.tic.append(time.process_time())
-        self.IN = inputs
+        self.IN = IN
         self.aux = morph.Auxiliary()
         self.lifetime_class = morph.Stellar_Lifetimes(self.IN)
-        """ Setup """
+        # Setup
         Ml = self.lifetime_class.s_mass[0] # Lower limit stellar masses [Msun] 
         Mu = self.lifetime_class.s_mass[-1] # Upper limit stellar masses [Msun]
         mass_uniform = np.linspace(Ml, Mu, num = self.IN.num_MassGrid)
@@ -26,16 +31,14 @@ class OneZone:
         time_logspace = np.logspace(np.log10(self.IN.time_start), np.log10(self.IN.age_Galaxy), num=self.IN.numTimeStep)
         self.time_chosen = time_uniform
         self.idx_age_Galaxy = self.aux.find_nearest(self.time_chosen, self.IN.age_Galaxy)
-        '''Surface density for the disk. The bulge goes as an inverse square law.'''
+        # Surface density for the disk. The bulge goes as an inverse square law
         surf_density_Galaxy = self.IN.sd / np.exp(self.IN.r / self.IN.Reff[self.IN.morphology]) #sigma(t_G) before eq(7) not used so far !!!!!!!
-
         infall_class = morph.Infall(self.IN, morphology=self.IN.morphology, time=self.time_chosen)
         infall = infall_class.inf()
-
         self.SFR_class = morph.Star_Formation_Rate(self.IN, self.IN.SFR_option, self.IN.custom_SFR)
         IMF_class = morph.Initial_Mass_Function(Ml, Mu, self.IN, self.IN.IMF_option, self.IN.custom_IMF)
         self.IMF = IMF_class.IMF() #() # Function @ input stellar mass
-
+        # Initialize Yields
         isotope_class = Y.Isotopes(self.IN)
         self.yields_LIMs_class = Y.Yields_LIMs(self.IN)
         self.yields_LIMs_class.import_yields()
@@ -45,14 +48,13 @@ class OneZone:
         self.yields_SNIa_class.import_yields()
         yields_BBN_class = Y.Yields_BBN(self.IN)
         yields_BBN_class.import_yields()
-
+        # Initialize ZA_all
         c_class = Y.Concentrations(self.IN)
         ZA_LIMs = c_class.extract_ZA_pairs_LIMs(self.yields_LIMs_class)
         ZA_SNIa = c_class.extract_ZA_pairs_SNIa(self.yields_SNIa_class)
         ZA_Massive = c_class.extract_ZA_pairs_Massive(yields_Massive_class)
         ZA_all = np.vstack((ZA_LIMs, ZA_SNIa, ZA_Massive))
-
-        """ Initialize Global tracked quantities """ 
+        # Initialize Global tracked quantities
         self.Infall_rate = infall(self.time_chosen)
         self.ZA_sorted = c_class.ZA_sorted(ZA_all) # [Z, A] VERY IMPORTANT! 321 isotopes with yields_SNIa_option = 'km20', 192 isotopes for 'i99' 
         self.ZA_sorted = self.ZA_sorted[1:,:]
@@ -77,13 +79,12 @@ class OneZone:
         self.Rate_LIMs = self.IN.epsilon * np.ones(len(self.time_chosen)) 
         self.Rate_SNIa = self.IN.epsilon * np.ones(len(self.time_chosen)) 
         self.Rate_NSM = self.IN.epsilon * np.ones(len(self.time_chosen)) 
-
-        ''' Load Interpolation Models '''
+        # Load Interpolation Models
         self._dir = os.path.dirname(__file__)
         self.X_lc18, self.Y_lc18, self.models_lc18, self.averaged_lc18 = self.load_processed_yields(func_name='lc18', loc=self._dir + '/input/yields/snii/lc18/tab_R', df_list=['X', 'Y', 'models', 'avgmassfrac'])
         self.X_k10, self.Y_k10, self.models_k10, self.averaged_k10 = self.load_processed_yields(func_name='k10', loc=self._dir + '/input/yields/lims/k10', df_list=['X', 'Y', 'models', 'avgmassfrac'])
         self.Y_i99 = self.load_processed_yields_snia(func_name='i99', loc=self._dir + '/input/yields/snia/i99', df_list='Y')
-
+        # Record load time
         self.tic.append(time.process_time())
         package_loading_time = self.tic[-1]
         print(f'Package lodaded in {1e0*(package_loading_time)} seconds.')
@@ -91,7 +92,6 @@ class OneZone:
     def load_processed_yields(self,func_name, loc, df_list):
         df_dict = {}
         for df_l in df_list:
-            #with open(f'{loc}/processed/{df_l}_{func_name}.pkl', 'rb') as pickle_file:
             with open(f'{loc}/processed/{df_l}.pkl', 'rb') as pickle_file:
                 df_dict[df_l] = pickle.load(pickle_file)
         return [df_dict[d] for d in df_list]#df_dict[df_list[0]], df_dict[df_list[1]]#, df_dict[df_list[2]]
@@ -99,12 +99,14 @@ class OneZone:
     def load_processed_yields_snia(self, func_name, loc, df_list):#, 'models']):
         df_dict = {}
         for df_l in df_list:
-            #with open(f'{loc}/processed/{df_l}_{func_name}.pkl', 'rb') as pickle_file:
             with open(f'{loc}/processed/{df_l}.pkl', 'rb') as pickle_file:
                 df_dict[df_l] = pickle.load(pickle_file)
         return df_dict[df_list[0]]
     
     def main(self):
+        """
+        Run the OneZone program
+        """
         self.tic.append(time.process_time())
         self.file1 = open("output/Terminal_output.txt", "w")
         self.evolve()
@@ -125,22 +127,19 @@ class OneZone:
         self.file1.close()
         self.aux.tic_count(string="Plots saved in", tic=self.tic)
     
-    ''' EVOLVE Methods '''
     def f_RK4(self, t_n, y_n, n, i=None):
-        ''' Explicit general diff eq GCE function '''
+        # Explicit general diff eq GCE function
         return self.Infall_rate[n] - self.SFR_tn(n)
 
     def solve_integral(self, t_n, y_n, n, **kwargs): #Wi_comp,
-        '''
-        Explicit general diff eq GCE function
-        INPUT
-        t_n        time_chosen[n]
-        y_n        dependent variable at n
-        n        index of the timestep
-        Functions:
-        Infall rate: [Msun/Gyr]
-        SFR: [Msun/Gyr]
-        '''
+        # Explicit general diff eq GCE function
+        # INPUT
+        # t_n        time_chosen[n]
+        # y_n        dependent variable at n
+        # n        index of the timestep
+        # Functions:
+        # Infall rate: [Msun/Gyr]
+        # SFR: [Msun/Gyr]
         Wi_comps = kwargs['Wi_comp'] # [list of 2-array lists] #Wi_comps[0][0].shape=(155,)
         Wi_SNIa = kwargs['Wi_SNIa']
         i = kwargs['i']
@@ -200,21 +199,16 @@ class OneZone:
         self.Xi_v[:,-1] = np.divide(self.Mass_i_v[:,-1], self.Mgas_v[-1]) 
 
     def SFR_tn(self, timestep_n):
-        """Actual SFR employed within the integro-differential equation
-
-        Args:
-            timestep_n ([int]): [timestep index]
-
-        Returns:
-            [function]: [SFR as a function of Mgas]
-        """
+        # Actual SFR employed within the integro-differential equation
+        # Args:
+        #     timestep_n ([int]): [timestep index]
+        # Returns:
+        #     [function]: [SFR as a function of Mgas]
         return self.SFR_class.SFR(Mgas=self.Mgas_v, Mtot=self.Mtot, timestep_n=timestep_n) # Function: SFR(Mgas)
 
 
 class Wi_grid:
-    '''
-    birthtime grid for Wi integral
-    '''
+    # birthtime grid for Wi integral
     def __init__(self, metallicity, age_idx, IN, lifetime_class, time_chosen):
         self.metallicity = metallicity #* np.ones(IN.num_MassGrid) # !!!!!!!
         self.age_idx = age_idx
@@ -223,10 +217,8 @@ class Wi_grid:
         self.time_chosen = time_chosen
 
     def grids(self, Ml_lim, Mu_lim):
-        '''
-        Ml_lim and Mu_lim are mass limits
-        They are converted to lifetimes by integr_lim() in integration_grid()
-        '''
+        # Ml_lim and Mu_lim are mass limits
+        # They are converted to lifetimes by integr_lim() in integration_grid()
         mass_grid = np.geomspace(Ml_lim, Mu_lim, num = self.IN.num_MassGrid)
         lifetime_grid = self.lifetime_class.interp_stellar_lifetimes(0.06)(mass_grid) #np.power(10, self.lifetime_class.interp_stellar_lifetimes(mass_grid, self.metallicity))#np.column_stack([mass_grid, self.metallicity * np.ones(len(mass_grid))])))
         birthtime_grid = self.time_chosen[self.age_idx] - lifetime_grid 
@@ -238,15 +230,11 @@ class Wi_grid:
 
             
 class Wi:
-    '''
-    Solves each integration item by integrating over birthtimes.
-    
-    Input upper and lower mass limits (to be mapped onto birthtimes)
-    
-    Gyr_age    (t)     is the Galactic age
-    birthtime (t')     is the stellar birthtime
-    lifetime (tau)    is the stellar lifetime
-    '''
+    # Solves each integration item by integrating over birthtimes.
+    # Input upper and lower mass limits (to be mapped onto birthtimes)
+    # Gyr_age    (t)     is the Galactic age
+    # birthtime (t')     is the stellar birthtime
+    # lifetime (tau)    is the stellar lifetime
     def __init__(self, age_idx, IN, lifetime_class, time_chosen, Z_v, SFR_v, IMF, yields_SNIa_class, models_lc18, models_k10, ZA_sorted):
         self.IN = IN
         self.lifetime_class = lifetime_class
@@ -262,41 +250,35 @@ class Wi:
         self.age_idx = age_idx
         self.Wi_grid_class = Wi_grid(self.metallicity, self.age_idx, self.IN, lifetime_class, self.time_chosen)
         #print('Massive channel')
-        self.Massive_birthtime_grid, self.Massive_lifetime_grid, self.Massive_mass_grid = (
-                self.Wi_grid_class.grids(self.IN.Ml_Massive, self.IN.Mu_Massive))
+        self.Massive_birthtime_grid, self.Massive_lifetime_grid, self.Massive_mass_grid = self.Wi_grid_class.grids(self.IN.Ml_Massive, self.IN.Mu_Massive)
         #print('LIMs channel')
-        self.LIMs_birthtime_grid, self.LIMs_lifetime_grid, self.LIMs_mass_grid = (
-                self.Wi_grid_class.grids(self.IN.Ml_LIMs, self.IN.Mu_LIMs)) # !!!!!!! you should subtract SNIa fraction
+        self.LIMs_birthtime_grid, self.LIMs_lifetime_grid, self.LIMs_mass_grid = self.Wi_grid_class.grids(self.IN.Ml_LIMs, self.IN.Mu_LIMs) # !!!!!!! you should subtract SNIa fraction
         #print('SNIa channel')
-        self.SNIa_birthtime_grid, self.SNIa_lifetime_grid, self.SNIa_mass_grid = (
-                self.Wi_grid_class.grids(self.IN.Ml_SNIa, self.IN.Mu_SNIa))
+        self.SNIa_birthtime_grid, self.SNIa_lifetime_grid, self.SNIa_mass_grid = self.Wi_grid_class.grids(self.IN.Ml_SNIa, self.IN.Mu_SNIa)
         self.yield_load = None
         
     def grid_picker(self, channel_switch, grid_type):
-        '''
-        Selects e.g. "self.LIMs_birthtime_grid"
-        
-        channel_switch:        can be 'LIMs', 'SNIa', 'Massive'
-        grid_type:            can be 'birthtime', 'lifetime', 'mass' 
-        '''
+        # Selects e.g. "self.LIMs_birthtime_grid"
+        # channel_switch:        can be 'LIMs', 'SNIa', 'Massive'
+        # grid_type:            can be 'birthtime', 'lifetime', 'mass' 
         return self.__dict__[channel_switch+'_'+grid_type+'_grid']
     
     def SFR_component(self, birthtime_grid):
-        ''' Returns the interpolated SFR vector computed at the birthtime grids'''
+        # Returns the interpolated SFR vector computed at the birthtime grids
         SFR_interp = interp.interp1d(self.time_chosen[:self.age_idx+1], self.SFR_v[:self.age_idx+1], fill_value='extrapolate')
         return SFR_interp(birthtime_grid)
 
     def Z_component(self, birthtime_grid):
-        ''' Returns the interpolated SFR vector computed at the birthtime grids'''
+        # Returns the interpolated SFR vector computed at the birthtime grids
         _Z_interp = interp.interp1d(self.time_chosen[:self.age_idx+1], self.Z_v[:self.age_idx+1], fill_value='extrapolate')
         return _Z_interp(birthtime_grid)
 
     def IMF_component(self, mass_grid):
-        ''' Returns the IMF vector computed at the mass grids'''
+        # Returns the IMF vector computed at the mass grids
         return self.IMF(mass_grid)
     
     def dMdtauM_component(self, lifetime_grid, derlog=None): #!!!!!!!
-        ''' computes the derivative of M(tauM) w.r.t. tauM '''
+        # computes the derivative of M(tauM) w.r.t. tauM
         derlog = self.IN.derlog if derlog is None else derlog
         if derlog == False:
             return self.lifetime_class.dMdtauM(np.log10(lifetime_grid), self.metallicity*np.ones(len(lifetime_grid)))#(lifetime_grid)
@@ -333,13 +315,13 @@ class Wi:
         return 0.005 * np.ones(len(self.ZA_sorted)) #y # len consistent with ZA_sorted
 
     def mass_component(self, channel_switch, mass_grid, lifetime_grid): #
-        ''' Portinari+98, page 22, last eq. first column '''
+        # Portinari+98, page 22, last eq. first column
         birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
         IMF_comp = self.IMF_component(mass_grid) # overwrite continuously in __init__
         return IMF_comp, IMF_comp * self.dMdtauM_component(np.log10(lifetime_grid)) 
 
     def compute_rate(self, channel_switch='Massive'):
-        ''' Computes the Type II SNae rate '''    
+        # Computes the Type II SNae rate 
         birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
         mass_grid = self.grid_picker(channel_switch, 'mass')
         SFR_comp = self.SFR_component(birthtime_grid)
@@ -386,9 +368,9 @@ class Wi:
         return rateSNII, rateLIMs, R_SNIa
 
     def compute(self, channel_switch, vel_idx=None):
+        # Computes, using the Simpson rule, the integral Wi 
+        # elements of eq. (34) Portinari+98 -- for stars that die at tn, for every i
         vel_idx = self.IN.LC18_vel_idx if vel_idx is None else vel_idx
-        '''Computes, using the Simpson rule, the integral Wi 
-        elements of eq. (34) Portinari+98 -- for stars that die at tn, for every i'''
         mass_grid = self.grid_picker(channel_switch, 'mass')
         lifetime_grid = self.grid_picker(channel_switch, 'lifetime')        
         birthtime_grid = self.grid_picker(channel_switch, 'birthtime')

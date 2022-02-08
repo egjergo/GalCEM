@@ -10,7 +10,13 @@ Welcome to GalCEM's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+Components
+==========
 
+.. toctree::
+   :maxdepth: 2
+
+   components
 
 Indices and tables
 ==================

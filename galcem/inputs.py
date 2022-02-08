@@ -5,6 +5,11 @@ import pandas as pd
 import os
 
 class Inputs:
+    """
+    Configuration inputs for OneZone
+    
+    ags_Galaxy (float): age of the Galaxy (Gyr)
+    """
     def __init__(self):
         '''	applies to thick disk at 8 kpc '''
         self.age_Galaxy = 13.8 # [Gyr]
