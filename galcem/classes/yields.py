@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 from pandas.core.common import flatten
 
-import prep.inputs as INp
-IN = INp.Inputs()
+from ..prep.inputs import Inputs
+IN = Inputs()
 
 """"""""""""""""""""""""""""""""""""""""""""""""
 "                                              "

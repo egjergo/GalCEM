@@ -6,8 +6,8 @@ import scipy.interpolate as interp
 from varname import varname
 import scipy.stats as ss
 
-import prep.inputs as INp
-IN = INp.Inputs()
+from ..prep.inputs import Inputs
+IN = Inputs()
 
 """"""""""""""""""""""""""""""""""""""""""""""""
 "                                              "
