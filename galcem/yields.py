@@ -295,7 +295,8 @@ class Yields_LIMs(Yields):
 	'''
 	Yields by LIMs, from Karakas et al. (2010) by default.
 	'''
-	def __init__(self, option=None):
+	def __init__(self, IN, option=None):
+		self.IN = IN
 		self.option = self.IN.yields_LIMs_option if option is None else option
 		self.Returned_stellar_mass = None
 		super().__init__()

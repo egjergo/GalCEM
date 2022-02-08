@@ -3,6 +3,8 @@ import time
 import numpy as np
 import scipy.integrate as integr
 import scipy.interpolate as interp
+import os
+import pickle
 
 from . import morphology as morph
 from . import yields as Y
@@ -13,10 +15,10 @@ class OneZone:
         self.tic.append(time.process_time())
         self.IN = inputs
         self.aux = morph.Auxiliary()
-        lifetime_class = morph.Stellar_Lifetimes(self.IN)
+        self.lifetime_class = morph.Stellar_Lifetimes(self.IN)
         """ Setup """
-        Ml = lifetime_class.s_mass[0] # Lower limit stellar masses [Msun] 
-        Mu = lifetime_class.s_mass[-1] # Upper limit stellar masses [Msun]
+        Ml = self.lifetime_class.s_mass[0] # Lower limit stellar masses [Msun] 
+        Mu = self.lifetime_class.s_mass[-1] # Upper limit stellar masses [Msun]
         mass_uniform = np.linspace(Ml, Mu, num = self.IN.num_MassGrid)
         #time_uniform = np.arange(IN.time_start, IN.time_end, IN.nTimeStep)
         #time_logspace = np.logspace(np.log10(IN.time_start), np.log10(IN.time_end), num=IN.numTimeStep)
@@ -65,8 +67,8 @@ class OneZone:
         self.Mgas_v = self.IN.epsilon * np.ones(len(self.time_chosen)) # Global
         self.SFR_v = self.IN.epsilon * np.ones(len(self.time_chosen)) #
         self.Mass_i_v = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)))	# Gass mass (i,j) where the i rows are the isotopes and j are the timesteps, [:,j] follows the timesteps
-        Xi_inf = isotope_class.construct_yield_vector(yields_BBN_class, self.ZA_sorted)
-        Mass_i_inf = np.column_stack(([Xi_inf] * len(self.Mtot)))
+        self.Xi_inf = isotope_class.construct_yield_vector(yields_BBN_class, self.ZA_sorted)
+        Mass_i_inf = np.column_stack(([self.Xi_inf] * len(self.Mtot)))
         self.Xi_v = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)))	# Xi 
         self.Z_v = self.IN.epsilon * np.ones(len(self.time_chosen)) # Metallicity 
         G_v = self.IN.epsilon * np.ones(len(self.time_chosen)) # G 
@@ -76,10 +78,32 @@ class OneZone:
         self.Rate_SNIa = self.IN.epsilon * np.ones(len(self.time_chosen)) 
         self.Rate_NSM = self.IN.epsilon * np.ones(len(self.time_chosen)) 
 
+        ''' Load Interpolation Models '''
+        self._dir = os.path.dirname(__file__)
+        self.X_lc18, self.Y_lc18, self.models_lc18, self.averaged_lc18 = self.load_processed_yields(func_name='lc18', loc=self._dir + '/input/yields/snii/lc18/tab_R', df_list=['X', 'Y', 'models', 'avgmassfrac'])
+        self.X_k10, self.Y_k10, self.models_k10, self.averaged_k10 = self.load_processed_yields(func_name='k10', loc=self._dir + '/input/yields/lims/k10', df_list=['X', 'Y', 'models', 'avgmassfrac'])
+        self.Y_i99 = self.load_processed_yields_snia(func_name='i99', loc=self._dir + '/input/yields/snia/i99', df_list='Y')
+
         self.tic.append(time.process_time())
         package_loading_time = self.tic[-1]
         print(f'Package lodaded in {1e0*(package_loading_time)} seconds.')
-        
+
+    def load_processed_yields(self,func_name, loc, df_list):
+        df_dict = {}
+        for df_l in df_list:
+            #with open(f'{loc}/processed/{df_l}_{func_name}.pkl', 'rb') as pickle_file:
+            with open(f'{loc}/processed/{df_l}.pkl', 'rb') as pickle_file:
+                df_dict[df_l] = pickle.load(pickle_file)
+        return [df_dict[d] for d in df_list]#df_dict[df_list[0]], df_dict[df_list[1]]#, df_dict[df_list[2]]
+
+    def load_processed_yields_snia(self, func_name, loc, df_list):#, 'models']):
+        df_dict = {}
+        for df_l in df_list:
+            #with open(f'{loc}/processed/{df_l}_{func_name}.pkl', 'rb') as pickle_file:
+            with open(f'{loc}/processed/{df_l}.pkl', 'rb') as pickle_file:
+                df_dict[df_l] = pickle.load(pickle_file)
+        return df_dict[df_list[0]]
+    
     def main(self):
         self.tic.append(time.process_time())
         self.file1 = open("output/Terminal_output.txt", "w")
@@ -100,7 +124,6 @@ class OneZone:
         print('Plotting...')
         self.file1.close()
         self.aux.tic_count(string="Plots saved in", tic=self.tic)
-        return None
     
     ''' EVOLVE Methods '''
     def f_RK4(self, t_n, y_n, n, i=None):
@@ -175,7 +198,6 @@ class OneZone:
                     self.Mass_i_v[i, n+1] = self.aux.RK4(self.solve_integral, self.time_chosen[n], self.Mass_i_v[i,n], n, self.IN.nTimeStep, i=i, Wi_comp=Wi_comp, Wi_SNIa=Wi_SNIa, yields=yields)
             self.Z_v[n] = np.divide(np.sum(self.Mass_i_v[:,n]), self.Mgas_v[n])
         self.Xi_v[:,-1] = np.divide(self.Mass_i_v[:,-1], self.Mgas_v[-1]) 
-        return None
 
     def SFR_tn(self, timestep_n):
         """Actual SFR employed within the integro-differential equation
@@ -249,7 +271,6 @@ class Wi:
         self.SNIa_birthtime_grid, self.SNIa_lifetime_grid, self.SNIa_mass_grid = (
                 self.Wi_grid_class.grids(self.IN.Ml_SNIa, self.IN.Mu_SNIa))
         self.yield_load = None
-        return None
         
     def grid_picker(self, channel_switch, grid_type):
         '''
