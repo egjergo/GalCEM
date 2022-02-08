@@ -1,9 +1,7 @@
 import numpy as np
 import pandas as pd
 from pandas.core.common import flatten
-
-from ..prep.inputs import Inputs
-IN = Inputs()
+import os
 
 """"""""""""""""""""""""""""""""""""""""""""""""
 "                                              "
@@ -27,11 +25,12 @@ class Isotopes:
 	'''
 	Pick yields
 	'''
-	def __init__(self):
-		self.elemZ = IN.periodic['elemZ']
-		self.elemSymb = IN.periodic['elemSymb']
-		self.elemName = IN.periodic['elemName']
-		self.elemA_characteristic = IN.periodic['elemA']
+	def __init__(self, IN):
+		self.IN = IN
+		self.elemZ = self.IN.periodic['elemZ']
+		self.elemSymb = self.IN.periodic['elemSymb']
+		self.elemName = self.IN.periodic['elemName']
+		self.elemA_characteristic = self.IN.periodic['elemA']
 		
 	def pick_by_Symb(self, ndarray_elemZ=0, elemSymb='Symb'):
 		'''
@@ -104,25 +103,25 @@ class Concentrations:
 	Computes the [X,Y] ratios
 	and normalizes to solar metallicity (Asplund+09)
 	'''
-	def __init__(self):
+	def __init__(self, IN):
+		self.IN = IN
 		self.concentration = None
-		self.solarA09_vs_H_bynumb = (IN.asplund1['photospheric'] - IN.asplund1['photospheric'][1])
-		self.solarA09_vs_Fe_bynumb = (IN.asplund1['photospheric'] - IN.asplund1['photospheric'][26])
-		self.solarA09_vs_H_bymass = (IN.asplund1['photospheric'] - IN.asplund1['photospheric'][1] + 
-							np.log10(np.divide(IN.periodic['elemA'],
-							IN.periodic['elemA'][1]))[:IN.asplund1['photospheric'].shape[0]])
-		self.solarA09_vs_Fe_bymass = (IN.asplund1['photospheric'] - IN.asplund1['photospheric'][26] + 
-							 np.log10(np.divide(IN.periodic['elemA'],
-							 IN.periodic['elemA'][26]))[:IN.asplund1['photospheric'].shape[0]])
-		self.asplund3_pd = pd.DataFrame(IN.asplund3, columns=['elemN','elemZ','elemA','percentage'])
-		return None
+		self.solarA09_vs_H_bynumb = (self.IN.asplund1['photospheric'] - self.IN.asplund1['photospheric'][1])
+		self.solarA09_vs_Fe_bynumb = (self.IN.asplund1['photospheric'] - self.IN.asplund1['photospheric'][26])
+		self.solarA09_vs_H_bymass = (self.IN.asplund1['photospheric'] - self.IN.asplund1['photospheric'][1] + 
+							np.log10(np.divide(self.IN.periodic['elemA'],
+							self.IN.periodic['elemA'][1]))[:self.IN.asplund1['photospheric'].shape[0]])
+		self.solarA09_vs_Fe_bymass = (self.IN.asplund1['photospheric'] - self.IN.asplund1['photospheric'][26] + 
+							 np.log10(np.divide(self.IN.periodic['elemA'],
+							 self.IN.periodic['elemA'][26]))[:self.IN.asplund1['photospheric'].shape[0]])
+		self.asplund3_pd = pd.DataFrame(self.IN.asplund3, columns=['elemN','elemZ','elemA','percentage'])
 		
 	def log10_avg_elem_vs_X(self, elemZ=1):
 		'''
 		log10(<M all> / <M elemZ>)
 		'''
-		return np.log10(np.divide(IN.periodic['elemA'],
-				IN.periodic['elemA'][elemZ]))[:IN.asplund1['photospheric'].shape[0]]
+		return np.log10(np.divide(self.IN.periodic['elemA'],
+				self.IN.periodic['elemA'][elemZ]))[:self.IN.asplund1['photospheric'].shape[0]]
 	
 	def abund_percentage(self, asplund3_pd, ZA_sorted):
 		percentages = []
@@ -161,7 +160,7 @@ class Concentrations:
 		Returns a complete list of the element symbol associated 
 		with each entry in ZA_sorted
 		'''
-		return [np.where(IN.periodic['elemZ'] == ZA_sorted[i,0])[0][0] for i in range(len(ZA_sorted))]
+		return [np.where(self.IN.periodic['elemZ'] == ZA_sorted[i,0])[0][0] for i in range(len(ZA_sorted))]
 		
 	def R_M_i_idx(self, yields_class, ZA_sorted, Mstar=None, metallicity=None, vel=None):
 		'''
@@ -191,19 +190,22 @@ class Yields:
 		self.stellarMass_bins = None # array of initial stellar mass bins for the given authors (n.b. not all yields have it!)
 		self.metallicityIni = None # Initial stellar metallicity (n.b. not all yields have it!)
 		self.stellarMassIni = None # Initial stellar mass (n.b. not all yields have it!)
+		self._dir = os.path.dirname(__file__)
 		
 		
 class Yields_BBN(Yields):
 	'''
 	Yields by Big Bang Nucleosynthesis, from Galli & Palla (2013) by default.
 	'''
-	def __init__(self, option=IN.yields_BBN_option):
-		self.option = option
+	def __init__(self, IN, option=None):
+		self.IN = IN
+		self.option = self.IN.yields_BBN_option if option is None else option
 		self.massCol = None
+		super().__init__()
 		
 	def import_yields(self):
 		if self.option == 'gp13':
-			yd = 'input/yields/bbn/'
+			yd = self._dir + '/input/yields/bbn/'
 			
 			self.tables = np.genfromtxt(yd + 'galli13.dat', names=['elemZ','elemA', 'numbFrac', 'mass'], 
 						 dtype=[('elemZ', '<i8'), ('elemA', '<i8'), ('numbFrac','<f8'), ('mass','<f8')])
@@ -217,12 +219,14 @@ class Yields_SNIa(Yields):
 	'''
 	Yields by Type Ia Supernova, from Iwamoto+99 by default.
 	'''
-	def __init__(self, option=IN.yields_SNIa_option):
-		self.option = option
+	def __init__(self, IN, option=None):
+		self.IN = IN
+		self.option = self.IN.yields_SNIa_option if option is None else option
+		super().__init__()
 		
 	def import_yields(self):
 		if self.option == 'km20':
-			yd = 'input/yields/snia/km20/'
+			yd = self._dir + '/input/yields/snia/km20/'
 			self.tables = np.genfromtxt(yd + 'yield_nucl.d', names=['elemName','elemA','elemZ','Yield'], 
 						 dtype=[('elemName', '<U5'), ('elemA', '<i8'), ('elemZ', '<i8'), ('Yield','<f8')])
 			self.yields = self.tables['Yield']
@@ -230,7 +234,7 @@ class Yields_SNIa(Yields):
 			self.elemZ = self.tables['elemZ']
 			
 		if self.option == 'i99':
-			yd = 'input/yields/snia/i99/'
+			yd = self._dir + '/input/yields/snia/i99/'
 			self.tables = np.genfromtxt(yd + 'table3.csv', skip_header=1, delimiter=',',
    			            names=['elemZ','elemA', 'elemSymb', 'TypeII', 
                                 'W7', 'W70', 'WDD1', 'WDD2', 'WDD3', 'CDD1', 'CDD2'],
@@ -247,15 +251,18 @@ class Yields_Massive(Yields):
 	'''
 	Yields by massive stars, from Limongi & Chieffi (2018) by default.
 	'''
-	def __init__(self, option=IN.yields_massive_option):
-		self.option = option
+	def __init__(self, IN, option=None):
+		self.IN = IN
+		self.option = self.IN.yields_massive_option if option is None else option
 		self.rotationalVelocity_bins = None
+		super().__init__()
+
 		
 	def import_yields(self):
 		if self.option == 'lc18':
 			self.metallicity_bins = np.power(10, [0., -1., -2., -3.])
 			self.rotationalVelocity_bins = [0., 150., 300.]
-			yd = 'input/yields/snii/lc18/tab_R/'
+			yd = self._dir + '/input/yields/snii/lc18/tab_R/'
 			yieldsT = []
 			yieldsTable = []
 			headers = []
@@ -288,9 +295,11 @@ class Yields_LIMs(Yields):
 	'''
 	Yields by LIMs, from Karakas et al. (2010) by default.
 	'''
-	def __init__(self, option=IN.yields_LIMs_option):
-		self.option = option
+	def __init__(self, option=None):
+		self.option = self.IN.yields_LIMs_option if option is None else option
 		self.Returned_stellar_mass = None
+		super().__init__()
+
 		
 	def is_unique(self, val, split_length):
 		it_is = [t[val] for t in self.tables]
@@ -314,7 +323,7 @@ class Yields_LIMs(Yields):
 		if self.option == 'k10':
 			self.metallicity_bins = [0.0001, 0.008, 0.004, 0.02]
 			split_length = [16, 15, 15, 16] # self.tables length (metallicity arrays)
-			yd = 'input/yields/lims/k10/'
+			yd = self._dir + '/input/yields/lims/k10/'
 			
 			self.tables = np.array([np.genfromtxt(yd + 'Z'+str(Z)+'.dat',
 				delimiter=',', names=['Mini','Zini','Mfin','elemName','elemZ','elemA',

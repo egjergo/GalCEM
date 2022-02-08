@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 # Romano+10 uses Portinari's code, with Kroupa+03 and the two-infall model
 # So far, I'm using Salpeter+55 for the IMF. Also check the Schmidt power exponent
+import os
 
 class Inputs:
     def __init__(self):
@@ -114,7 +115,8 @@ class Inputs:
         	'UrsaMinor': 11}
         self.wind_efficiency = 0 # override: no overflow in this run
         
-        self.p98_t14_df = pd.read_csv('input/starlifetime/portinari98table14.dat')
+        _dir = os.path.dirname(__file__)
+        self.p98_t14_df = pd.read_csv(_dir+'/input/starlifetime/portinari98table14.dat')
         self.p98_t14_df.columns = [name.replace('#M','mass').replace('Z=','') 
                                             for name in self.p98_t14_df.columns]
         self.p98_t14_df = pd.melt(self.p98_t14_df, id_vars='mass', 
@@ -124,24 +126,24 @@ class Inputs:
         self.p98_t14_df['lifetimes_log10_Gyr'] = np.log10(self.p98_t14_df['lifetimes_yr']/1e9)
         self.p98_t14_df['lifetimes_Gyr'] = self.p98_t14_df['lifetimes_yr']/1e9
 
-        self.s_lifetimes_p98 = np.genfromtxt('input/starlifetime/portinari98table14.dat', 
+        self.s_lifetimes_p98 = np.genfromtxt(_dir+'/input/starlifetime/portinari98table14.dat', 
                                 delimiter = ',', # padded to evaluate at boundary masses
                                 names = ['M','Z0004', 'Z008', 'Z02', 'Z05'])
         self.time_start = np.min([self.s_lifetimes_p98[Z] for Z in ['Z0004', 'Z008', 'Z02', 'Z05']]) / 1e9 # [Gyr]
         self.time_end = np.max([self.s_lifetimes_p98[Z] for Z in ['Z0004', 'Z008', 'Z02', 'Z05']]) / 1e9 # [Gyr]
 
-        self.asplund1 = np.genfromtxt('input/physics/asplund09/table1.dat', 
+        self.asplund1 = np.genfromtxt(_dir+'/input/physics/asplund09/table1.dat', 
 						 names=['elemZ','elemN','photospheric','perr','meteoric','merr'], 
 						 delimiter=',', dtype=[('elemZ', '<f8'), ('elemN', '<U5'), 
 						 ('photospheric','<f8'), ('perr', '<f8'), ('meteoric', '<f8'),
 						  ('merr', '<f8')])                     
 
-        self.asplund3 = np.genfromtxt('input/physics/asplund09/table3.dat', 
+        self.asplund3 = np.genfromtxt(_dir+'/input/physics/asplund09/table3.dat', 
 						 names=['elemN','elemZ','elemA','percentage'], 
 						 dtype=[('elemN', '<U2'), ('elemZ', '<i8'), ('elemA', '<i8'),
 						  ('percentage', 'float')], delimiter=',')
 
-        self.periodic = np.genfromtxt('input/physics/periodicinfo.dat', 
+        self.periodic = np.genfromtxt(_dir+'/input/physics/periodicinfo.dat', 
 						 names=['elemZ','_','elemName','-','elemSymb','--','elemA'], 
 						 delimiter=',', dtype=[('elemZ', '<f8'), ('_', '<U5'), 
 						 ('elemName', '<U13'), ('-', '<U5'), ('elemSymb', '<U5'), 

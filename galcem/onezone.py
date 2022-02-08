@@ -4,18 +4,16 @@ import numpy as np
 import scipy.integrate as integr
 import scipy.interpolate as interp
 
-from .classes import morphology as morph
-from .classes import yields as Y
-import test.yield_interpolation_test as yt 
+from . import morphology as morph
+from . import yields as Y
 
-
-class OneZone(object):
+class OneZone:
     def __init__(self, inputs):
         self.tic = []
         self.tic.append(time.process_time())
         self.IN = inputs
         self.aux = morph.Auxiliary()
-        lifetime_class = morph.Stellar_Lifetimes()
+        lifetime_class = morph.Stellar_Lifetimes(self.IN)
         """ Setup """
         Ml = lifetime_class.s_mass[0] # Lower limit stellar masses [Msun] 
         Mu = lifetime_class.s_mass[-1] # Upper limit stellar masses [Msun]
@@ -29,24 +27,24 @@ class OneZone(object):
         '''Surface density for the disk. The bulge goes as an inverse square law.'''
         surf_density_Galaxy = self.IN.sd / np.exp(self.IN.r / self.IN.Reff[self.IN.morphology]) #sigma(t_G) before eq(7) not used so far !!!!!!!
 
-        infall_class = morph.Infall(morphology=self.IN.morphology, time=self.time_chosen)
+        infall_class = morph.Infall(self.IN, morphology=self.IN.morphology, time=self.time_chosen)
         infall = infall_class.inf()
 
-        self.SFR_class = morph.Star_Formation_Rate(self.IN.SFR_option, self.IN.custom_SFR)
-        IMF_class = morph.Initial_Mass_Function(Ml, Mu, self.IN.IMF_option, self.IN.custom_IMF)
+        self.SFR_class = morph.Star_Formation_Rate(self.IN, self.IN.SFR_option, self.IN.custom_SFR)
+        IMF_class = morph.Initial_Mass_Function(Ml, Mu, self.IN, self.IN.IMF_option, self.IN.custom_IMF)
         self.IMF = IMF_class.IMF() #() # Function @ input stellar mass
 
-        isotope_class = Y.Isotopes()
-        self.yields_LIMs_class = Y.Yields_LIMs()
+        isotope_class = Y.Isotopes(self.IN)
+        self.yields_LIMs_class = Y.Yields_LIMs(self.IN)
         self.yields_LIMs_class.import_yields()
-        yields_Massive_class = Y.Yields_Massive()
+        yields_Massive_class = Y.Yields_Massive(self.IN)
         yields_Massive_class.import_yields()
-        self.yields_SNIa_class = Y.Yields_SNIa()
+        self.yields_SNIa_class = Y.Yields_SNIa(self.IN)
         self.yields_SNIa_class.import_yields()
-        yields_BBN_class = Y.Yields_BBN()
+        yields_BBN_class = Y.Yields_BBN(self.IN)
         yields_BBN_class.import_yields()
 
-        c_class = Y.Concentrations()
+        c_class = Y.Concentrations(self.IN)
         ZA_LIMs = c_class.extract_ZA_pairs_LIMs(self.yields_LIMs_class)
         ZA_SNIa = c_class.extract_ZA_pairs_SNIa(self.yields_SNIa_class)
         ZA_Massive = c_class.extract_ZA_pairs_Massive(yields_Massive_class)
@@ -155,7 +153,7 @@ class OneZone(object):
             self.phys_integral(n)        
             self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
             if n > 0.: 
-                Wi_class = Wi(n)
+                Wi_class = Wi(n, self.IN, self.lifetime_class, self.time_chosen, self.Z_v, self.SFR_v, self.IMF, self.yields_SNIa_class, self.models_lc18, self.models_k10, self.ZA_sorted)
                 self.Rate_SNII[n], self.Rate_LIMs[n], self.Rate_SNIa[n] = Wi_class.compute_rates()
                 Wi_comp = [Wi_class.compute("Massive"), Wi_class.compute("LIMs")]
                 #yield_SNII = Wi_class.yield_array('Massive', Wi_class.Massive_mass_grid, Wi_class.Massive_birthtime_grid)
@@ -191,7 +189,7 @@ class OneZone(object):
         return self.SFR_class.SFR(Mgas=self.Mgas_v, Mtot=self.Mtot, timestep_n=timestep_n) # Function: SFR(Mgas)
 
 
-class Wi_grid(object):
+class Wi_grid:
     '''
     birthtime grid for Wi integral
     '''
@@ -201,7 +199,6 @@ class Wi_grid(object):
         self.IN = IN
         self.lifetime_class = lifetime_class
         self.time_chosen = time_chosen
-        return None
 
     def grids(self, Ml_lim, Mu_lim):
         '''

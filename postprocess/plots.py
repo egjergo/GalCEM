@@ -2,7 +2,7 @@
 import time
 import numpy as np
 
-import galcem.prep.inputs as INp
+import galcem.inputs as INp
 IN = INp.Inputs()
 from galcem.prep.setup import *
 

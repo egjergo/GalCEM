@@ -149,7 +149,6 @@ def plot_yields(nrow=3, ncol=3, FeH_ini=0, vel=0, figsiz = (10,8)):
 	plt.subplots_adjust(wspace=0., hspace=0.)
 	#plt.show(block = False)
 	plt.savefig('PLOTS/yields_'+folder+'_'+iso_or_ele+'_FeH'+str(FeH_ini)+'_vel'+str(vel)+'.pdf')
-	return None
 #plot_yields(FeH_ini=0, vel=0)
 
 
@@ -207,7 +206,6 @@ def plot_yields_vel(nrow=3, ncol=3, FeH_ini=0, figsiz = (10,8)):
 	plt.subplots_adjust(wspace=0., hspace=0.)
 	#plt.show(block = False)
 	plt.savefig('PLOTS/yields_'+folder+'_FeH'+str(FeH_ini)+'.pdf')
-	return None
 #plot_yields_vel(FeH_ini=0)
 
 
@@ -268,7 +266,6 @@ def plot_yields_FeH(nrow=3, ncol=3, vel=0, figsiz = (10,8)):
 	plt.subplots_adjust(wspace=0., hspace=0.)
 	#plt.show(block = False)
 	plt.savefig('PLOTS/yields_'+folder+'_vel'+str(vel)+'.pdf')
-	return None
 #plot_yields_FeH(vel=0)
 #plot_yields_FeH(vel=1)
 #plot_yields_FeH(vel=2)
@@ -339,5 +336,4 @@ def plot_yields_mass(nrow=3, ncol=4, figsiz = (11,8)):
 	plt.subplots_adjust(wspace=0., hspace=0.)
 	#plt.show(block = False)
 	plt.savefig('PLOTS/yields'+folder+'_mass.pdf')
-	return None
 plot_yields_mass()
