@@ -28,12 +28,12 @@ class OneZone:
         # Setup
         Ml = self.lifetime_class.s_mass[0] # Lower limit stellar masses [Msun] 
         Mu = self.lifetime_class.s_mass[-1] # Upper limit stellar masses [Msun]
-        mass_uniform = np.linspace(Ml, Mu, num = self.IN.num_MassGrid)
-        #time_uniform = np.arange(IN.time_start, IN.time_end, IN.nTimeStep)
-        #time_logspace = np.logspace(np.log10(IN.time_start), np.log10(IN.time_end), num=IN.numTimeStep)
-        time_uniform = np.arange(self.IN.time_start, self.IN.age_Galaxy, self.IN.nTimeStep)
-        time_logspace = np.logspace(np.log10(self.IN.time_start), np.log10(self.IN.age_Galaxy), num=self.IN.numTimeStep)
-        self.time_chosen = time_uniform
+        self.mass_uniform = np.linspace(Ml, Mu, num = self.IN.num_MassGrid)
+        #self.time_uniform = np.arange(IN.time_start, IN.time_end, IN.nTimeStep)
+        #self.time_logspace = np.logspace(np.log10(IN.time_start), np.log10(IN.time_end), num=IN.numTimeStep)
+        self.time_uniform = np.arange(self.IN.time_start, self.IN.age_Galaxy, self.IN.nTimeStep)
+        self.time_logspace = np.logspace(np.log10(self.IN.time_start), np.log10(self.IN.age_Galaxy), num=self.IN.numTimeStep)
+        self.time_chosen = self.time_uniform
         self.idx_age_Galaxy = self.aux.find_nearest(self.time_chosen, self.IN.age_Galaxy)
         # Surface density for the disk. The bulge goes as an inverse square law
         surf_density_Galaxy = self.IN.sd / np.exp(self.IN.r / self.IN.Reff[self.IN.morphology]) #sigma(t_G) before eq(7) not used so far !!!!!!!
