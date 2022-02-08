@@ -22,4 +22,4 @@ python examples/mwe.py
 - update docs using `docs/index.rst` and `docs/components.rst` and in-code docstrings
 - modify/delete `examples/GalCEM_notebook.ipynb`
 - update `yield_interpolation/` files
-
+- update `OneZone.elem_abundance()`, currently broken
