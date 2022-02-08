@@ -1,3 +1,5 @@
+.. image:: figs/GalCEM_flowchart.png
+
 OneZone
 ....................................
 

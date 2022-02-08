@@ -6,9 +6,8 @@
 Welcome to GalCEM's documentation!
 ==================================
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+.. image:: figs/GalCEMdiagram.jpg
+
 
 Components
 ==========
