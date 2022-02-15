@@ -1,0 +1,2 @@
+recursive-include galcem/input *
+include galcem/galcem.mplstyle

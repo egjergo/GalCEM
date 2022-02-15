@@ -43,7 +43,7 @@ class Isotopes:
 		Returns:
 			the indices of the yield classes corresponding to the given element 
 		'''
-		print(f'Symbol: \t {type(self.elemSymb)}')
+		print('Symbol: \t %s'%type(self.elemSymb))
 		idx = np.where(self.elemSymb == elemSymb)
 		return np.where(ndarray_elemZ == self.elemZ[idx])
 		
@@ -58,7 +58,7 @@ class Isotopes:
 		Returns:
 			the indices of the yield classes corresponding to the given element 
 		'''
-		print(f'Symbol: \t {type(self.elemSymb)}')
+		print('Symbol: \t %s'%type(self.elemSymb))
 		idx = np.where(self.elemSymb == elemSymb)
 		return np.where(ndarray_elemZ == self.elemZ[idx])
 	

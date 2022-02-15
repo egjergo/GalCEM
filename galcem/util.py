@@ -97,7 +97,7 @@ class Wi:
                 X_sample = np.column_stack([Z_comp, mass_grid])
                 models = self.models_k10
             else:
-                print(f'{channel_switch = } currently not included.')
+                print('%s currently not included.'%channel_switch)
                 pass
             
             for i, model in enumerate(models):

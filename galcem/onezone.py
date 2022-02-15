@@ -2,6 +2,7 @@
 import time
 import numpy as np
 import scipy.integrate as integr
+from scipy.interpolate import *
 import os
 import pickle
 
@@ -91,19 +92,19 @@ class OneZone:
         # Record load time
         self.tic.append(time.process_time())
         package_loading_time = self.tic[-1]
-        print(f'Package lodaded in {1e0*(package_loading_time)} seconds.')
+        print('Package lodaded in %.1e seconds.'%package_loading_time)
 
     def load_processed_yields(self,func_name, loc, df_list):
         df_dict = {}
         for df_l in df_list:
-            with open(f'{loc}/processed/{df_l}.pkl', 'rb') as pickle_file:
+            with open('%s/processed/%s.pkl'%(loc,df_l), 'rb') as pickle_file:
                 df_dict[df_l] = pickle.load(pickle_file)
         return [df_dict[d] for d in df_list]#df_dict[df_list[0]], df_dict[df_list[1]]#, df_dict[df_list[2]]
 
     def load_processed_yields_snia(self, func_name, loc, df_list):#, 'models']):
         df_dict = {}
         for df_l in df_list:
-            with open(f'{loc}/processed/{df_l}.pkl', 'rb') as pickle_file:
+            with open('%s/processed/%s.pkl'%(loc,df_l), 'rb') as pickle_file:
                 df_dict[df_l] = pickle.load(pickle_file)
         return df_dict[df_list[0]]
     
@@ -153,14 +154,11 @@ class OneZone:
             Wi_vals = []
             for j,val in enumerate(Wi_comps):
                 if len(val[1]) > 0.:
-                    #print(f'{channel_switch[j]}, {ZA_sorted[i]}')
-                    #file1.write(f'{channel_switch[j]}, {ZA_sorted[i]}\n') 
                     Wi_vals.append(integr.simps(val[0] * yields[j], x=val[1]))
             infall_comp = self.Infall_rate[n] * self.Xi_inf[i]
             sfr_comp = self.SFR_v[n] * self.Xi_v[i,n]
             val = infall_comp  - sfr_comp + np.sum(Wi_vals) + Wi_SNIa #+ np.sum(Wi_val, axis=0)
             if val < 0.:
-                #print('val negative')
                 val = 0.
         return val
 
@@ -172,8 +170,8 @@ class OneZone:
 
     def evolve(self):
         for n in range(len(self.time_chosen[:self.idx_age_Galaxy])):
-            print(f'{n = }')
-            self.file1.write(f'{n = }\n')
+            print('n = %d'%n)
+            self.file1.write('n = %d\n'%n)
             self.phys_integral(n)        
             self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
             if n > 0.: 
@@ -183,7 +181,7 @@ class OneZone:
                 #yield_SNII = Wi_class.yield_array('Massive', Wi_class.Massive_mass_grid, Wi_class.Massive_birthtime_grid)
                 #yield_LIMs = Wi_class.yield_array('LIMs', Wi_class.LIMs_mass_grid, Wi_class.LIMs_birthtime_grid)
                 for i, _ in enumerate(self.ZA_sorted): 
-                    self.file1.write(f'{i=}\n')
+                    self.file1.write('i = %d\n'%i)
                     Wi_SNIa = self.Rate_SNIa[n] * self.Y_i99[i]
                     if self.X_lc18[i].empty:
                         yields_lc18 = 0.
@@ -321,7 +319,7 @@ class OneZone:
         for i, ax in enumerate(axs.flat):
             if i < len(Z):
                 ax.plot(timex, Masses[i])
-                ax.annotate(f"{self.ZA_symb_list[i]}({Z[i]},{A[i]})", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
+                ax.annotate('%s(%d,%d)'%(self.ZA_symb_list[i],Z[i],A[i]), xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
                 ax.set_ylim(-7.5, 10.5)
                 ax.set_xlim(0,13.8)
                 ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
@@ -368,7 +366,7 @@ class OneZone:
         for i, ax in enumerate(axs.flat):
             if i < len(Z):
                 ax.plot(XH, Masses[i])
-                ax.annotate(f"{self.ZA_symb_list[i]}({Z[i]},{A[i]})", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
+                ax.annotate('%s(%d,%d)'%(self.ZA_symb_list[i],Z[i],A[i]), xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
                 ax.set_ylim(-15, 0.5)
                 ax.set_xlim(-11, 0.5)
                 ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
@@ -388,7 +386,7 @@ class OneZone:
                 if i != nrow-1:
                     axs[i,j].set_xticklabels([])
         axs[nrow//2,0].set_ylabel('Absolute Abundances', fontsize = 15)
-        axs[nrow-1, ncol//2].set_xlabel(f'[{self.ZA_symb_list[elem_idx]}{A[elem_idx]}/H]', fontsize = 15)
+        axs[nrow-1, ncol//2].set_xlabel('[%s%s/H]'%(self.ZA_symb_list[elem_idx],A[elem_idx]), fontsize = 15)
         plt.tight_layout(rect = [0.02, 0, 1, 1])
         plt.subplots_adjust(wspace=0., hspace=0.)
         plt.show(block=False)
@@ -441,7 +439,7 @@ class OneZone:
                 ax.plot(FeH_highZ, normalized_abundances_highZ[i], color='red', linestyle='--', alpha=0.3)
                 ax.axhline(y=0, color='grey', linestyle='--', linewidth=1, alpha=0.5)
                 ax.axvline(x=0, color='grey', linestyle='--', linewidth=1, alpha=0.5)
-                ax.annotate(f"{Z_list[i]}{Z_symb_list[i]}", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
+                ax.annotate('%s%d'%(Z_list[i],Z_symb_list[i]), xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
                 ax.set_ylim(setylim) #(-2, 2) #(-1.5, 1.5)
                 ax.set_xlim(setxlim) #(-11, -2) #(-8.5, 0.5)
                 ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
@@ -461,7 +459,7 @@ class OneZone:
                 if i != nrow-1:
                     axs[i,j].set_xticklabels([])
         axs[nrow//2,0].set_ylabel('[X/Fe]', fontsize = 15)
-        axs[nrow-1, ncol//2].set_xlabel(f'[Fe/H]', fontsize = 15)
+        axs[nrow-1, ncol//2].set_xlabel('[Fe/H]', fontsize = 15)
         fig.tight_layout(rect = [0.03, 0, 1, 1])
         fig.subplots_adjust(wspace=0., hspace=0.)
         plt.show(block=False)

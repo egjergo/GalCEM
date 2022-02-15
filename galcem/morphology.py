@@ -3,7 +3,6 @@ import numpy as np
 import scipy.integrate
 import scipy.misc as sm 
 import scipy.interpolate as interp
-from varname import varname
 import scipy.stats as ss
 
 """"""""""""""""""""""""""""""""""""""""""""""""
@@ -27,7 +26,7 @@ class Auxiliary:
         return [ key for key, val in dir.items() if id( val) == id( var)][0]
 
     def is_monotonic(self, arr):
-        print (f"for  {varname(arr)}") 
+        #print ('for %s'%varname(arr)) 
         if all(arr[i] <= arr[i + 1] for i in range(len(arr) - 1)): 
             return "monotone increasing" 
         elif all(arr[i] >= arr[i + 1] for i in range(len(arr) - 1)):
@@ -48,7 +47,7 @@ class Auxiliary:
         tic.append(time.process_time())
         m = math.floor((tic[-1] - tic[-2])/60.)
         s = ((tic[-1] - tic[-2])%60.)
-        print(f"{string} = {m} minutes and {s} seconds.")
+        print('%s = %d minutes and %d seconds'%(string,m,s))
 
     def pick_ZA_sorted_idx(self, ZA_sorted, Z=1,A=1):
         return np.intersect1d(np.where(ZA_sorted[:,0]==Z), np.where(ZA_sorted[:,1]==A))[0]
