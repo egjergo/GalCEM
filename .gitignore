@@ -142,4 +142,4 @@ cython_debug/
 
 # GALCEM specific
 runs/
-!/galcem/input/yields/*.txt
+!/galcem/input/yields/lims/c15/data/*.txt
