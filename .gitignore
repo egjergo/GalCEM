@@ -1,5 +1,3 @@
-runs/
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -141,3 +139,7 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+# GALCEM specific
+runs/
+!/galcem/input/yields/*.txt

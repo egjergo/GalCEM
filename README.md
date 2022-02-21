@@ -6,6 +6,7 @@ Eda Gjergo (Wuhan University) <GalacticCEM@gmail.com>
 
 ## TODO
 
+- build interpolation models based on `galcem/input/yields/lims/c15/...dat` and the corresponding .txt files
 - delete/merge code from `_scratch/`
 - update docs using `docs/index.rst` and `docs/components.rst` and in-code docstrings
 - modify/delete `examples/GalCEM_notebook.ipynb`
@@ -68,6 +69,7 @@ back in the terminal install matplotlib
 pip install matplotlib
 python
 ```
+
 now in the new python console 
 
 ```python
@@ -82,7 +84,9 @@ oz.plots()
 ## Upload to PyPI
 
 ```
-twine check dist/*
 python setup.py sdist
 twine check dist/*
+twine upload -r testpypi dist/*
+twine upload dist/*
 ```
+
