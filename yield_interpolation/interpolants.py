@@ -7,8 +7,6 @@ import pandas as pd
 import pickle
 from matplotlib import pyplot,cm
 
-from prep.setup import ZA_sorted
-
 class GalChemInterpolant(object):
     def __init__(self,dfx,dfy):
         self.xnames = list(dfx.columns)
@@ -95,10 +93,10 @@ def fit_2d_interpolant(dfx,dfy,tag,test,y_log10_scaled,view_angle):
     pyplot.show(block=False)
     fig.savefig('figures/interpolants/%s.pdf'%name,format='pdf',bbox_inches='tight')    
 
-def fit_3d_interpolant(dfx,dfy,tag,test,y_log10_scaled,view_angle):
+def fit_3d_interpolant(dfx,dfy,tag,test,y_log10_scaled,view_angle,figroot):
     nticks = 64
     sepfrac = 0.1
-    interpolant = model = GalChemInterpolant(dfx,dfy) # https://docs.scipy.org/doc/scipy/reference/interpolate.html
+    interpolant = GalChemInterpolant(dfx,dfy) # https://docs.scipy.org/doc/scipy/reference/interpolate.html
     if not test: return interpolant
     inputs,output = list(dfx.columns),str(dfy.name)
     name = '%s.%s'%(tag,output)
@@ -131,7 +129,7 @@ def fit_3d_interpolant(dfx,dfy,tag,test,y_log10_scaled,view_angle):
         x1_ticks = np.linspace(x1min-sepfrac*x1_sep,x1max+sepfrac*x1_sep,nticks)
         x0mesh,x1mesh = np.meshgrid(x0_ticks,x1_ticks)
         xquery = np.hstack([x0mesh.reshape(-1,1),x1mesh.reshape(-1,1),np.tile(k,(x0mesh.size ,1))])
-        yquery = model(xquery)
+        yquery = interpolant(xquery)
         ymesh = yquery.reshape(x1mesh.shape)
         ax = fig.add_subplot(n_keys,2,1+2*j,projection='3d')
         surf = ax.plot_surface(x0mesh,x1mesh,ymesh,cmap=cm.Greys,alpha=.9,vmin=ymesh.min(),vmax=ymesh.max())
@@ -149,7 +147,7 @@ def fit_3d_interpolant(dfx,dfy,tag,test,y_log10_scaled,view_angle):
         ax.set_ylabel(inputs[1])  
         ax.set_title('%s = %d'%(inputs[-1],k)) 
     fig.suptitle(tag)
-    fig.savefig('figures/interpolants/%s.pdf'%name,format='pdf',bbox_inches='tight') 
+    fig.savefig('%s%s.pdf'%(figroot,name),format='pdf',bbox_inches='tight') 
 
 if __name__ == '__main__':
     '''
