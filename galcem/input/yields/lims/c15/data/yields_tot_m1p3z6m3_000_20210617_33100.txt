@@ -1,4 +1,4 @@
-Isotope      A            Z            YIELD [M<sub><font face='Wingdings'>&#164;</font></sub>]Isotope      A            Z            YIELD [M<sub><font face='Wingdings'>&#164;</font></sub>]Isotope      A            Z            YIELD [M<sub><font face='Wingdings'>&#164;</font></sub>]Isotope      A            Z            YIELD [M<sub><font face='Wingdings'>&#164;</font></sub>]Isotope      A            Z            YIELD [M<sub><font face='Wingdings'>&#164;</font></sub>]Isotope      A            Z            YIELD [M<sub><font face='Wingdings'>&#164;</font></sub>]Isotope      A            Z            YIELD [M<sub><font face='Wingdings'>&#164;</font></sub>]Isotope      A            Z            YIELD [M<sub><font face='Wingdings'>&#164;</font></sub>]
+Isotope      A            Z            YIELD 
 H            1            1            4.77060E-01  
 He4          4            2            1.92830E-01  
 C12          12           6            1.17960E-03  
