@@ -144,3 +144,6 @@ cython_debug/
 runs/
 !/galcem/input/yields/lims/c15/data/*.txt
 yield_interpolation/figs/c15/*.pdf
+
+# Include Observational Data
+!/galcem/input/observations/*.txt
