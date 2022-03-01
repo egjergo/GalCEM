@@ -38,7 +38,6 @@ class GalCemInterpolant(object):
             s_yhat = s_yhattf
         s_yhat.name = self.s_y.name
         return s_yhat
-        
     def get_train_metrics(self,by={}):
         dfx2 = self.dfx.copy()
         s_y2 = self.s_y.copy()
