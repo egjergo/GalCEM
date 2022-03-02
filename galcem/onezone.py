@@ -10,20 +10,16 @@ from .morphology import Auxiliary,Stellar_Lifetimes,Infall,Star_Formation_Rate,I
 from .yields import Isotopes,Yields_LIMs,Yields_Massive,Yields_SNIa,Yields_BBN,Concentrations
 from .util import Wi
 
-class OneZone:
+class Inputs:
     """
-    OneZone class
-    
-    In (Input): an Input configuration instance 
+    shared init
     """
-    def __init__(self, IN, outdir = 'runs/mygcrun/'):
+    def __init__(self, IN, outdir='runs/myrun/'):
         self._dir_out = outdir if outdir[-1]=='/' else outdir+'/'
         print('Output directory: ', self._dir_out)
         self._dir_out_figs = self._dir_out + 'figs/'
         os.makedirs(self._dir_out,exist_ok=True)
         os.makedirs(self._dir_out_figs,exist_ok=True)
-        self.tic = []
-        self.tic.append(time.process_time())
         self.IN = IN
         self.aux = Auxiliary()
         self.lifetime_class = Stellar_Lifetimes(self.IN)
@@ -76,7 +72,7 @@ class OneZone:
         self.returned_Mass_v = self.IN.epsilon * np.ones(len(self.time_chosen)) 
         self.SFR_v = self.IN.epsilon * np.ones(len(self.time_chosen)) #
         self.Mass_i_v = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)))    # Gass mass (i,j) where the i rows are the isotopes and j are the timesteps, [:,j] follows the timesteps
-        self.W_i_comp = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)))    # Gass mass (i,j) where the i rows are the isotopes and j are the timesteps, [:,j] follows the timesteps
+        self.W_i_comp = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen), 3), dtype=object)    # Gass mass (i,j) where the i rows are the isotopes and j are the timesteps, [:,j] follows the timesteps
         self.Xi_inf = isotope_class.construct_yield_vector(yields_BBN_class, self.ZA_sorted)
         Mass_i_inf = np.column_stack(([self.Xi_inf] * len(self.Mtot)))
         self.Xi_v = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)))    # Xi 
@@ -89,15 +85,26 @@ class OneZone:
         self.Rate_NSM = self.IN.epsilon * np.ones(len(self.time_chosen)) 
         # Load Interpolation Models
         self._dir = os.path.dirname(__file__)
-        print('self._dir: ', self._dir)
         self.X_lc18, self.Y_lc18, self.models_lc18, self.averaged_lc18 = self.load_processed_yields(func_name='lc18', loc=self._dir + '/input/yields/snii/lc18/tab_R', df_list=['X', 'Y', 'models', 'avgmassfrac'])
         self.X_k10, self.Y_k10, self.models_k10, self.averaged_k10 = self.load_processed_yields(func_name='k10', loc=self._dir + '/input/yields/lims/k10', df_list=['X', 'Y', 'models', 'avgmassfrac'])
         self.Y_i99 = self.load_processed_yields_snia(func_name='i99', loc=self._dir + '/input/yields/snia/i99', df_list='Y')
+    
+    
+class OneZone(Inputs):
+    """
+    OneZone class
+    
+    In (Input): an Input configuration instance 
+    """
+    def __init__(self, IN, outdir = 'runs/mygcrun/'):
+        self.tic = []
+        super().__init__(IN, outdir=outdir)
+        self.tic.append(time.process_time())
         # Record load time
         self.tic.append(time.process_time())
         package_loading_time = self.tic[-1]
-        print('Package lodaded in %.1e seconds.'%package_loading_time)
-
+        print('Package lodaded in %.1e seconds.'%package_loading_time)   
+    
     def load_processed_yields(self,func_name, loc, df_list):
         df_dict = {}
         for df_l in df_list:
@@ -144,14 +151,21 @@ class OneZone:
         if n <= 0:
             val = self.Infall_rate[n] * self.Xi_inf[i]  - np.multiply(self.SFR_v[n], self.Xi_v[i,n])
         else:
-            Wi_vals = []
+            Wi_vals = [0., 0.]
             for j,val in enumerate(Wi_comps):
                 if len(val[1]) > 0.:
-                    Wi_vals.append(integr.simps(val[0] * yields[j], x=val[1]))
+                    Wi_vals[j] = integr.simps(val[1] * yields[j], x=val[1])
             infall_comp = self.Infall_rate[n] * self.Xi_inf[i]
             sfr_comp = self.SFR_v[n] * self.Xi_v[i,n]
-            self.W_i_comp_v[i,n] = np.column_stack((Wi_vals[1], Wi_vals[1], Wi_SNIa))
-            val = infall_comp  - sfr_comp + np.sum(Wi_vals) + Wi_SNIa #+ np.sum(Wi_val, axis=0)
+            returned = [Wi_vals[0], Wi_vals[1], Wi_SNIa]
+            self.W_i_comp[i,n,0] = Wi_vals[0]
+            self.W_i_comp[i,n,1] = Wi_vals[1]
+            self.W_i_comp[i,n,2] = Wi_SNIa
+            #for j, _ in range(len(returned)):
+            #    print('returned[j]', returned[j])
+            #    print('i, n, j ', i, j, n)
+            #    self.W_i_comp[i,n,j] = returned[j]
+            val = infall_comp  - sfr_comp + np.sum(returned) #+ np.sum(Wi_val, axis=0)
             if val < 0.:
                 val = 0.
         return val
@@ -165,7 +179,7 @@ class OneZone:
 
     def evolve(self):
         for n, _ in enumerate(self.time_chosen[:self.idx_age_Galaxy]):
-            print('n = %d'%n)
+            print('time [Gyr] = %d'%self.time_chosen[n])
             self.file1.write('n = %d\n'%n)
             self.phys_integral(n)        
             self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
@@ -224,19 +238,24 @@ class OneZone:
         #self.aux.tic_count(string="Output saved in", tic=self.tic)
         self.file1.close()
     
-    ''''''''''''''''''''''''''''''''
-    '''         PLOTTING         '''
-    ''''''''''''''''''''''''''''''''
-    
+    '''
+    class OneZone_Plots(Inputs):
+    """
+    PLOTTING
+    """    
+    '''
+    #def __init__(self, IN, outdir='runs/mygcrun/'):
+    #    super().__init__(IN, outdir=outdir)
+        
     def plots(self):
         self.tic.append(time.process_time())
-        self.phys_integral_plot()
-        self.ZA_sorted_plot()
         self.iso_evolution()
         self.iso_abundance()
-        self.lifetimeratio_test_plot()
         self.observational()
         self.observational_lelemZ()
+        self.ZA_sorted_plot()
+        self.phys_integral_plot()
+        self.lifetimeratio_test_plot()
         # self.elem_abundance() # currently has errors
         self.aux.tic_count(string="Plots saved in", tic=self.tic)
         
@@ -567,8 +586,12 @@ class OneZone:
         fig.tight_layout()
         plt.savefig(self._dir_out_figs + 'tauratio.pdf')
         
-    
-    def _observational(self, figsiz = (32,10)):
+    def _observational(self, figsiz = (32,10), some_value=0.):
+        import glob
+        import itertools
+        import pandas as pd
+        from matplotlib import pyplot as plt
+        import matplotlib.ticker as ticker
         Z_list = np.unique(self.ZA_sorted[:,0])
         Z_symb_list = self.IN.periodic['elemSymb'][Z_list] # name of elements for all isotopes
     
