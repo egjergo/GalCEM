@@ -18,6 +18,7 @@ class OneZone:
     """
     def __init__(self, IN, outdir = 'runs/mygcrun/'):
         self._dir_out = outdir if outdir[-1]=='/' else outdir+'/'
+        print('Output directory: ', self._dir_out)
         self._dir_out_figs = self._dir_out + 'figs/'
         os.makedirs(self._dir_out,exist_ok=True)
         os.makedirs(self._dir_out_figs,exist_ok=True)
@@ -73,10 +74,10 @@ class OneZone:
         self.Mstar_test = self.IN.epsilon * np.ones(len(self.time_chosen)) # Global
         self.Mgas_v = self.IN.epsilon * np.ones(len(self.time_chosen)) # Global
         self.SFR_v = self.IN.epsilon * np.ones(len(self.time_chosen)) #
-        self.Mass_i_v = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)))	# Gass mass (i,j) where the i rows are the isotopes and j are the timesteps, [:,j] follows the timesteps
+        self.Mass_i_v = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)))    # Gass mass (i,j) where the i rows are the isotopes and j are the timesteps, [:,j] follows the timesteps
         self.Xi_inf = isotope_class.construct_yield_vector(yields_BBN_class, self.ZA_sorted)
         Mass_i_inf = np.column_stack(([self.Xi_inf] * len(self.Mtot)))
-        self.Xi_v = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)))	# Xi 
+        self.Xi_v = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)))    # Xi 
         self.Z_v = self.IN.epsilon * np.ones(len(self.time_chosen)) # Metallicity 
         G_v = self.IN.epsilon * np.ones(len(self.time_chosen)) # G 
         S_v = self.IN.epsilon * np.ones(len(self.time_chosen)) # S = 1 - G 
@@ -86,6 +87,7 @@ class OneZone:
         self.Rate_NSM = self.IN.epsilon * np.ones(len(self.time_chosen)) 
         # Load Interpolation Models
         self._dir = os.path.dirname(__file__)
+        print('self._dir: ', self._dir)
         self.X_lc18, self.Y_lc18, self.models_lc18, self.averaged_lc18 = self.load_processed_yields(func_name='lc18', loc=self._dir + '/input/yields/snii/lc18/tab_R', df_list=['X', 'Y', 'models', 'avgmassfrac'])
         self.X_k10, self.Y_k10, self.models_k10, self.averaged_k10 = self.load_processed_yields(func_name='k10', loc=self._dir + '/input/yields/lims/k10', df_list=['X', 'Y', 'models', 'avgmassfrac'])
         self.Y_i99 = self.load_processed_yields_snia(func_name='i99', loc=self._dir + '/input/yields/snia/i99', df_list='Y')
@@ -127,9 +129,17 @@ class OneZone:
                 header = ' (0) elemZ,    (1) elemA,    (2) masses [Msun] of every isotope for every timestep')
         np.savetxt(self._dir_out +  'X_i.dat', np.column_stack((self.ZA_sorted, self.Xi_v)), fmt=' '.join(['%5.i']*2 + ['%12.4e']*self.Xi_v[0,:].shape[0]),
                 header = ' (0) elemZ,    (1) elemA,    (2) abundance mass ratios of every isotope for every timestep (normalized to solar, Asplund et al., 2009)')
-        self.aux.tic_count(string="Output saved in", tic=self.tic)
+        #self.aux.tic_count(string="Output saved in", tic=self.tic)
         self.file1.close()
     
+    def SFR_tn(self, timestep_n):
+        # Actual SFR employed within the integro-differential equation
+        # Args:
+        #     timestep_n ([int]): [timestep index]
+        # Returns:
+        #     [function]: [SFR as a function of Mgas]
+        return self.SFR_class.SFR(Mgas=self.Mgas_v, Mtot=self.Mtot, timestep_n=timestep_n) # Function: SFR(Mgas)
+
     def f_RK4(self, t_n, y_n, n, i=None):
         # Explicit general diff eq GCE function
         return self.Infall_rate[n] - self.SFR_tn(n)
@@ -195,16 +205,11 @@ class OneZone:
                         yields_k10 = self.averaged_k10[i][0][idx_LIMs]
                     yields = [yields_lc18, yields_k10]
                     self.Mass_i_v[i, n+1] = self.aux.RK4(self.solve_integral, self.time_chosen[n], self.Mass_i_v[i,n], n, self.IN.nTimeStep, i=i, Wi_comp=Wi_comp, Wi_SNIa=Wi_SNIa, yields=yields)
-            self.Z_v[n] = np.divide(np.sum(self.Mass_i_v[:,n]), self.Mgas_v[n])
+            returned_Mass = np.sum(self.Mass_i_v[:,n])
+            self.Z_v[n] = np.divide(returned_Mass, self.Mgas_v[n])
+            self.Mgas_v[n+1] = self.Mgas_v[n+1] + returned_Mass
+            self.Mstar_v[n+1] = self.Mstar_v[n+1] + returned_Mass
         self.Xi_v[:,-1] = np.divide(self.Mass_i_v[:,-1], self.Mgas_v[-1]) 
-
-    def SFR_tn(self, timestep_n):
-        # Actual SFR employed within the integro-differential equation
-        # Args:
-        #     timestep_n ([int]): [timestep index]
-        # Returns:
-        #     [function]: [SFR as a function of Mgas]
-        return self.SFR_class.SFR(Mgas=self.Mgas_v, Mtot=self.Mtot, timestep_n=timestep_n) # Function: SFR(Mgas)
     
     # Plotting
     def plots(self):
@@ -214,6 +219,8 @@ class OneZone:
         self.iso_evolution()
         self.iso_abundance()
         self.lifetimeratio_test_plot()
+        self.observational()
+        self.observational_lelemZ()
         # self.elem_abundance() # currently has errors
         self.aux.tic_count(string="Plots saved in", tic=self.tic)
         
@@ -300,7 +307,7 @@ class OneZone:
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'tracked_elements.pdf')
 
-    def iso_evolution(self, figsize=(32,10)):
+    def iso_evolution(self, figsize=(40,13)):
         from matplotlib import pyplot as plt
         plt.style.use(self._dir+'/galcem.mplstyle')
         import matplotlib.ticker as ticker
@@ -321,7 +328,7 @@ class OneZone:
                 ax.plot(timex, Masses[i])
                 ax.annotate('%s(%d,%d)'%(self.ZA_symb_list[i],Z[i],A[i]), xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
                 ax.set_ylim(-7.5, 10.5)
-                ax.set_xlim(0,13.8)
+                ax.set_xlim(0.01,13.8)
                 ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
                 ax.tick_params(width = 1, length = 2, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
                 ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=1))
@@ -345,7 +352,7 @@ class OneZone:
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'iso_evolution.pdf')
 
-    def iso_abundance(self, figsize=(32,10), elem_idx=99): # elem_idx=99 is Fe56, elem_idx=0 is H.
+    def iso_abundance(self, figsize=(40,13), elem_idx=99): # elem_idx=99 is Fe56, elem_idx=0 is H.
         from matplotlib import pyplot as plt
         plt.style.use(self._dir+'/galcem.mplstyle')
         import matplotlib.ticker as ticker
@@ -492,12 +499,12 @@ class OneZone:
         plt.savefig(self._dir_out_figs + 'tauratio.pdf')
         
     
-    def _observational(figsiz = (32,10)):
-        Z_list = np.unique(ZA_sorted[:,0])
-        Z_symb_list = IN.periodic['elemSymb'][Z_list] # name of elements for all isotopes
+    def _observational(self, figsiz = (32,10)):
+        Z_list = np.unique(self.ZA_sorted[:,0])
+        Z_symb_list = self.IN.periodic['elemSymb'][Z_list] # name of elements for all isotopes
     
     
-        path = r'input/observations' # use your path
+        path = self._dir + r'input/observations' # use your path
         all_files = glob.glob(path + "/*.txt")
 
         li = []
@@ -537,107 +544,17 @@ class OneZone:
         plt.show(block=False)
         return None
 
-
-
-    def observational(figsiz = (32,10), c=5):
-    	Mass_i = np.loadtxt('./output/Mass_i.dat')
-    	Z_list = np.unique(ZA_sorted[:,0])
-    	Z_symb_list = IN.periodic['elemSymb'][Z_list] # name of elements for all isotopes
-    	solar_norm_H = c_class.solarA09_vs_H_bymass[Z_list]
-    	solar_norm_Fe = c_class.solarA09_vs_Fe_bymass[Z_list]
-    	#for i,val in enumerate(Z_list):
-    	#    print(np.where(ZA_sorted[:,0]==val)[0])
-    	#    print(f'{val=}')
-    	#    print(f'{Z_list[i]=}')
-    	#    print(Z_symb_list[i])
-    	Masses_i = []
-    	Masses2_i = []
-    	Fe = np.sum(Mass_i[np.where(ZA_sorted[:,0]==26)[0], c:], axis=0)
-    	H = np.sum(Mass_i[np.where(ZA_sorted[:,0]==1)[0], c:], axis=0)
-    	for i,val in enumerate(Z_list):
-    	    print(f'{i=}')
-    	    print(f'{val=}')
-    	    print(f'{Z_list[i]=}')
-    	    mass = np.sum(Mass_i[np.where(ZA_sorted[:,0]==val)[0], c:], axis=0)
-    	    Masses2_i.append(np.log10(np.divide(mass,Fe)) - solar_norm_Fe[np.where(Z_list==val)[0]])
-    	    Masses_i.append(mass)
-    	Masses = np.log10(np.divide(Masses_i, Fe))
-    	Masses2 = np.array(Masses2_i) 
-    	FeH = np.log10(np.divide(Fe, H)) - solar_norm_H[np.where(Z_list==26)[0]]
-    	ncol = aux.find_nearest(np.power(np.arange(20),2), len(Z_list))
-    	if len(Z_list) < ncol:
-    	    nrow = ncol
-    	else:
-    	    nrow = ncol + 1
-    	fig, axs = plt.subplots(nrow, ncol, figsize =figsiz)#, sharex=True)
-    
-    	path = r'input/observations' # use your path
-    	all_files = glob.glob(path + "/*.txt")
-
-    	li = []
-    	elemZmin = 12
-    	elemZmax = 12
-
-    	for filename in all_files:
-        	df = pd.read_table(filename, sep=',')
-        	elemZmin0 = np.min(df.iloc[:,0])
-        	elemZmax0 = np.max(df.iloc[:,0])
-        	elemZmin = np.min([elemZmin0, elemZmin])
-        	elemZmax = np.max([elemZmax0, elemZmax])
-        	li.append(df)
-
-    	markerlist = ['o', 'v', '^', '<', '>', 'P', '*', 'd', 'X']
-    	colorlist = ['#00ccff', '#ffb300', '#ff004d']
-    	lenlist = len(li)
-    	print(f'{lenlist=}')
-    	print(f'{elemZmin=}')
-    	print(f'{elemZmax=}')
-    
-    	for i, ax in enumerate(axs.flat):
-        	for j, ll in enumerate(li):
-            	idx_obs = np.where(ll.iloc[:,0] == i)[0]
-            	ax.scatter(ll.iloc[idx_obs,1], ll.iloc[idx_obs,2], label=ll.iloc[idx_obs, 4], alpha=0.1)
-        	if i < len(Z_list):
-            	#ax.plot(FeH, Masses[i], color='blue')
-            	ax.plot(FeH, Masses2[i], color='black', linewidth=2)
-            	ax.annotate(f"{Z_list[i]}{Z_symb_list[i]}", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
-            	#ax.set_ylim(-6, 6)
-            	ax.set_ylim(-1.5, 1.5)
-            	#ax.set_xlim(-11, -2)
-            	#ax.set_xlim(-6.5, 0.5)
-            	ax.set_xlim(-6.5, 0.5)
-            	ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=.5))
-            	ax.tick_params(width = 1, length = 2, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
-            	ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=.2))
-            	ax.tick_params(width = 1, length = 2, axis = 'y', which = 'minor', left = True, right = True, direction = 'in')
-            	ax.xaxis.set_major_locator(ticker.MultipleLocator(base=2))
-            	ax.tick_params(width = 1, length = 5, axis = 'x', which = 'major', bottom = True, top = True, direction = 'in')
-            	ax.yaxis.set_major_locator(ticker.MultipleLocator(base=1))
-            	ax.tick_params(width = 1, length = 5, axis = 'y', which = 'major', left = True, right = True, direction = 'in')
-        	else:
-            	fig.delaxes(ax)
-    	for i in range(nrow):
-        	for j in range(ncol):
-            	if j != 0:
-                	axs[i,j].set_yticklabels([])
-            	if i != nrow-1:
-                	axs[i,j].set_xticklabels([])
-    	axs[nrow//2,0].set_ylabel('[X/Fe]', fontsize = 15)
-    	axs[nrow-1, ncol//2].set_xlabel(f'[Fe/H]', fontsize = 15)
-    	fig.tight_layout(rect = [0.03, 0, 1, 1])
-    	fig.subplots_adjust(wspace=0., hspace=0.)
-    	plt.show(block=False)
-    	plt.savefig('./figures/elem_obs.pdf')
-    	return None
-
-
-
-    def observational_lelemZ(figsiz = (32,10), c=5):
-        Mass_i = np.loadtxt('./output/Mass_i.dat')
-        Z_list = np.unique(ZA_sorted[:,0])
-        Z_symb_list = IN.periodic['elemSymb'][Z_list] # name of elements for all isotopes
-        solar_norm_H = c_class.solarA09_vs_H_bymass[Z_list]
-        solar_norm_Fe = c_class.solarA09_vs_Fe_bymass[Z_list]
+    def observational(self, figsiz = (32,10), c=5):
+        import glob
+        import pandas as pd
+        from matplotlib import pyplot as plt
+        import matplotlib.ticker as ticker
+        plt.style.use(self._dir+'/galcem.mplstyle')
+        Mass_i = np.loadtxt(self._dir_out+'Mass_i.dat')
+        Z_list = np.unique(self.ZA_sorted[:,0])
+        Z_symb_list = self.IN.periodic['elemSymb'][Z_list] # name of elements for all isotopes
+        solar_norm_H = self.c_class.solarA09_vs_H_bymass[Z_list]
+        solar_norm_Fe = self.c_class.solarA09_vs_Fe_bymass[Z_list]
         #for i,val in enumerate(Z_list):
         #    print(np.where(ZA_sorted[:,0]==val)[0])
         #    print(f'{val=}')
@@ -645,23 +562,26 @@ class OneZone:
         #    print(Z_symb_list[i])
         Masses_i = []
         Masses2_i = []
-        Fe = np.sum(Mass_i[np.where(ZA_sorted[:,0]==26)[0], c:], axis=0)
-        H = np.sum(Mass_i[np.where(ZA_sorted[:,0]==1)[0], c:], axis=0)
+        Fe = np.sum(Mass_i[np.where(self.ZA_sorted[:,0]==26)[0], c:], axis=0)
+        H = np.sum(Mass_i[np.where(self.ZA_sorted[:,0]==1)[0], c:], axis=0)
         for i,val in enumerate(Z_list):
-        	print(f'{i=}')
-        	print(f'{val=}')
-        	print(f'{Z_list[i]=}')
-        	mass = np.sum(Mass_i[np.where(ZA_sorted[:,0]==val)[0], c:], axis=0)
-        	Masses2_i.append(np.log10(np.divide(mass,Fe)) - solar_norm_Fe[np.where(Z_list==val)[0]])
-        	Masses_i.append(mass)
+            print(f'{i=}')
+            print(f'{val=}')
+            print(f'{Z_list[i]=}')
+            mass = np.sum(Mass_i[np.where(self.ZA_sorted[:,0]==val)[0], c:], axis=0)
+            Masses2_i.append(np.log10(np.divide(mass,Fe)) - solar_norm_Fe[np.where(Z_list==val)[0]])
+            Masses_i.append(mass)
         Masses = np.log10(np.divide(Masses_i, Fe))
         Masses2 = np.array(Masses2_i) 
         FeH = np.log10(np.divide(Fe, H)) - solar_norm_H[np.where(Z_list==26)[0]]
-        nrow = 5
-        ncol = 6
+        ncol = self.aux.find_nearest(np.power(np.arange(20),2), len(Z_list))
+        if len(Z_list) < ncol:
+            nrow = ncol
+        else:
+            nrow = ncol + 1
         fig, axs = plt.subplots(nrow, ncol, figsize =figsiz)#, sharex=True)
-
-        path = r'input/observations' # use your path
+    
+        path = self._dir + r'/input/observations' # use your path
         all_files = glob.glob(path + "/*.txt")
 
         li = []
@@ -669,12 +589,12 @@ class OneZone:
         elemZmax = 12
 
         for filename in all_files:
-        	df = pd.read_table(filename, sep=',')
-        	elemZmin0 = np.min(df.iloc[:,0])
-        	elemZmax0 = np.max(df.iloc[:,0])
-        	elemZmin = np.min([elemZmin0, elemZmin])
-        	elemZmax = np.max([elemZmax0, elemZmax])
-        	li.append(df)
+            df = pd.read_table(filename, sep=',')
+            elemZmin0 = np.min(df.iloc[:,0])
+            elemZmax0 = np.max(df.iloc[:,0])
+            elemZmin = np.min([elemZmin0, elemZmin])
+            elemZmax = np.max([elemZmax0, elemZmax])
+            li.append(df)
 
         markerlist = ['o', 'v', '^', '<', '>', 'P', '*', 'd', 'X']
         colorlist = ['#00ccff', '#ffb300', '#ff004d']
@@ -682,12 +602,12 @@ class OneZone:
         print(f'{lenlist=}')
         print(f'{elemZmin=}')
         print(f'{elemZmax=}')
-
+    
         for i, ax in enumerate(axs.flat):
-        	for j, ll in enumerate(li):
+            for j, ll in enumerate(li):
                 idx_obs = np.where(ll.iloc[:,0] == i)[0]
                 ax.scatter(ll.iloc[idx_obs,1], ll.iloc[idx_obs,2], label=ll.iloc[idx_obs, 4], alpha=0.1)
-        	if i < nrow*ncol:
+            if i < len(Z_list):
                 #ax.plot(FeH, Masses[i], color='blue')
                 ax.plot(FeH, Masses2[i], color='black', linewidth=2)
                 ax.annotate(f"{Z_list[i]}{Z_symb_list[i]}", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
@@ -704,18 +624,112 @@ class OneZone:
                 ax.tick_params(width = 1, length = 5, axis = 'x', which = 'major', bottom = True, top = True, direction = 'in')
                 ax.yaxis.set_major_locator(ticker.MultipleLocator(base=1))
                 ax.tick_params(width = 1, length = 5, axis = 'y', which = 'major', left = True, right = True, direction = 'in')
-        	else:
+            else:
                 fig.delaxes(ax)
         for i in range(nrow):
-        	for j in range(ncol):
+            for j in range(ncol):
                 if j != 0:
-                	axs[i,j].set_yticklabels([])
+                    axs[i,j].set_yticklabels([])
                 if i != nrow-1:
-                	axs[i,j].set_xticklabels([])
+                    axs[i,j].set_xticklabels([])
         axs[nrow//2,0].set_ylabel('[X/Fe]', fontsize = 15)
         axs[nrow-1, ncol//2].set_xlabel(f'[Fe/H]', fontsize = 15)
         fig.tight_layout(rect = [0.03, 0, 1, 1])
         fig.subplots_adjust(wspace=0., hspace=0.)
         plt.show(block=False)
-        plt.savefig('./figures/elem_obs_lelemZ.pdf')
+        plt.savefig(self._dir_out_figs + 'elem_obs.pdf')
+        return None
+
+
+    def observational_lelemZ(self, figsiz = (32,10), c=5):
+        import glob
+        import pandas as pd
+        from matplotlib import pyplot as plt
+        import matplotlib.ticker as ticker
+        plt.style.use(self._dir+'/galcem.mplstyle')
+        Mass_i = np.loadtxt(self._dir_out+'Mass_i.dat')
+        Z_list = np.unique(self.ZA_sorted[:,0])
+        Z_symb_list = self.IN.periodic['elemSymb'][Z_list] # name of elements for all isotopes
+        solar_norm_H = self.c_class.solarA09_vs_H_bymass[Z_list]
+        solar_norm_Fe = self.c_class.solarA09_vs_Fe_bymass[Z_list]
+        #for i,val in enumerate(Z_list):
+        #    print(np.where(self.ZA_sorted[:,0]==val)[0])
+        #    print(f'{val=}')
+        #    print(f'{Z_list[i]=}')
+        #    print(Z_symb_list[i])
+        Masses_i = []
+        Masses2_i = []
+        Fe = np.sum(Mass_i[np.where(self.ZA_sorted[:,0]==26)[0], c:], axis=0)
+        H = np.sum(Mass_i[np.where(self.ZA_sorted[:,0]==1)[0], c:], axis=0)
+        for i,val in enumerate(Z_list):
+            print(f'{i=}')
+            print(f'{val=}')
+            print(f'{Z_list[i]=}')
+            mass = np.sum(Mass_i[np.where(self.ZA_sorted[:,0]==val)[0], c:], axis=0)
+            Masses2_i.append(np.log10(np.divide(mass,Fe)) - solar_norm_Fe[np.where(Z_list==val)[0]])
+            Masses_i.append(mass)
+        Masses = np.log10(np.divide(Masses_i, Fe))
+        Masses2 = np.array(Masses2_i) 
+        FeH = np.log10(np.divide(Fe, H)) - solar_norm_H[np.where(Z_list==26)[0]]
+        nrow = 5
+        ncol = 6
+        fig, axs = plt.subplots(nrow, ncol, figsize =figsiz)#, sharex=True)
+
+        path = self._dir + r'/input/observations' # use your path
+        all_files = glob.glob(path + "/*.txt")
+
+        li = []
+        elemZmin = 12
+        elemZmax = 12
+
+        for filename in all_files:
+            df = pd.read_table(filename, sep=',')
+            elemZmin0 = np.min(df.iloc[:,0])
+            elemZmax0 = np.max(df.iloc[:,0])
+            elemZmin = np.min([elemZmin0, elemZmin])
+            elemZmax = np.max([elemZmax0, elemZmax])
+            li.append(df)
+
+        markerlist = ['o', 'v', '^', '<', '>', 'P', '*', 'd', 'X']
+        colorlist = ['#00ccff', '#ffb300', '#ff004d']
+        lenlist = len(li)
+        print(f'{lenlist=}')
+        print(f'{elemZmin=}')
+        print(f'{elemZmax=}')
+
+        for i, ax in enumerate(axs.flat):
+            for j, ll in enumerate(li):
+                idx_obs = np.where(ll.iloc[:,0] == i)[0]
+                ax.scatter(ll.iloc[idx_obs,1], ll.iloc[idx_obs,2], label=ll.iloc[idx_obs, 4], alpha=0.1)
+            if i < nrow*ncol:
+                #ax.plot(FeH, Masses[i], color='blue')
+                ax.plot(FeH, Masses2[i], color='black', linewidth=2)
+                ax.annotate(f"{Z_list[i]}{Z_symb_list[i]}", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
+                #ax.set_ylim(-6, 6)
+                ax.set_ylim(-1.5, 1.5)
+                #ax.set_xlim(-11, -2)
+                #ax.set_xlim(-6.5, 0.5)
+                ax.set_xlim(-6.5, 0.5)
+                ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=.5))
+                ax.tick_params(width = 1, length = 2, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
+                ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=.2))
+                ax.tick_params(width = 1, length = 2, axis = 'y', which = 'minor', left = True, right = True, direction = 'in')
+                ax.xaxis.set_major_locator(ticker.MultipleLocator(base=2))
+                ax.tick_params(width = 1, length = 5, axis = 'x', which = 'major', bottom = True, top = True, direction = 'in')
+                ax.yaxis.set_major_locator(ticker.MultipleLocator(base=1))
+                ax.tick_params(width = 1, length = 5, axis = 'y', which = 'major', left = True, right = True, direction = 'in')
+            else:
+                fig.delaxes(ax)
+        for i in range(nrow):
+            for j in range(ncol):
+                if j != 0:
+                    axs[i,j].set_yticklabels([])
+                if i != nrow-1:
+                    axs[i,j].set_xticklabels([])
+        axs[nrow//2,0].set_ylabel('[X/Fe]', fontsize = 15)
+        axs[nrow-1, ncol//2].set_xlabel(f'[Fe/H]', fontsize = 15)
+        fig.tight_layout(rect = [0.03, 0, 1, 1])
+        fig.subplots_adjust(wspace=0., hspace=0.)
+        plt.show(block=False)
+        plt.savefig(self._dir_out_figs + 'elem_obs_lelemZ.pdf')
         return None
