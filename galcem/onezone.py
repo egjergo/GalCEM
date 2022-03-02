@@ -40,7 +40,7 @@ class OneZone:
         # Surface density for the disk. The bulge goes as an inverse square law
         surf_density_Galaxy = self.IN.sd / np.exp(self.IN.r / self.IN.Reff[self.IN.morphology]) #sigma(t_G) before eq(7) not used so far !!!!!!!
         infall_class = Infall(self.IN, morphology=self.IN.morphology, time=self.time_chosen)
-        infall = infall_class.inf()
+        self.infall = infall_class.inf()
         self.SFR_class = Star_Formation_Rate(self.IN, self.IN.SFR_option, self.IN.custom_SFR)
         IMF_class = Initial_Mass_Function(Ml, Mu, self.IN, self.IN.IMF_option, self.IN.custom_IMF)
         self.IMF = IMF_class.IMF() #() # Function @ input stellar mass
@@ -61,7 +61,7 @@ class OneZone:
         ZA_Massive = self.c_class.extract_ZA_pairs_Massive(yields_Massive_class)
         ZA_all = np.vstack((ZA_LIMs, ZA_SNIa, ZA_Massive))
         # Initialize Global tracked quantities
-        self.Infall_rate = infall(self.time_chosen)
+        self.Infall_rate = self.infall(self.time_chosen)
         self.ZA_sorted = self.c_class.ZA_sorted(ZA_all) # [Z, A] VERY IMPORTANT! 321 isotopes with yields_SNIa_option = 'km20', 192 isotopes for 'i99' 
         self.ZA_sorted = self.ZA_sorted[1:,:]
         self.ZA_symb_list = self.IN.periodic['elemSymb'][self.ZA_sorted[:,0]] # name of elements for all isotopes
@@ -70,11 +70,13 @@ class OneZone:
         elemZ_for_metallicity = np.where(self.ZA_sorted[:,0]>2)[0][0] #  starting idx (int) that excludes H and He for the metallicity selection
         self.Mtot = np.insert(np.cumsum((self.Infall_rate[1:] + self.Infall_rate[:-1]) * self.IN.nTimeStep / 2), 0, self.IN.epsilon) # The total baryonic mass (i.e. the infall mass) is computed right away
         #Mtot_quad = [quad(infall, self.time_chosen[0], i)[0] for i in range(1,len(self.time_chosen)-1)] # slow loop, deprecate!!!!!!!
-        self.Mstar_v = self.IN.epsilon * np.ones(len(self.time_chosen)) # Global
-        self.Mstar_test = self.IN.epsilon * np.ones(len(self.time_chosen)) # Global
-        self.Mgas_v = self.IN.epsilon * np.ones(len(self.time_chosen)) # Global
+        self.Mstar_v = self.IN.epsilon * np.ones(len(self.time_chosen)) 
+        self.Mstar_test = self.IN.epsilon * np.ones(len(self.time_chosen)) 
+        self.Mgas_v = self.IN.epsilon * np.ones(len(self.time_chosen)) 
+        self.returned_Mass_v = self.IN.epsilon * np.ones(len(self.time_chosen)) 
         self.SFR_v = self.IN.epsilon * np.ones(len(self.time_chosen)) #
         self.Mass_i_v = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)))    # Gass mass (i,j) where the i rows are the isotopes and j are the timesteps, [:,j] follows the timesteps
+        self.W_i_comp = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)))    # Gass mass (i,j) where the i rows are the isotopes and j are the timesteps, [:,j] follows the timesteps
         self.Xi_inf = isotope_class.construct_yield_vector(yields_BBN_class, self.ZA_sorted)
         Mass_i_inf = np.column_stack(([self.Xi_inf] * len(self.Mtot)))
         self.Xi_v = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)))    # Xi 
@@ -110,28 +112,6 @@ class OneZone:
                 df_dict[df_l] = pickle.load(pickle_file)
         return df_dict[df_list[0]]
     
-    def main(self):
-        """
-        Run the OneZone program
-        """
-        self.tic.append(time.process_time())
-        self.file1 = open(self._dir_out + "Terminal_output.txt", "w")
-        self.evolve()
-        self.aux.tic_count(string="Computation time", tic=self.tic)
-        #Z_v = np.divide(np.sum(self.Mass_i_v[elemZ_for_metallicity:,:]), Mgas_v)
-        G_v = np.divide(self.Mgas_v, self.Mtot)
-        S_v = 1 - G_v
-        print("Saving the output...")
-        np.savetxt(self._dir_out + 'phys.dat', np.column_stack((self.time_chosen, self.Mtot, self.Mgas_v,
-                self.Mstar_v, self.SFR_v/1e9, self.Infall_rate/1e9, self.Z_v, G_v, S_v, self.Rate_SNII, self.Rate_SNIa, self.Rate_LIMs)), fmt='%-12.4e', #SFR is divided by 1e9 to get the /Gyr to /yr conversion 
-                header = ' (0) time_chosen [Gyr]    (1) Mtot [Msun]    (2) Mgas_v [Msun]    (3) Mstar_v [Msun]    (4) SFR_v [Msun/yr]    (5)Infall_v [Msun/yr]    (6) Z_v    (7) G_v    (8) S_v     (9) Rate_SNII     (10) Rate_SNIa     (11) Rate_LIMs')
-        np.savetxt(self._dir_out +  'Mass_i.dat', np.column_stack((self.ZA_sorted, self.Mass_i_v)), fmt=' '.join(['%5.i']*2 + ['%12.4e']*self.Mass_i_v[0,:].shape[0]),
-                header = ' (0) elemZ,    (1) elemA,    (2) masses [Msun] of every isotope for every timestep')
-        np.savetxt(self._dir_out +  'X_i.dat', np.column_stack((self.ZA_sorted, self.Xi_v)), fmt=' '.join(['%5.i']*2 + ['%12.4e']*self.Xi_v[0,:].shape[0]),
-                header = ' (0) elemZ,    (1) elemA,    (2) abundance mass ratios of every isotope for every timestep (normalized to solar, Asplund et al., 2009)')
-        #self.aux.tic_count(string="Output saved in", tic=self.tic)
-        self.file1.close()
-    
     def SFR_tn(self, timestep_n):
         # Actual SFR employed within the integro-differential equation
         # Args:
@@ -140,9 +120,12 @@ class OneZone:
         #     [function]: [SFR as a function of Mgas]
         return self.SFR_class.SFR(Mgas=self.Mgas_v, Mtot=self.Mtot, timestep_n=timestep_n) # Function: SFR(Mgas)
 
-    def f_RK4(self, t_n, y_n, n, i=None):
+    def Mgas_func(self, t_n, y_n, n, i=None):
         # Explicit general diff eq GCE function
-        return self.Infall_rate[n] - self.SFR_tn(n)
+        return self.infall(t_n) - self.SFR_tn(n)
+    
+    def Mstar_func(self, t_n, y_n, n, i=None):
+        return y_n + self.SFR_tn(n) * self.IN.nTimeStep
 
     def solve_integral(self, t_n, y_n, n, **kwargs): #Wi_comp,
         # Explicit general diff eq GCE function
@@ -167,6 +150,7 @@ class OneZone:
                     Wi_vals.append(integr.simps(val[0] * yields[j], x=val[1]))
             infall_comp = self.Infall_rate[n] * self.Xi_inf[i]
             sfr_comp = self.SFR_v[n] * self.Xi_v[i,n]
+            self.W_i_comp_v[i,n] = np.column_stack((Wi_vals[1], Wi_vals[1], Wi_SNIa))
             val = infall_comp  - sfr_comp + np.sum(Wi_vals) + Wi_SNIa #+ np.sum(Wi_val, axis=0)
             if val < 0.:
                 val = 0.
@@ -175,15 +159,21 @@ class OneZone:
     def phys_integral(self, n):
         self.SFR_v[n] = self.SFR_tn(n)
         self.Mstar_v[n+1] = self.Mstar_v[n] + self.SFR_v[n] * self.IN.nTimeStep
-        self.Mstar_test[n+1] = self.Mtot[n-1] - self.Mgas_v[n]
-        self.Mgas_v[n+1] = self.aux.RK4(self.f_RK4, self.time_chosen[n], self.Mgas_v[n], n, self.IN.nTimeStep)    
+        #self.Mstar_v[n+1] = self.aux.RK4(self.Mstar_func, self.time_chosen[n], self.Mstar_v[n], n, self.IN.nTimeStep) 
+        self.Mstar_test[n+1] = self.Mtot[n] - self.Mgas_v[n]
+        self.Mgas_v[n+1] = self.aux.RK4(self.Mgas_func, self.time_chosen[n], self.Mgas_v[n], n, self.IN.nTimeStep)    
 
     def evolve(self):
-        for n in range(len(self.time_chosen[:self.idx_age_Galaxy])):
+        for n, _ in enumerate(self.time_chosen[:self.idx_age_Galaxy]):
             print('n = %d'%n)
             self.file1.write('n = %d\n'%n)
             self.phys_integral(n)        
             self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
+            gas_iso_sum = np.sum(self.Mass_i_v[:,n])
+            if gas_iso_sum == self.Mgas_v[n]:
+                print('gas isotope sum equals tot gas')
+            else:
+                print('gas_iso_sum - Mgas = ', gas_iso_sum - self.Mgas_v[n])
             if n > 0.: 
                 Wi_class = Wi(n, self.IN, self.lifetime_class, self.time_chosen, self.Z_v, self.SFR_v, self.IMF, self.yields_SNIa_class, self.models_lc18, self.models_k10, self.ZA_sorted)
                 self.Rate_SNII[n], self.Rate_LIMs[n], self.Rate_SNIa[n] = Wi_class.compute_rates()
@@ -205,13 +195,39 @@ class OneZone:
                         yields_k10 = self.averaged_k10[i][0][idx_LIMs]
                     yields = [yields_lc18, yields_k10]
                     self.Mass_i_v[i, n+1] = self.aux.RK4(self.solve_integral, self.time_chosen[n], self.Mass_i_v[i,n], n, self.IN.nTimeStep, i=i, Wi_comp=Wi_comp, Wi_SNIa=Wi_SNIa, yields=yields)
-            returned_Mass = np.sum(self.Mass_i_v[:,n])
-            self.Z_v[n] = np.divide(returned_Mass, self.Mgas_v[n])
-            self.Mgas_v[n+1] = self.Mgas_v[n+1] + returned_Mass
-            self.Mstar_v[n+1] = self.Mstar_v[n+1] + returned_Mass
+            returned_Mass = np.sum(self.Mass_i_v[:,n+1]) - gas_iso_sum
+            self.returned_Mass_v[n] = returned_Mass
+            self.Mgas_v[n] = self.Mgas_v[n] + returned_Mass
+            #self.Mstar_v[n] = self.Mstar_v[n] - returned_Mass
+            self.Z_v[n] = np.divide(gas_iso_sum, self.Mgas_v[n])
         self.Xi_v[:,-1] = np.divide(self.Mass_i_v[:,-1], self.Mgas_v[-1]) 
     
-    # Plotting
+    def main(self):
+        """
+        Run the OneZone program
+        """
+        self.tic.append(time.process_time())
+        self.file1 = open(self._dir_out + "Terminal_output.txt", "w")
+        self.evolve()
+        self.aux.tic_count(string="Computation time", tic=self.tic)
+        #Z_v = np.divide(np.sum(self.Mass_i_v[elemZ_for_metallicity:,:]), Mgas_v)
+        G_v = np.divide(self.Mgas_v, self.Mtot)
+        S_v = 1 - G_v
+        print("Saving the output...")
+        np.savetxt(self._dir_out + 'phys.dat', np.column_stack((self.time_chosen, self.Mtot, self.Mgas_v,
+                self.Mstar_v, self.SFR_v/1e9, self.Infall_rate/1e9, self.Z_v, G_v, S_v, self.Rate_SNII, self.Rate_SNIa, self.Rate_LIMs)), fmt='%-12.4e', #SFR is divided by 1e9 to get the /Gyr to /yr conversion 
+                header = ' (0) time_chosen [Gyr]    (1) Mtot [Msun]    (2) Mgas_v [Msun]    (3) Mstar_v [Msun]    (4) SFR_v [Msun/yr]    (5)Infall_v [Msun/yr]    (6) Z_v    (7) G_v    (8) S_v     (9) Rate_SNII     (10) Rate_SNIa     (11) Rate_LIMs')
+        np.savetxt(self._dir_out +  'Mass_i.dat', np.column_stack((self.ZA_sorted, self.Mass_i_v)), fmt=' '.join(['%5.i']*2 + ['%12.4e']*self.Mass_i_v[0,:].shape[0]),
+                header = ' (0) elemZ,    (1) elemA,    (2) masses [Msun] of every isotope for every timestep')
+        np.savetxt(self._dir_out +  'X_i.dat', np.column_stack((self.ZA_sorted, self.Xi_v)), fmt=' '.join(['%5.i']*2 + ['%12.4e']*self.Xi_v[0,:].shape[0]),
+                header = ' (0) elemZ,    (1) elemA,    (2) abundance mass ratios of every isotope for every timestep (normalized to solar, Asplund et al., 2009)')
+        #self.aux.tic_count(string="Output saved in", tic=self.tic)
+        self.file1.close()
+    
+    ''''''''''''''''''''''''''''''''
+    '''         PLOTTING         '''
+    ''''''''''''''''''''''''''''''''
+    
     def plots(self):
         self.tic.append(time.process_time())
         self.phys_integral_plot()
@@ -224,7 +240,7 @@ class OneZone:
         # self.elem_abundance() # currently has errors
         self.aux.tic_count(string="Plots saved in", tic=self.tic)
         
-    def phys_integral_plot(self, logAge=False):
+    def _phys_integral_plot(self, logAge=False):
         # Requires running "phys_integral()" in onezone.py beforehand
         from matplotlib import pyplot as plt
         plt.style.use(self._dir+'/galcem.mplstyle')
@@ -272,6 +288,59 @@ class OneZone:
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'total_physical.pdf')
 
+    def phys_integral_plot(self, logAge=False):
+        # Requires running "phys_integral()" in onezone.py beforehand
+        from matplotlib import pyplot as plt
+        plt.style.use(self._dir+'/galcem.mplstyle')
+        phys = np.loadtxt(self._dir_out + 'phys.dat')
+        time_chosen = phys[:,0]
+        Mtot = phys[:,1]
+        Mgas_v = phys[:,2]
+        Mstar_v = phys[:,3]
+        SFR_v = phys[:,4]
+        Infall_rate = phys[:,5] 
+        Z_v = phys[:,6]
+        G_v = phys[:,7]
+        S_v = phys[:,8] 
+        Rate_SNII = phys[:,9]
+        Rate_SNIa = phys[:,10]
+        Rate_LIMs = phys[:,11]
+        fig, axs = plt.subplots(1, 2, figsize=(12,7))
+        time_plot = time_chosen
+        xscale = '_lin'
+        if logAge == True:
+            time_plot = np.log10(time_chosen)
+            xscale = '_log'
+        axs[0].hlines(self.IN.M_inf[self.IN.morphology], 0, self.IN.age_Galaxy, label=r'$M_{gal,f}$', linewidth = 1, linestyle = '-.')
+        axs[1].vlines(13.7, self.IN.MW_SFR-1., self.IN.MW_SFR-0.2, label=r'MW$_{SFR}$ CP11', linewidth = 3, linestyle = '-', color='blue', alpha=0.8)
+        axs[0].semilogy(time_plot, Mtot, label=r'$M_{tot}$', linewidth=2)
+        axs[0].semilogy(time_plot, Mstar_v, label= r'$M_{star}$', linewidth=2)
+        axs[0].semilogy(time_plot, Mgas_v, label= r'$M_{gas}$', linewidth=2)
+        axs[0].semilogy(time_plot, Mstar_v + Mgas_v, label= r'$M_g + M_s$', linestyle = '--')
+        axs[0].semilogy(time_plot, self.Mstar_test, label= r'$M_{star,t}$', linewidth=2, linestyle = ':')
+        axs[1].semilogy(time_plot[:-1], np.divide(Rate_SNII[:-1],1e9), label= r'SNII', color = 'black', linestyle=':', linewidth=3)
+        axs[1].semilogy(time_plot[:-1], np.divide(Rate_SNIa[:-1],1e9), label= r'SNIa', color = 'gray', linestyle=':', linewidth=3)
+        axs[1].semilogy(time_plot[:-1], np.divide(Rate_LIMs[:-1],1e9), label= r'LIMs', color = 'magenta', linestyle=':', linewidth=3)
+        axs[1].semilogy(time_plot[:-1], Infall_rate[:-1], label= r'Infall', color = 'cyan', linestyle='-', linewidth=3)
+        axs[1].semilogy(time_plot[:-1], SFR_v[:-1], label= r'SFR', color = 'blue', linestyle='--', linewidth=3)
+        if not logAge:
+            axs[0].set_xlim(0,13.8)
+            axs[1].set_xlim(0,13.8)
+        axs[0].set_ylim(1e8, 1e11)
+        axs[1].set_ylim(1e-2, 1e2)
+        axs[0].tick_params(right=True, which='both', direction='in')
+        axs[1].tick_params(right=True, which='both', direction='in')
+        axs[0].set_xlabel(r'Age [Gyr]', fontsize = 20)
+        axs[1].set_xlabel(r'Age [Gyr]', fontsize = 20)
+        axs[0].set_ylabel(r'Masses [$M_{\odot}$]', fontsize = 20)
+        axs[1].set_ylabel(r'Rates [$M_{\odot}/yr$]', fontsize = 20)
+        #axs[0].set_title(r'$f_{SFR} = $ %.2f' % (self.IN.SFR_rescaling), fontsize=15)
+        axs[0].legend(fontsize=18, loc='lower center', ncol=2, frameon=True, framealpha=0.8)
+        axs[1].legend(fontsize=18, loc='upper center', ncol=2, frameon=True, framealpha=0.8)
+        plt.tight_layout()
+        plt.show(block=False)
+        plt.savefig(self._dir_out_figs + 'total_physical'+str(xscale)+'.pdf')
+        
     def ZA_sorted_plot(self, cmap_name='magma_r', cbins=10): # angle = 2 * np.pi / np.arctan(0.4) !!!!!!!
         from matplotlib import cm,pyplot as plt
         plt.style.use(self._dir+'/galcem.mplstyle')
@@ -546,6 +615,7 @@ class OneZone:
 
     def observational(self, figsiz = (32,10), c=5):
         import glob
+        import itertools
         import pandas as pd
         from matplotlib import pyplot as plt
         import matplotlib.ticker as ticker
@@ -596,8 +666,8 @@ class OneZone:
             elemZmax = np.max([elemZmax0, elemZmax])
             li.append(df)
 
-        markerlist = ['o', 'v', '^', '<', '>', 'P', '*', 'd', 'X']
-        colorlist = ['#00ccff', '#ffb300', '#ff004d']
+        markerlist = itertools.cycle(('o', 'v', '^', '<', '>', 'P', '*', 'd', 'X'))
+        colorlist = itertools.cycle(('#00ccff', '#ffb300', '#ff004d'))
         lenlist = len(li)
         print(f'{lenlist=}')
         print(f'{elemZmin=}')
@@ -606,7 +676,7 @@ class OneZone:
         for i, ax in enumerate(axs.flat):
             for j, ll in enumerate(li):
                 idx_obs = np.where(ll.iloc[:,0] == i)[0]
-                ax.scatter(ll.iloc[idx_obs,1], ll.iloc[idx_obs,2], label=ll.iloc[idx_obs, 4], alpha=0.1)
+                ax.scatter(ll.iloc[idx_obs,1], ll.iloc[idx_obs,2], label=ll.iloc[idx_obs, 4], alpha=0.1, marker=next(markerlist), color=next(colorlist))
             if i < len(Z_list):
                 #ax.plot(FeH, Masses[i], color='blue')
                 ax.plot(FeH, Masses2[i], color='black', linewidth=2)
@@ -643,6 +713,7 @@ class OneZone:
 
     def observational_lelemZ(self, figsiz = (32,10), c=5):
         import glob
+        import itertools
         import pandas as pd
         from matplotlib import pyplot as plt
         import matplotlib.ticker as ticker
@@ -690,8 +761,8 @@ class OneZone:
             elemZmax = np.max([elemZmax0, elemZmax])
             li.append(df)
 
-        markerlist = ['o', 'v', '^', '<', '>', 'P', '*', 'd', 'X']
-        colorlist = ['#00ccff', '#ffb300', '#ff004d']
+        markerlist =itertools.cycle(('o', 'v', '^', '<', '>', 'P', '*', 'd', 'X'))
+        colorlist = itertools.cycle(('#00ccff', '#ffb300', '#ff004d', '#003662', '#620005', '#366200'))
         lenlist = len(li)
         print(f'{lenlist=}')
         print(f'{elemZmin=}')
@@ -700,7 +771,7 @@ class OneZone:
         for i, ax in enumerate(axs.flat):
             for j, ll in enumerate(li):
                 idx_obs = np.where(ll.iloc[:,0] == i)[0]
-                ax.scatter(ll.iloc[idx_obs,1], ll.iloc[idx_obs,2], label=ll.iloc[idx_obs, 4], alpha=0.1)
+                ax.scatter(ll.iloc[idx_obs,1], ll.iloc[idx_obs,2], label=ll.iloc[idx_obs, 4], alpha=0.1, marker=next(markerlist), color=next(colorlist))
             if i < nrow*ncol:
                 #ax.plot(FeH, Masses[i], color='blue')
                 ax.plot(FeH, Masses2[i], color='black', linewidth=2)
