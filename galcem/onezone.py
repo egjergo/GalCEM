@@ -251,6 +251,7 @@ class OneZone(Inputs):
     def plots(self):
         self.tic.append(time.process_time())
         self.iso_evolution()
+        self.iso_evolution_comp()
         self.iso_abundance()
         self.observational()
         self.observational_lelemZ()
@@ -403,6 +404,14 @@ class OneZone(Inputs):
         Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
         Masses = np.log10(Mass_i[:,2:])
         phys = np.loadtxt(self._dir_out + 'phys.dat')
+        W_i_comp = pickle.load(open(self._dir_out + 'W_i_comp.pkl','rb'))
+        W_i_comp +=  self.IN.epsilon
+        W_i_comp = np.log10(W_i_comp)
+        print('W_i_comp.shape = ', W_i_comp.shape)
+        print('W_i_comp[0,0].size = ', W_i_comp[0,0].size)
+        Mass_massive = W_i_comp[:,:,0]
+        Mass_AGB = W_i_comp[:,:,1]
+        Mass_SNIa = W_i_comp[:,:,2]
         timex = phys[:,0]
         Z = self.ZA_sorted[:,0]
         A = self.ZA_sorted[:,1]
@@ -414,7 +423,10 @@ class OneZone(Inputs):
         fig, axs = plt.subplots(nrow, ncol, figsize=figsize)#, sharex=True)
         for i, ax in enumerate(axs.flat):
             if i < len(Z):
-                ax.plot(timex, Masses[i])
+                ax.plot(timex, Masses[i], color='black')
+                #ax.plot(timex, Mass_massive[i], color='blue', linestyle=':')
+                #ax.plot(timex, Mass_AGB[i], color='magenta', linestyle='--')
+                #ax.plot(timex, Mass_SNIa[i], color='grey', linestyle=':')
                 ax.annotate('%s(%d,%d)'%(self.ZA_symb_list[i],Z[i],A[i]), xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
                 ax.set_ylim(-7.5, 10.5)
                 ax.set_xlim(0.01,13.8)
@@ -440,6 +452,64 @@ class OneZone(Inputs):
         plt.subplots_adjust(wspace=0., hspace=0.)
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'iso_evolution.pdf')
+        
+
+    def iso_evolution_comp(self, figsize=(40,13)):
+        from matplotlib import pyplot as plt
+        plt.style.use(self._dir+'/galcem.mplstyle')
+        import matplotlib.ticker as ticker
+        Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
+        Masses = np.log10(Mass_i[:,2:])
+        phys = np.loadtxt(self._dir_out + 'phys.dat')
+        W_i_comp = pickle.load(open(self._dir_out + 'W_i_comp.pkl','rb'))
+        print(f"{np.max(W_i_comp)=}")
+        print(f"{np.min(W_i_comp)=}")
+        W_i_comp +=  100.
+        W_i_comp = np.asarray(W_i_comp, dtype=float)
+        W_i_comp = np.log10(W_i_comp)
+        Mass_massive = W_i_comp[:,:,0]
+        Mass_AGB = W_i_comp[:,:,1]
+        Mass_SNIa = W_i_comp[:,:,2]
+        timex = phys[:,0]
+        Z = self.ZA_sorted[:,0]
+        A = self.ZA_sorted[:,1]
+        ncol = self.aux.find_nearest(np.power(np.arange(20),2), len(Z))
+        if len(self.ZA_sorted) > ncol:
+            nrow = ncol
+        else:
+            nrow = ncol + 1
+        fig, axs = plt.subplots(nrow, ncol, figsize=figsize)#, sharex=True)
+        for i, ax in enumerate(axs.flat):
+            if i < len(Z):
+                #ax.plot(timex, Masses[i], color='black')
+                ax.plot(timex, Mass_massive[i]-2, color='blue', linestyle=':', linewidth=3, alpha=0.3)
+                ax.plot(timex, Mass_AGB[i]-2, color='magenta', linestyle='--', linewidth=1, alpha=0.3)
+                ax.plot(timex, Mass_SNIa[i]-2, color='grey', linestyle=':', linewidth=2, alpha=0.3)
+                ax.annotate('%s(%d,%d)'%(self.ZA_symb_list[i],Z[i],A[i]), xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
+                ax.set_ylim(-2, 10)
+                ax.set_xlim(0.01,13.8)
+                ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
+                ax.tick_params(width = 1, length = 2, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
+                ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=1))
+                ax.tick_params(width = 1, length = 2, axis = 'y', which = 'minor', left = True, right = True, direction = 'in')
+                ax.xaxis.set_major_locator(ticker.MultipleLocator(base=5))
+                ax.tick_params(width = 1, length = 5, axis = 'x', which = 'major', bottom = True, top = True, direction = 'in')
+                ax.yaxis.set_major_locator(ticker.MultipleLocator(base=5))
+                ax.tick_params(width = 1, length = 5, axis = 'y', which = 'major', left = True, right = True, direction = 'in')
+            else:
+                fig.delaxes(ax)
+        for i in range(nrow):
+            for j in range(ncol):
+                if j != 0:
+                    axs[i,j].set_yticklabels([])
+                if i != nrow-1:
+                    axs[i,j].set_xticklabels([])
+        axs[nrow//2,0].set_ylabel(r'Masses [$10^{10}M_{\odot}$]', fontsize = 15)
+        axs[nrow-1, ncol//2].set_xlabel('Age [Gyr]', fontsize = 15)
+        plt.tight_layout(rect = [0.02, 0, 1, 1])
+        plt.subplots_adjust(wspace=0., hspace=0.)
+        plt.show(block=False)
+        plt.savefig(self._dir_out_figs + 'iso_evolution_comp.pdf')
 
     def iso_abundance(self, figsize=(40,13), elem_idx=99): # elem_idx=99 is Fe56, elem_idx=0 is H.
         from matplotlib import pyplot as plt
