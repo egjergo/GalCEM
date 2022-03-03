@@ -179,15 +179,15 @@ class OneZone(Inputs):
 
     def evolve(self):
         for n, _ in enumerate(self.time_chosen[:self.idx_age_Galaxy]):
-            print('time [Gyr] = %d'%self.time_chosen[n])
+            print('time [Gyr] = %.2f'%self.time_chosen[n])
             self.file1.write('n = %d\n'%n)
             self.phys_integral(n)        
             self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
             gas_iso_sum = np.sum(self.Mass_i_v[:,n])
-            if gas_iso_sum == self.Mgas_v[n]:
-                print('gas isotope sum equals tot gas')
-            else:
-                print('gas_iso_sum - Mgas = ', gas_iso_sum - self.Mgas_v[n])
+            #if gas_iso_sum == self.Mgas_v[n]:
+            #    print('gas isotope sum equals tot gas')
+            #else:
+            #    print('gas_iso_sum - Mgas = ', gas_iso_sum - self.Mgas_v[n])
             if n > 0.: 
                 Wi_class = Wi(n, self.IN, self.lifetime_class, self.time_chosen, self.Z_v, self.SFR_v, self.IMF, self.yields_SNIa_class, self.models_lc18, self.models_k10, self.ZA_sorted)
                 self.Rate_SNII[n], self.Rate_LIMs[n], self.Rate_SNIa[n] = Wi_class.compute_rates()
@@ -235,6 +235,7 @@ class OneZone(Inputs):
                 header = ' (0) elemZ,    (1) elemA,    (2) masses [Msun] of every isotope for every timestep')
         np.savetxt(self._dir_out +  'X_i.dat', np.column_stack((self.ZA_sorted, self.Xi_v)), fmt=' '.join(['%5.i']*2 + ['%12.4e']*self.Xi_v[0,:].shape[0]),
                 header = ' (0) elemZ,    (1) elemA,    (2) abundance mass ratios of every isotope for every timestep (normalized to solar, Asplund et al., 2009)')
+        pickle.dump(self.W_i_comp,open(self._dir_out + 'W_i_comp.pkl','wb'))
         #self.aux.tic_count(string="Output saved in", tic=self.tic)
         self.file1.close()
     
