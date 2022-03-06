@@ -10,19 +10,16 @@ from .morphology import Auxiliary,Stellar_Lifetimes,Infall,Star_Formation_Rate,I
 from .yields import Isotopes,Yields_LIMs,Yields_Massive,Yields_SNIa,Yields_BBN,Concentrations
 from .util import Wi
 
-class OneZone:
+class Inputs:
     """
-    OneZone class
-    
-    In (Input): an Input configuration instance 
+    shared init
     """
-    def __init__(self, IN, outdir = 'runs/mygcrun/'):
+    def __init__(self, IN, outdir='runs/myrun/'):
         self._dir_out = outdir if outdir[-1]=='/' else outdir+'/'
+        print('Output directory: ', self._dir_out)
         self._dir_out_figs = self._dir_out + 'figs/'
         os.makedirs(self._dir_out,exist_ok=True)
         os.makedirs(self._dir_out_figs,exist_ok=True)
-        self.tic = []
-        self.tic.append(time.process_time())
         self.IN = IN
         self.aux = Auxiliary()
         self.lifetime_class = Stellar_Lifetimes(self.IN)
@@ -39,7 +36,7 @@ class OneZone:
         # Surface density for the disk. The bulge goes as an inverse square law
         surf_density_Galaxy = self.IN.sd / np.exp(self.IN.r / self.IN.Reff[self.IN.morphology]) #sigma(t_G) before eq(7) not used so far !!!!!!!
         infall_class = Infall(self.IN, morphology=self.IN.morphology, time=self.time_chosen)
-        infall = infall_class.inf()
+        self.infall = infall_class.inf()
         self.SFR_class = Star_Formation_Rate(self.IN, self.IN.SFR_option, self.IN.custom_SFR)
         IMF_class = Initial_Mass_Function(Ml, Mu, self.IN, self.IN.IMF_option, self.IN.custom_IMF)
         self.IMF = IMF_class.IMF() #() # Function @ input stellar mass
@@ -60,7 +57,7 @@ class OneZone:
         ZA_Massive = self.c_class.extract_ZA_pairs_Massive(yields_Massive_class)
         ZA_all = np.vstack((ZA_LIMs, ZA_SNIa, ZA_Massive))
         # Initialize Global tracked quantities
-        self.Infall_rate = infall(self.time_chosen)
+        self.Infall_rate = self.infall(self.time_chosen)
         self.ZA_sorted = self.c_class.ZA_sorted(ZA_all) # [Z, A] VERY IMPORTANT! 321 isotopes with yields_SNIa_option = 'km20', 192 isotopes for 'i99' 
         self.ZA_sorted = self.ZA_sorted[1:,:]
         self.ZA_symb_list = self.IN.periodic['elemSymb'][self.ZA_sorted[:,0]] # name of elements for all isotopes
@@ -69,11 +66,13 @@ class OneZone:
         elemZ_for_metallicity = np.where(self.ZA_sorted[:,0]>2)[0][0] #  starting idx (int) that excludes H and He for the metallicity selection
         self.Mtot = np.insert(np.cumsum((self.Infall_rate[1:] + self.Infall_rate[:-1]) * self.IN.nTimeStep / 2), 0, self.IN.epsilon) # The total baryonic mass (i.e. the infall mass) is computed right away
         #Mtot_quad = [quad(infall, self.time_chosen[0], i)[0] for i in range(1,len(self.time_chosen)-1)] # slow loop, deprecate!!!!!!!
-        self.Mstar_v = self.IN.epsilon * np.ones(len(self.time_chosen)) # Global
-        self.Mstar_test = self.IN.epsilon * np.ones(len(self.time_chosen)) # Global
-        self.Mgas_v = self.IN.epsilon * np.ones(len(self.time_chosen)) # Global
+        self.Mstar_v = self.IN.epsilon * np.ones(len(self.time_chosen)) 
+        self.Mstar_test = self.IN.epsilon * np.ones(len(self.time_chosen)) 
+        self.Mgas_v = self.IN.epsilon * np.ones(len(self.time_chosen)) 
+        self.returned_Mass_v = self.IN.epsilon * np.ones(len(self.time_chosen)) 
         self.SFR_v = self.IN.epsilon * np.ones(len(self.time_chosen)) #
         self.Mass_i_v = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)))    # Gass mass (i,j) where the i rows are the isotopes and j are the timesteps, [:,j] follows the timesteps
+        self.W_i_comp = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen), 3), dtype=object)    # Gass mass (i,j) where the i rows are the isotopes and j are the timesteps, [:,j] follows the timesteps
         self.Xi_inf = isotope_class.construct_yield_vector(yields_BBN_class, self.ZA_sorted)
         Mass_i_inf = np.column_stack(([self.Xi_inf] * len(self.Mtot)))
         self.Xi_v = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)))    # Xi 
@@ -89,11 +88,22 @@ class OneZone:
         self.X_lc18, self.Y_lc18, self.models_lc18, self.averaged_lc18 = self.load_processed_yields(func_name='lc18', loc=self._dir + '/input/yields/snii/lc18/tab_R', df_list=['X', 'Y', 'models', 'avgmassfrac'])
         self.X_k10, self.Y_k10, self.models_k10, self.averaged_k10 = self.load_processed_yields(func_name='k10', loc=self._dir + '/input/yields/lims/k10', df_list=['X', 'Y', 'models', 'avgmassfrac'])
         self.Y_i99 = self.load_processed_yields_snia(func_name='i99', loc=self._dir + '/input/yields/snia/i99', df_list='Y')
+    
+class OneZone(Inputs):
+    """
+    OneZone class
+    
+    In (Input): an Input configuration instance 
+    """
+    def __init__(self, IN, outdir = 'runs/mygcrun/'):
+        self.tic = []
+        super().__init__(IN, outdir=outdir)
+        self.tic.append(time.process_time())
         # Record load time
         self.tic.append(time.process_time())
         package_loading_time = self.tic[-1]
-        print('Package lodaded in %.1e seconds.'%package_loading_time)
-
+        print('Package lodaded in %.1e seconds.'%package_loading_time)   
+        
     def load_processed_yields(self,func_name, loc, df_list):
         df_dict = {}
         for df_l in df_list:
