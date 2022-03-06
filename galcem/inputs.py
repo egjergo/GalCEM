@@ -20,7 +20,7 @@ class Inputs:
         # For SNIa
         self.Ml_SNIa = 3./2 # Lower limit for total binary mass for SNIae [Msun]
         self.Mu_SNIa = 12 # Upper limit for total binary mass for SNIae [Msun]
-        self.A_SNIa = 0.35 #0.06 # Fraction of white dwarfs that underwent a SNIa
+        self.A_SNIa = 0.06 #0.35 # Fraction of white dwarfs that underwent a SNIa
 
         self.Ml_LIMs = 0.6 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Mu_LIMs = 9 # [Msun] !!!!!!! temporary. Import from yield tables

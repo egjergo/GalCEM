@@ -172,6 +172,7 @@ class OneZone(Setup):
                 else:
                     Wi_vals.append(0.)
             returned = [Wi_vals[0], Wi_vals[1], Wi_SNIa]
+            
             infall_comp = self.Infall_rate[n] * self.Xi_inf[i]
             sfr_comp = self.SFR_v[n] * self.Xi_v[i,n] 
             self.W_i_comp[i,n,0] = returned[0]
@@ -391,7 +392,7 @@ class OneZone(Setup):
         W_i_comp = pickle.load(open(self._dir_out + 'W_i_comp.pkl','rb'))
         print(f"{np.max(W_i_comp)=}")
         print(f"{np.min(W_i_comp)=}")
-        W_i_comp +=  100.
+        #W_i_comp +=  100.
         W_i_comp = np.asarray(W_i_comp, dtype=float)
         W_i_comp = np.log10(W_i_comp)
         Mass_massive = W_i_comp[:,:,0]
@@ -409,11 +410,11 @@ class OneZone(Setup):
         for i, ax in enumerate(axs.flat):
             if i < len(Z):
                 #ax.plot(timex, Masses[i], color='black')
-                ax.plot(timex, Mass_massive[i]-2, color='black', linestyle='-.', linewidth=3, alpha=0.5, label='SNII')
-                ax.plot(timex, Mass_AGB[i]-2, color='magenta', linestyle='--', linewidth=1, alpha=0.5, label='LIMs')
-                ax.plot(timex, Mass_SNIa[i]-2, color='blue', linestyle=':', linewidth=2, alpha=0.5, label='SNIa')
+                ax.plot(timex, Mass_massive[i], color='black', linestyle='-.', linewidth=3, alpha=0.5, label='SNII')
+                ax.plot(timex, Mass_AGB[i], color='magenta', linestyle='--', linewidth=1, alpha=0.5, label='LIMs')
+                ax.plot(timex, Mass_SNIa[i], color='blue', linestyle=':', linewidth=2, alpha=0.5, label='SNIa')
                 ax.annotate('%s(%d,%d)'%(self.ZA_symb_list[i],Z[i],A[i]), xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
-                ax.set_ylim(-2, 9.9)
+                ax.set_ylim(-4.9, 9.9)
                 ax.set_xlim(0.01,13.8)
                 ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
                 ax.tick_params(width = 1, length = 2, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
@@ -432,7 +433,7 @@ class OneZone(Setup):
                 if i != nrow-1:
                     axs[i,j].set_xticklabels([])
                     
-        axs[nrow//2,0].set_ylabel(r'Masses [$10^{10}M_{\odot}$]', fontsize = 15)
+        axs[nrow//2,0].set_ylabel(r'Masses [log10 $M_{\odot}$]', fontsize = 15)
         axs[nrow-1, ncol//2].set_xlabel('Age [Gyr]', fontsize = 15)
         axs[0, ncol//2].legend(ncol=3, loc='upper center', bbox_to_anchor=(0.5, 1.5), frameon=False, fontsize=15)
         plt.tight_layout(rect = [0.03, 0, 1, .98])
@@ -440,16 +441,16 @@ class OneZone(Setup):
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'iso_evolution_comp.pdf')
 
-    def iso_abundance(self, figsize=(32,10), elem_idx=99): # elem_idx=99 is Fe56, elem_idx=0 is H.
+    def iso_abundance(self, figsize=(32,10), elem_idx=99, c=5): # elem_idx=99 is Fe56, elem_idx=0 is H.
         from matplotlib import pyplot as plt
         plt.style.use(self._dir+'/galcem.mplstyle')
         import matplotlib.ticker as ticker
         Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
         #Masses = np.log10(np.divide(Mass_i[:,2:], Mass_i[elem_idx,2:]))
-        Fe = np.sum(Mass_i[97:104,7:],axis=0)
-        Masses = np.log10(np.divide(Mass_i[:,7:], Fe))
+        Fe = np.sum(Mass_i[np.where(self.ZA_sorted[:,0]==26)[0], c:], axis=0)
+        Masses = np.log10(np.divide(Mass_i[:,c:], Fe))
         #XH = np.log10(np.divide(Mass_i[elem_idx,2:], Mass_i[0,2:])) 
-        XH = np.log10(np.divide(Fe, Mass_i[0,7:])) 
+        XH = np.log10(np.divide(Fe, Mass_i[0,c:])) 
         Z = self.ZA_sorted[:,0]
         A = self.ZA_sorted[:,1]
         ncol = self.aux.find_nearest(np.power(np.arange(20),2), len(Z))
@@ -734,7 +735,8 @@ class OneZone(Setup):
             li.append(df)
 
         markerlist =itertools.cycle(('o', 'v', '^', '<', '>', 'P', '*', 'd', 'X'))
-        colorlist = itertools.cycle(('#00ccff', '#ffb300', '#ff004d', '#003662', '#620005', '#366200'))
+        #colorlist = itertools.cycle(('#00ccff', '#ffb300', '#ff004d', '#003662', '#620005', '#366200'))
+        colorlist = itertools.cycle(('#00ccff', '#ffb300', '#ff004d'))
         lenlist = len(li)
         print(f'{lenlist=}')
         print(f'{elemZmin=}')
