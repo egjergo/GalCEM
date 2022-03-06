@@ -190,7 +190,7 @@ class Yields:
 		self.stellarMass_bins = None # array of initial stellar mass bins for the given authors (n.b. not all yields have it!)
 		self.metallicityIni = None # Initial stellar metallicity (n.b. not all yields have it!)
 		self.stellarMassIni = None # Initial stellar mass (n.b. not all yields have it!)
-		self._dir = os.path.dirname(__file__)
+		self._dir = os.path.join(os.path.dirname( __file__ ), '..')
 		
 		
 class Yields_BBN(Yields):

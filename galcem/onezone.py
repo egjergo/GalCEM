@@ -6,11 +6,11 @@ from scipy.interpolate import *
 import os
 import pickle
 
-from .morphology import Auxiliary,Stellar_Lifetimes,Infall,Star_Formation_Rate,Initial_Mass_Function
-from .yields import Isotopes,Yields_LIMs,Yields_Massive,Yields_SNIa,Yields_BBN,Concentrations
-from .util import Wi
+from .classes.morphology import Auxiliary,Stellar_Lifetimes,Infall,Star_Formation_Rate,Initial_Mass_Function
+from .classes.yields import Isotopes,Yields_LIMs,Yields_Massive,Yields_SNIa,Yields_BBN,Concentrations
+from .classes.integration import Wi
 
-class Inputs:
+class Setup:
     """
     shared init
     """
@@ -89,7 +89,7 @@ class Inputs:
         self.X_k10, self.Y_k10, self.models_k10, self.averaged_k10 = self.load_processed_yields(func_name='k10', loc=self._dir + '/input/yields/lims/k10', df_list=['X', 'Y', 'models', 'avgmassfrac'])
         self.Y_i99 = self.load_processed_yields_snia(func_name='i99', loc=self._dir + '/input/yields/snia/i99', df_list='Y')
     
-class OneZone(Inputs):
+class OneZone(Setup):
     """
     OneZone class
     
@@ -137,12 +137,16 @@ class OneZone(Inputs):
                 header = ' (0) elemZ,    (1) elemA,    (2) masses [Msun] of every isotope for every timestep')
         np.savetxt(self._dir_out +  'X_i.dat', np.column_stack((self.ZA_sorted, self.Xi_v)), fmt=' '.join(['%5.i']*2 + ['%12.4e']*self.Xi_v[0,:].shape[0]),
                 header = ' (0) elemZ,    (1) elemA,    (2) abundance mass ratios of every isotope for every timestep (normalized to solar, Asplund et al., 2009)')
+        pickle.dump(self.W_i_comp,open(self._dir_out + 'W_i_comp.pkl','wb'))
         self.aux.tic_count(string="Output saved in", tic=self.tic)
         self.file1.close()
     
-    def f_RK4(self, t_n, y_n, n, i=None):
+    def Mgas_func(self, t_n, y_n, n, i=None):
         # Explicit general diff eq GCE function
         return self.Infall_rate[n] - self.SFR_tn(n)
+    
+    def Mstar_func(self, t_n, y_n, n, i=None):
+        return y_n + self.SFR_tn(n) * self.IN.nTimeStep
 
     def solve_integral(self, t_n, y_n, n, **kwargs): #Wi_comp,
         # Explicit general diff eq GCE function
@@ -166,8 +170,12 @@ class OneZone(Inputs):
                 if len(val[1]) > 0.:
                     Wi_vals.append(integr.simps(val[0] * yields[j], x=val[1]))
             infall_comp = self.Infall_rate[n] * self.Xi_inf[i]
-            sfr_comp = self.SFR_v[n] * self.Xi_v[i,n]
-            val = infall_comp  - sfr_comp + np.sum(Wi_vals) + Wi_SNIa #+ np.sum(Wi_val, axis=0)
+            sfr_comp = self.SFR_v[n] * self.Xi_v[i,n]            
+            #returned = [Wi_vals[0], Wi_vals[1], Wi_SNIa]
+            #self.W_i_comp[i,n,0] = Wi_vals[0]
+            #self.W_i_comp[i,n,1] = Wi_vals[1]
+            #self.W_i_comp[i,n,2] = Wi_SNIa
+            val = infall_comp  - sfr_comp + np.sum(Wi_vals) + Wi_SNIa# + np.sum(returned)
             if val < 0.:
                 val = 0.
         return val
@@ -176,7 +184,7 @@ class OneZone(Inputs):
         self.SFR_v[n] = self.SFR_tn(n)
         self.Mstar_v[n+1] = self.Mstar_v[n] + self.SFR_v[n] * self.IN.nTimeStep
         self.Mstar_test[n+1] = self.Mtot[n-1] - self.Mgas_v[n]
-        self.Mgas_v[n+1] = self.aux.RK4(self.f_RK4, self.time_chosen[n], self.Mgas_v[n], n, self.IN.nTimeStep)    
+        self.Mgas_v[n+1] = self.aux.RK4(self.Mgas_func, self.time_chosen[n], self.Mgas_v[n], n, self.IN.nTimeStep)    
 
     def evolve(self):
         for n in range(len(self.time_chosen[:self.idx_age_Galaxy])):
@@ -216,11 +224,19 @@ class OneZone(Inputs):
         #     [function]: [SFR as a function of Mgas]
         return self.SFR_class.SFR(Mgas=self.Mgas_v, Mtot=self.Mtot, timestep_n=timestep_n) # Function: SFR(Mgas)
     
-    # Plotting
+    '''
+    class OneZone_Plots(Setup):
+    """
+    PLOTTING
+    """    
+    '''
+    #def __init__(self, IN, outdir='runs/mygcrun/'):
+    #    super().__init__(IN, outdir=outdir)
+        
     def plots(self):
         self.tic.append(time.process_time())
         self.iso_evolution()
-        #self.iso_evolution_comp()
+        self.iso_evolution_comp()
         self.iso_abundance()
         self.observational()
         self.observational_lelemZ()
@@ -230,54 +246,6 @@ class OneZone(Inputs):
         # self.elem_abundance() # currently has errors
         self.aux.tic_count(string="Plots saved in", tic=self.tic)
         
-    def _phys_integral_plot(self, logAge=False):
-        # Requires running "phys_integral()" in onezone.py beforehand
-        from matplotlib import pyplot as plt
-        plt.style.use(self._dir+'/galcem.mplstyle')
-        phys = np.loadtxt(self._dir_out + 'phys.dat')
-        time_chosen = phys[:,0]
-        Mtot = phys[:,1]
-        Mgas_v = phys[:,2]
-        Mstar_v = phys[:,3]
-        SFR_v = phys[:,4]
-        Infall_rate = phys[:,5] 
-        Z_v = phys[:,6]
-        G_v = phys[:,7]
-        S_v = phys[:,8] 
-        Rate_SNII = phys[:,9]
-        Rate_SNIa = phys[:,10]
-        Rate_LIMs = phys[:,11]
-        fig = plt.figure(figsize =(7, 5))
-        ax = fig.add_subplot(111)
-        ax2 = ax.twinx()
-        time_plot = time_chosen
-        if logAge == True:
-            time_plot = np.log10(time_chosen)
-        ax.hlines(self.IN.M_inf[self.IN.morphology], 0, self.IN.age_Galaxy, label=r'$M_{gal,f}$', linewidth = 1, linestyle = '-.')
-        ax.semilogy(time_plot, Mtot, label=r'$M_{tot}$', linewidth=2)
-        ax.semilogy(time_plot, Mstar_v, label= r'$M_{star}$', linewidth=2)
-        ax.semilogy(time_plot, Mgas_v, label= r'$M_{gas}$', linewidth=2)
-        ax.semilogy(time_plot, Mstar_v + Mgas_v, label= r'$M_g + M_s$', linestyle = '--')
-        ax.semilogy(time_plot, self.Mstar_test, label= r'$M_{star,t}$', linewidth=2, linestyle = ':')
-        ax2.semilogy(time_plot, Infall_rate, label= r'Infall', color = 'cyan', linestyle='-', linewidth=3)
-        ax2.semilogy(time_plot, SFR_v, label= r'SFR', color = 'blue', linestyle='--', linewidth=3)
-        ax2.semilogy(time_plot, np.divide(Rate_SNII,1e9), label= r'SNII', color = 'black', linestyle=':', linewidth=3)
-        ax2.semilogy(time_plot, np.divide(Rate_SNIa,1e9), label= r'SNIa', color = 'gray', linestyle=':', linewidth=3)
-        ax2.semilogy(time_plot, np.divide(Rate_LIMs,1e9), label= r'LIMs', color = 'magenta', linestyle=':', linewidth=3)
-        if not logAge:
-            ax.set_xlim(0,13.8)
-        ax.set_ylim(1e6, 1e11)
-        ax2.set_ylim(1e-2, 1e2)
-        ax.set_xlabel(r'Age [Gyr]', fontsize = 15)
-        ax.set_ylabel(r'Masses [$M_{\odot}$]', fontsize = 15)
-        ax2.set_ylabel(r'Rates [$M_{\odot}/yr$]', fontsize = 15)
-        ax.set_title(r'$f_{SFR} = $ %.2f' % (self.IN.SFR_rescaling), fontsize=15)
-        ax.legend(fontsize=15, loc='lower left', ncol=2, frameon=True, framealpha=0.8)
-        ax2.legend(fontsize=15, loc='lower right', ncol=1, frameon=False)
-        plt.tight_layout()
-        plt.show(block=False)
-        plt.savefig(self._dir_out_figs + 'total_physical.pdf')
-
     def phys_integral_plot(self, logAge=False):
         # Requires running "phys_integral()" in onezone.py beforehand
         from matplotlib import pyplot as plt
@@ -614,57 +582,6 @@ class OneZone(Inputs):
         fig.tight_layout()
         plt.savefig(self._dir_out_figs + 'tauratio.pdf')
         
-    
-    def _observational(self, figsiz = (32,10), some_value=0.):
-        import glob
-        import itertools
-        import pandas as pd
-        from matplotlib import pyplot as plt
-        import matplotlib.ticker as ticker
-        Z_list = np.unique(self.ZA_sorted[:,0])
-        Z_symb_list = self.IN.periodic['elemSymb'][Z_list] # name of elements for all isotopes
-    
-    
-        path = self._dir + r'input/observations' # use your path
-        all_files = glob.glob(path + "/*.txt")
-
-        li = []
-        elemZmin = 12
-        elemZmax = 12
-
-        for filename in all_files:
-            df = pd.read_table(filename, sep=',')
-            elemZmin0 = np.min(df.iloc[:,0])
-            elemZmax0 = np.max(df.iloc[:,0])
-            elemZmin = np.min([elemZmin0, elemZmin])
-            elemZmax = np.max([elemZmax0, elemZmax])
-            li.append(df)
-
-        markerlist = ['o', 'v', '^', '<', '>', 'P', '*', 'd', 'X']
-        colorlist = ['#00ccff', '#ffb300', '#ff004d']
-        lenlist = len(li)
-        print(f'{lenlist=}')
-        print(f'{elemZmin=}')
-        print(f'{elemZmax=}')
-        nsqrt = np.sqrt(elemZmax-elemZmin)
-        ncol = int(np.floor(nsqrt))
-        if nsqrt.is_integer():
-            nrow = ncol
-        else:
-            nrow = ncol + 1
-        print(f'{ncol=}')
-        print(f'{nrow=}')
-    
-        fig, axs = plt.subplots(nrow, ncol, figsize =figsiz)#, sharex=True)
-        for i, ax in enumerate(axs.flat):
-            ax.annotate(f"{Z_list[i]}{Z_symb_list[i]}", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
-            if i < lenlist:
-                for elem, j in enumerate(li):
-                    j.loc[j.iloc[:,0] == some_value]
-                    ax.scatter(li[j].iloc[:,1], li[j].iloc[:,2])
-        plt.show(block=False)
-        return None
-
     def observational(self, figsiz = (32,10), c=5):
         import glob
         import itertools
@@ -761,7 +678,6 @@ class OneZone(Inputs):
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'elem_obs.pdf')
         return None
-
 
     def observational_lelemZ(self, figsiz = (32,10), c=5):
         import glob
