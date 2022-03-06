@@ -168,14 +168,16 @@ class OneZone(Setup):
             Wi_vals = []
             for j,val in enumerate(Wi_comps):
                 if len(val[1]) > 0.:
-                    Wi_vals.append(integr.simps(val[0] * yields[j], x=val[1]))
+                    Wi_vals.append(integr.simps(val[0] * yields[j], x=val[1]))   
+                else:
+                    Wi_vals.append(0.)
+            returned = [Wi_vals[0], Wi_vals[1], Wi_SNIa]
             infall_comp = self.Infall_rate[n] * self.Xi_inf[i]
-            sfr_comp = self.SFR_v[n] * self.Xi_v[i,n]            
-            #returned = [Wi_vals[0], Wi_vals[1], Wi_SNIa]
-            #self.W_i_comp[i,n,0] = Wi_vals[0]
-            #self.W_i_comp[i,n,1] = Wi_vals[1]
-            #self.W_i_comp[i,n,2] = Wi_SNIa
-            val = infall_comp  - sfr_comp + np.sum(Wi_vals) + Wi_SNIa# + np.sum(returned)
+            sfr_comp = self.SFR_v[n] * self.Xi_v[i,n] 
+            self.W_i_comp[i,n,0] = returned[0]
+            self.W_i_comp[i,n,1] = returned[1]
+            self.W_i_comp[i,n,2] = returned[2]
+            val = infall_comp  - sfr_comp + np.sum(returned)
             if val < 0.:
                 val = 0.
         return val
@@ -270,17 +272,17 @@ class OneZone(Setup):
             time_plot = np.log10(time_chosen)
             xscale = '_log'
         axs[0].hlines(self.IN.M_inf[self.IN.morphology], 0, self.IN.age_Galaxy, label=r'$M_{gal,f}$', linewidth = 1, linestyle = '-.')
-        axs[1].vlines(13.7, self.IN.MW_SFR-1., self.IN.MW_SFR-0.2, label=r'MW$_{SFR}$ CP11', linewidth = 3, linestyle = '-', color='blue', alpha=0.8)
+        axs[1].vlines(13.7, self.IN.MW_SFR-1., self.IN.MW_SFR-0.2, label=r'MW$_{SFR}$ CP11', linewidth = 3, linestyle = '-', color='red', alpha=0.8)
         axs[0].semilogy(time_plot, Mtot, label=r'$M_{tot}$', linewidth=2)
         axs[0].semilogy(time_plot, Mstar_v, label= r'$M_{star}$', linewidth=2)
         axs[0].semilogy(time_plot, Mgas_v, label= r'$M_{gas}$', linewidth=2)
         axs[0].semilogy(time_plot, Mstar_v + Mgas_v, label= r'$M_g + M_s$', linestyle = '--')
         axs[0].semilogy(time_plot, self.Mstar_test, label= r'$M_{star,t}$', linewidth=2, linestyle = ':')
         axs[1].semilogy(time_plot[:-1], np.divide(Rate_SNII[:-1],1e9), label= r'SNII', color = 'black', linestyle=':', linewidth=3)
-        axs[1].semilogy(time_plot[:-1], np.divide(Rate_SNIa[:-1],1e9), label= r'SNIa', color = 'gray', linestyle=':', linewidth=3)
+        axs[1].semilogy(time_plot[:-1], np.divide(Rate_SNIa[:-1],1e9), label= r'SNIa', color = 'blue', linestyle=':', linewidth=3)
         axs[1].semilogy(time_plot[:-1], np.divide(Rate_LIMs[:-1],1e9), label= r'LIMs', color = 'magenta', linestyle=':', linewidth=3)
         axs[1].semilogy(time_plot[:-1], Infall_rate[:-1], label= r'Infall', color = 'cyan', linestyle='-', linewidth=3)
-        axs[1].semilogy(time_plot[:-1], SFR_v[:-1], label= r'SFR', color = 'blue', linestyle='--', linewidth=3)
+        axs[1].semilogy(time_plot[:-1], SFR_v[:-1], label= r'SFR', color = 'red', linestyle='--', linewidth=3)
         if not logAge:
             axs[0].set_xlim(0,13.8)
             axs[1].set_xlim(0,13.8)
@@ -407,11 +409,11 @@ class OneZone(Setup):
         for i, ax in enumerate(axs.flat):
             if i < len(Z):
                 #ax.plot(timex, Masses[i], color='black')
-                ax.plot(timex, Mass_massive[i]-2, color='blue', linestyle=':', linewidth=3, alpha=0.3)
-                ax.plot(timex, Mass_AGB[i]-2, color='magenta', linestyle='--', linewidth=1, alpha=0.3)
-                ax.plot(timex, Mass_SNIa[i]-2, color='grey', linestyle=':', linewidth=2, alpha=0.3)
+                ax.plot(timex, Mass_massive[i]-2, color='black', linestyle='-.', linewidth=3, alpha=0.5, label='SNII')
+                ax.plot(timex, Mass_AGB[i]-2, color='magenta', linestyle='--', linewidth=1, alpha=0.5, label='LIMs')
+                ax.plot(timex, Mass_SNIa[i]-2, color='blue', linestyle=':', linewidth=2, alpha=0.5, label='SNIa')
                 ax.annotate('%s(%d,%d)'%(self.ZA_symb_list[i],Z[i],A[i]), xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
-                ax.set_ylim(-2, 10)
+                ax.set_ylim(-2, 9.9)
                 ax.set_xlim(0.01,13.8)
                 ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
                 ax.tick_params(width = 1, length = 2, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
@@ -429,9 +431,11 @@ class OneZone(Setup):
                     axs[i,j].set_yticklabels([])
                 if i != nrow-1:
                     axs[i,j].set_xticklabels([])
+                    
         axs[nrow//2,0].set_ylabel(r'Masses [$10^{10}M_{\odot}$]', fontsize = 15)
         axs[nrow-1, ncol//2].set_xlabel('Age [Gyr]', fontsize = 15)
-        plt.tight_layout(rect = [0.02, 0, 1, 1])
+        axs[0, ncol//2].legend(ncol=3, loc='upper center', bbox_to_anchor=(0.5, 1.5), frameon=False, fontsize=15)
+        plt.tight_layout(rect = [0.03, 0, 1, .98])
         plt.subplots_adjust(wspace=0., hspace=0.)
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'iso_evolution_comp.pdf')
