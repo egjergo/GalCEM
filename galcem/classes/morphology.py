@@ -233,17 +233,20 @@ class Initial_Mass_Function:
         plaw = self.IN.Salpeter_IMF_Plaw if plaw is None else plaw
         return lambda Mstar: Mstar ** (-(1 + plaw))
         
-    def Kroupa03(self):#, C = 0.31): #if m <= 0.5: lambda m: 0.58 * (m ** -0.30)/m
-        '''
-        Kroupa & Weidner (2003)
-        '''
-        if self.mass <= 0.5:
+    def canonical_IMF(self, Mstar):
+        if Mstar <= 0.5:
             plaw = -0.3
         elif self.mass <= 1.0:
             plaw = 1.2
         else:
             plaw = 1.7
-        return lambda Mstar: Mstar ** (-(1 + plaw))
+        return Mstar **(-(1 + plaw))
+        
+    def Kroupa93(self):#, C = 0.31): #if m <= 0.5: lambda m: 0.58 * (m ** -0.30)/m
+        '''
+        Kroupa, Tout & Gilmore (1993)
+        '''
+        return lambda Mstar: self.canonical_IMF(Mstar)
         
     def IMF_select(self):
         if not self.custom:
