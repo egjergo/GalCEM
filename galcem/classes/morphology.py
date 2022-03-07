@@ -237,7 +237,9 @@ class Initial_Mass_Function:
         '''
         Kroupa & Weidner (2003)
         '''
-        if self.mass <= 1.0:
+        if self.mass <= 0.5:
+            plaw = -0.3
+        elif self.mass <= 1.0:
             plaw = 1.2
         else:
             plaw = 1.7

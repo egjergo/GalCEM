@@ -1,2 +1,2 @@
 from .onezone import OneZone
-from .inputs import Inputs
+from .classes.inputs import Inputs

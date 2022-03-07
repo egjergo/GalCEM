@@ -141,13 +141,6 @@ class OneZone(Setup):
         self.aux.tic_count(string="Output saved in", tic=self.tic)
         self.file1.close()
     
-    def Mgas_func(self, t_n, y_n, n, i=None):
-        # Explicit general diff eq GCE function
-        return self.Infall_rate[n] - self.SFR_tn(n)
-    
-    def Mstar_func(self, t_n, y_n, n, i=None):
-        return y_n + self.SFR_tn(n) * self.IN.nTimeStep
-
     def solve_integral(self, t_n, y_n, n, **kwargs): #Wi_comp,
         # Explicit general diff eq GCE function
         # INPUT
@@ -183,9 +176,28 @@ class OneZone(Setup):
                 val = 0.
         return val
 
+    def Mgas_func(self, t_n, y_n, n, i=None):
+        # Explicit general diff eq GCE function
+        # Mgas(t)
+        
+        return self.Infall_rate[n] - self.SFR_tn(n) + np.sum(self.W_i_comp[:,n,:])
+    
+    def Mstar_func(self, t_n, y_n, n, i=None):
+        # Mstar(t)
+        return y_n - np.sum(self.W_i_comp[:,n,:]) + self.SFR_tn(n) #* self.IN.nTimeStep
+
+    def SFR_tn(self, timestep_n):
+        # Actual SFR employed within the integro-differential equation
+        # Args:
+        #     timestep_n ([int]): [timestep index]
+        # Returns:
+        #     [function]: [SFR as a function of Mgas]
+        return self.SFR_class.SFR(Mgas=self.Mgas_v, Mtot=self.Mtot, timestep_n=timestep_n) # Function: SFR(Mgas)
+    
     def phys_integral(self, n):
         self.SFR_v[n] = self.SFR_tn(n)
-        self.Mstar_v[n+1] = self.Mstar_v[n] + self.SFR_v[n] * self.IN.nTimeStep
+        #self.Mstar_v[n+1] = self.Mstar_v[n] + self.SFR_v[n] * self.IN.nTimeStep
+        self.Mstar_v[n+1] = self.aux.RK4(self.Mstar_func, self.time_chosen[n], self.Mstar_v[n], n, self.IN.nTimeStep) 
         self.Mstar_test[n+1] = self.Mtot[n-1] - self.Mgas_v[n]
         self.Mgas_v[n+1] = self.aux.RK4(self.Mgas_func, self.time_chosen[n], self.Mgas_v[n], n, self.IN.nTimeStep)    
 
@@ -219,14 +231,6 @@ class OneZone(Setup):
             self.Z_v[n] = np.divide(np.sum(self.Mass_i_v[:,n]), self.Mgas_v[n])
         self.Xi_v[:,-1] = np.divide(self.Mass_i_v[:,-1], self.Mgas_v[-1]) 
 
-    def SFR_tn(self, timestep_n):
-        # Actual SFR employed within the integro-differential equation
-        # Args:
-        #     timestep_n ([int]): [timestep index]
-        # Returns:
-        #     [function]: [SFR as a function of Mgas]
-        return self.SFR_class.SFR(Mgas=self.Mgas_v, Mtot=self.Mtot, timestep_n=timestep_n) # Function: SFR(Mgas)
-    
     '''
     class OneZone_Plots(Setup):
     """

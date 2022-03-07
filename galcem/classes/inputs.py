@@ -51,7 +51,7 @@ class Inputs:
         self.custom_SNIaDTD = None
 
         self.inf_option = None # or 'two-infall'
-        self.IMF_option = 'Salpeter55' #'Kroupa03' or 'Kroupa01' 
+        self.IMF_option = 'Salpeter55' #'Kroupa03' #'Kroupa01'  
         self.SFR_option = 'SFRgal' # or 'CSFR'
         self.CSFR_option = None # e.g., 'md14'. 
         self.SNIaDTD_option = 'GreggioRenzini83' # 'RuizMannucci01'
@@ -120,7 +120,7 @@ class Inputs:
         	'UrsaMinor': 11}
         self.wind_efficiency = 0 # override: no overflow in this run
         
-        _dir = os.path.dirname(__file__)
+        _dir = os.path.join(os.path.dirname( __file__ ), '..')
         self.p98_t14_df = pd.read_csv(_dir+'/input/starlifetime/portinari98table14.dat')
         self.p98_t14_df.columns = [name.replace('#M','mass').replace('Z=','') 
                                             for name in self.p98_t14_df.columns]
