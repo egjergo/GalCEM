@@ -112,7 +112,7 @@ class Stellar_Lifetimes:
         self.Z_names = ['Z0004', 'Z008', 'Z02', 'Z05']
         self.Z_binned = [0.0004, 0.008, 0.02, 0.05]
         self.Z_bins = [0.001789, 0.012649, 0.031623] # log-avg'd Z_binned
-        self.s_mass = self.IN.s_lifetimes_p98['M']
+        self.s_mass = self.IN.s_lifetimes_p98['M'].values
     
     def interp_tau(self, idx):
         tau = self.IN.s_lifetimes_p98[self.Z_names[idx]] / 1e9
@@ -167,7 +167,7 @@ class Infall:
         Analytical implicit function of an exponentially decaying infall.
         Only depends on time (in Gyr)
         '''
-        return lambda t: np.exp(-t / self.IN.tau_inf[self.morphology])
+        return lambda t: np.exp(-t / self.IN.tau_inf)
         
     def two_infall(self):
         '''
@@ -192,7 +192,7 @@ class Infall:
         USED IN:
             inf() and SFR()
         """
-        return np.divide(self.IN.M_inf[self.morphology], scipy.integrate.quad(self.infall_func(),
+        return np.divide(self.IN.M_inf, scipy.integrate.quad(self.infall_func(),
                              self.time[0], self.IN.age_Galaxy)[0])
 
     def inf(self):
@@ -291,14 +291,14 @@ class Star_Formation_Rate:
     def SFRgal(self, k=None, Mgas=[], Mtot=[], timestep_n=0): 
         ''' Talbot & Arnett (1975)'''
         k = self.IN.k_SFR if k is None else k
-        return np.multiply(self.IN.nu[self.morphology]  * (Mgas[timestep_n])**(k) 
+        return np.multiply(self.IN.nu  * (Mgas[timestep_n])**(k) 
             / (Mtot[timestep_n])**(k-1), self.IN.SFR_rescaling)
     
     
     def SFR_G(self, k=None, G=[], Mtot=[], timestep_n=0): 
         ''' Talbot & Arnett (1975)'''
         k = self.IN.k_SFR if k is None else k
-        return np.multiply(self.IN.nu[self.morphology]  * (G[timestep_n])**(k))
+        return np.multiply(self.IN.nu  * (G[timestep_n])**(k))
             #/ (Mtot[timestep_n])**(k-1), self.IN.SFR_rescaling)
     
     def CSFR(self):

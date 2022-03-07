@@ -16,7 +16,7 @@ import os
 "   __      Yields                             "
 "        __        Yields_BBN                     "
 "        __        Yields_SNIa                    "
-"        __        Yields_Massive                 "
+"        __        Yields_SNII                 "
 "        __        Yields_LIMs                    "
 "                                              "
 """"""""""""""""""""""""""""""""""""""""""""""""
@@ -75,7 +75,7 @@ class Isotopes:
             extract_yield_vector[idx] = yield_channel.yields[i] 
         return extract_yield_vector
 
-    def construct_yield_Massive(self, yield_channel, ZA_sorted, iso):
+    def construct_yield_SNII(self, yield_channel, ZA_sorted, iso):
         dummy = np.zeros((4,3,9))
         if np.intersect1d(np.where(yield_channel.elemZ == ZA_sorted[iso,0]), 
                                  np.where(yield_channel.elemA == ZA_sorted[iso,1])):
@@ -138,7 +138,7 @@ class Concentrations:
     def extract_ZA_pairs_SNIa(self, yields):
         return np.column_stack((yields.elemZ, yields.elemA))
     
-    def extract_ZA_pairs_Massive(self, yields):
+    def extract_ZA_pairs_SNII(self, yields):
         return np.column_stack((yields.elemZ, yields.elemA))
         
     def extract_ZA_pairs_LIMs(self, yields):
@@ -254,13 +254,13 @@ class Yields_SNIa(Yields):
             self.elemZ = self.tables['elemZ']
 
                 
-class Yields_Massive(Yields):
+class Yields_SNII(Yields):
     '''
-    Yields by massive stars, from Limongi & Chieffi (2018) by default.
+    Yields by SNII stars, from Limongi & Chieffi (2018) by default.
     '''
     def __init__(self, IN, option=None):
         self.IN = IN
-        self.option = self.IN.yields_massive_option if option is None else option
+        self.option = self.IN.yields_SNII_option if option is None else option
         self.rotationalVelocity_bins = None
         super().__init__()
 
@@ -274,8 +274,8 @@ class Yields_Massive(Yields):
             yieldsTable = []
             headers = []
             
-            with open(yd + 'tab_yieldstot_iso_exp.dec', 'r') as yieldsMassive:
-                for line in yieldsMassive:
+            with open(yd + 'tab_yieldstot_iso_exp.dec', 'r') as yieldsSNII:
+                for line in yieldsSNII:
                     if 'ele' not in line:
                         types = np.concatenate([['<U4', 'i4', 'i4'], (len(headers[-1]) - 3) * ['f8']])
                         dtypes = list(zip(headers[-1],types))

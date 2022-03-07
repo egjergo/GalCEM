@@ -1,5 +1,6 @@
 # I only achieve simplicity with enormous effort (Clarice Lispector)
 import time
+#import ruamel.yaml
 import numpy as np
 import scipy.integrate as integr
 from scipy.interpolate import *
@@ -7,12 +8,12 @@ import os
 import pickle
 
 from .classes.morphology import Auxiliary,Stellar_Lifetimes,Infall,Star_Formation_Rate,Initial_Mass_Function
-from .classes.yields import Isotopes,Yields_LIMs,Yields_Massive,Yields_SNIa,Yields_BBN,Concentrations
+from .classes.yields import Isotopes,Yields_LIMs,Yields_SNII,Yields_SNIa,Yields_BBN,Concentrations
 from .classes.integration import Wi
 
 class Setup:
     """
-    shared init
+    shared initial setup for both the OneZone and Plots classes
     """
     def __init__(self, IN, outdir='runs/myrun/'):
         self._dir_out = outdir if outdir[-1]=='/' else outdir+'/'
@@ -23,39 +24,42 @@ class Setup:
         self.IN = IN
         self.aux = Auxiliary()
         self.lifetime_class = Stellar_Lifetimes(self.IN)
+        
         # Setup
         Ml = self.lifetime_class.s_mass[0] # Lower limit stellar masses [Msun] 
         Mu = self.lifetime_class.s_mass[-1] # Upper limit stellar masses [Msun]
         self.mass_uniform = np.linspace(Ml, Mu, num = self.IN.num_MassGrid)
-        #self.time_uniform = np.arange(IN.time_start, IN.time_end, IN.nTimeStep)
-        #self.time_logspace = np.logspace(np.log10(IN.time_start), np.log10(IN.time_end), num=IN.numTimeStep)
-        self.time_uniform = np.arange(self.IN.time_start, self.IN.age_Galaxy, self.IN.nTimeStep)
+        self.time_logspace = np.logspace(np.log10(IN.time_start), np.log10(IN.time_end), num=IN.numTimeStep)
+        self.time_uniform = np.arange(self.IN.time_start, self.IN.age_Galaxy, self.IN.nTimeStep) # np.arange(IN.time_start, IN.time_end, IN.nTimeStep)
         self.time_logspace = np.logspace(np.log10(self.IN.time_start), np.log10(self.IN.age_Galaxy), num=self.IN.numTimeStep)
         self.time_chosen = self.time_uniform
         self.idx_age_Galaxy = self.aux.find_nearest(self.time_chosen, self.IN.age_Galaxy)
         # Surface density for the disk. The bulge goes as an inverse square law
-        surf_density_Galaxy = self.IN.sd / np.exp(self.IN.r / self.IN.Reff[self.IN.morphology]) #sigma(t_G) before eq(7) not used so far !!!!!!!
+        surf_density_Galaxy = self.IN.sd / np.exp(self.IN.r / self.IN.Reff) #sigma(t_G) before eq(7) not used so far !!!!!!!
         infall_class = Infall(self.IN, morphology=self.IN.morphology, time=self.time_chosen)
         self.infall = infall_class.inf()
         self.SFR_class = Star_Formation_Rate(self.IN, self.IN.SFR_option, self.IN.custom_SFR)
         IMF_class = Initial_Mass_Function(Ml, Mu, self.IN, self.IN.IMF_option, self.IN.custom_IMF)
         self.IMF = IMF_class.IMF() #() # Function @ input stellar mass
+        
         # Initialize Yields
         isotope_class = Isotopes(self.IN)
         self.yields_LIMs_class = Yields_LIMs(self.IN)
         self.yields_LIMs_class.import_yields()
-        yields_Massive_class = Yields_Massive(self.IN)
-        yields_Massive_class.import_yields()
+        yields_SNII_class = Yields_SNII(self.IN)
+        yields_SNII_class.import_yields()
         self.yields_SNIa_class = Yields_SNIa(self.IN)
         self.yields_SNIa_class.import_yields()
         yields_BBN_class = Yields_BBN(self.IN)
         yields_BBN_class.import_yields()
+        
         # Initialize ZA_all
         self.c_class = Concentrations(self.IN)
         ZA_LIMs = self.c_class.extract_ZA_pairs_LIMs(self.yields_LIMs_class)
         ZA_SNIa = self.c_class.extract_ZA_pairs_SNIa(self.yields_SNIa_class)
-        ZA_Massive = self.c_class.extract_ZA_pairs_Massive(yields_Massive_class)
-        ZA_all = np.vstack((ZA_LIMs, ZA_SNIa, ZA_Massive))
+        ZA_SNII = self.c_class.extract_ZA_pairs_SNII(yields_SNII_class)
+        ZA_all = np.vstack((ZA_LIMs, ZA_SNIa, ZA_SNII))
+        
         # Initialize Global tracked quantities
         self.Infall_rate = self.infall(self.time_chosen)
         self.ZA_sorted = self.c_class.ZA_sorted(ZA_all) # [Z, A] VERY IMPORTANT! 321 isotopes with yields_SNIa_option = 'km20', 192 isotopes for 'i99' 
@@ -83,26 +87,12 @@ class Setup:
         self.Rate_LIMs = self.IN.epsilon * np.ones(len(self.time_chosen)) 
         self.Rate_SNIa = self.IN.epsilon * np.ones(len(self.time_chosen)) 
         self.Rate_NSM = self.IN.epsilon * np.ones(len(self.time_chosen)) 
+        
         # Load Interpolation Models
         self._dir = os.path.dirname(__file__)
-        self.X_lc18, self.Y_lc18, self.models_lc18, self.averaged_lc18 = self.load_processed_yields(func_name='lc18', loc=self._dir + '/input/yields/snii/lc18/tab_R', df_list=['X', 'Y', 'models', 'avgmassfrac'])
-        self.X_k10, self.Y_k10, self.models_k10, self.averaged_k10 = self.load_processed_yields(func_name='k10', loc=self._dir + '/input/yields/lims/k10', df_list=['X', 'Y', 'models', 'avgmassfrac'])
-        self.Y_i99 = self.load_processed_yields_snia(func_name='i99', loc=self._dir + '/input/yields/snia/i99', df_list='Y')
-    
-class OneZone(Setup):
-    """
-    OneZone class
-    
-    In (Input): an Input configuration instance 
-    """
-    def __init__(self, IN, outdir = 'runs/mygcrun/'):
-        self.tic = []
-        super().__init__(IN, outdir=outdir)
-        self.tic.append(time.process_time())
-        # Record load time
-        self.tic.append(time.process_time())
-        package_loading_time = self.tic[-1]
-        print('Package lodaded in %.1e seconds.'%package_loading_time)   
+        self.X_lc18, self.Y_lc18, self.models_lc18, self.averaged_lc18 = self.load_processed_yields(func_name=self.IN.yields_SNII_option, loc=self._dir + '/input/yields/snii/'+ self.IN.yields_SNII_option + '/tab_R', df_list=['X', 'Y', 'models', 'avgmassfrac'])
+        self.X_k10, self.Y_k10, self.models_k10, self.averaged_k10 = self.load_processed_yields(func_name=self.IN.yields_LIMs_option, loc=self._dir + '/input/yields/lims/' + self.IN.yields_LIMs_option, df_list=['X', 'Y', 'models', 'avgmassfrac'])
+        self.Y_i99 = self.load_processed_yields_snia(func_name=self.IN.yields_SNIa_option, loc=self._dir + '/input/yields/snia/' + self.IN.yields_SNIa_option, df_list='Y')
         
     def load_processed_yields(self,func_name, loc, df_list):
         df_dict = {}
@@ -117,13 +107,30 @@ class OneZone(Setup):
             with open('%s/processed/%s.pkl'%(loc,df_l), 'rb') as pickle_file:
                 df_dict[df_l] = pickle.load(pickle_file)
         return df_dict[df_list[0]]
+        
+class OneZone(Setup):
+    """
+    OneZone class
+    
+    In (Input): an Input configuration instance 
+    """
+    def __init__(self, IN, outdir = 'runs/mygcrun/'):
+        self.tic = []
+        super().__init__(IN, outdir=outdir)
+        self.tic.append(time.process_time())
+        # Record load time
+        self.tic.append(time.process_time())
+        package_loading_time = self.tic[-1]
+        print('Package lodaded in %.1e seconds.'%package_loading_time)   
     
     def main(self):
-        """
-        Run the OneZone program
-        """
+        ''' Run the OneZone program '''
         self.tic.append(time.process_time())
         self.file1 = open(self._dir_out + "Terminal_output.txt", "w")
+        pickle.dump(self.IN,open(self._dir_out + 'inputs.pkl','wb'))
+        #with open(self._dir_out + 'inputs.txt', 'w') as yaml_file:
+        #    yaml.dump(self.IN.__dict__, stream=yaml_file, default_flow_style=False)
+        #ruamel.yaml.round_trip_dump(self.IN.__dict__, stream=open(self._dir_out + 'inputs.txt', 'wb'), indent=4) 
         self.evolve()
         self.aux.tic_count(string="Computation time", tic=self.tic)
         #Z_v = np.divide(np.sum(self.Mass_i_v[elemZ_for_metallicity:,:]), Mgas_v)
@@ -141,20 +148,22 @@ class OneZone(Setup):
         self.aux.tic_count(string="Output saved in", tic=self.tic)
         self.file1.close()
     
-    def solve_integral(self, t_n, y_n, n, **kwargs): #Wi_comp,
-        # Explicit general diff eq GCE function
-        # INPUT
-        # t_n        time_chosen[n]
-        # y_n        dependent variable at n
-        # n        index of the timestep
-        # Functions:
-        # Infall rate: [Msun/Gyr]
-        # SFR: [Msun/Gyr]
+    def solve_integral(self, t_n, y_n, n, **kwargs):
+        '''
+        Explicit general diff eq GCE function
+        INPUT
+        t_n        time_chosen[n]
+        y_n        dependent variable at n
+        n        index of the timestep
+        Functions:
+        Infall rate: [Msun/Gyr]
+        SFR: [Msun/Gyr]
+        '''
         Wi_comps = kwargs['Wi_comp'] # [list of 2-array lists] #Wi_comps[0][0].shape=(155,)
         Wi_SNIa = kwargs['Wi_SNIa']
         i = kwargs['i']
         yields = kwargs['yields']
-        channel_switch = ['Massive', 'LIMs']
+        channel_switch = ['SNII', 'LIMs']
         if n <= 0:
             val = self.Infall_rate[n] * self.Xi_inf[i]  - np.multiply(self.SFR_v[n], self.Xi_v[i,n])
         else:
@@ -168,9 +177,9 @@ class OneZone(Setup):
             
             infall_comp = self.Infall_rate[n] * self.Xi_inf[i]
             sfr_comp = self.SFR_v[n] * self.Xi_v[i,n] 
-            self.W_i_comp[i,n,0] = returned[0]
-            self.W_i_comp[i,n,1] = returned[1]
-            self.W_i_comp[i,n,2] = returned[2]
+            self.W_i_comp[i,n,0] = returned[0] / self.IN.nTimeStep # rate
+            self.W_i_comp[i,n,1] = returned[1] / self.IN.nTimeStep # rate
+            self.W_i_comp[i,n,2] = returned[2] / self.IN.nTimeStep # rate
             val = infall_comp  - sfr_comp + np.sum(returned)
             if val < 0.:
                 val = 0.
@@ -179,22 +188,24 @@ class OneZone(Setup):
     def Mgas_func(self, t_n, y_n, n, i=None):
         # Explicit general diff eq GCE function
         # Mgas(t)
-        
         return self.Infall_rate[n] - self.SFR_tn(n) + np.sum(self.W_i_comp[:,n,:])
     
     def Mstar_func(self, t_n, y_n, n, i=None):
         # Mstar(t)
-        return y_n - np.sum(self.W_i_comp[:,n,:]) + self.SFR_tn(n) #* self.IN.nTimeStep
+        return y_n - np.sum(self.W_i_comp[:,n,:]) + self.SFR_tn(n) 
 
     def SFR_tn(self, timestep_n):
-        # Actual SFR employed within the integro-differential equation
-        # Args:
-        #     timestep_n ([int]): [timestep index]
-        # Returns:
-        #     [function]: [SFR as a function of Mgas]
+        '''
+        Actual SFR employed within the integro-differential equation
+        Args:
+            timestep_n ([int]): [timestep index]
+        Returns:
+            [function]: [SFR as a function of Mgas]
+        '''
         return self.SFR_class.SFR(Mgas=self.Mgas_v, Mtot=self.Mtot, timestep_n=timestep_n) # Function: SFR(Mgas)
     
     def phys_integral(self, n):
+        '''Integral for the total physical quantities'''
         self.SFR_v[n] = self.SFR_tn(n)
         #self.Mstar_v[n+1] = self.Mstar_v[n] + self.SFR_v[n] * self.IN.nTimeStep
         self.Mstar_v[n+1] = self.aux.RK4(self.Mstar_func, self.time_chosen[n], self.Mstar_v[n], n, self.IN.nTimeStep) 
@@ -202,6 +213,7 @@ class OneZone(Setup):
         self.Mgas_v[n+1] = self.aux.RK4(self.Mgas_func, self.time_chosen[n], self.Mgas_v[n], n, self.IN.nTimeStep)    
 
     def evolve(self):
+        '''Evolution routine'''
         for n in range(len(self.time_chosen[:self.idx_age_Galaxy])):
             print('time [Gyr] = %.2f'%self.time_chosen[n])
             #self.file1.write('n = %d\n'%n)
@@ -210,8 +222,8 @@ class OneZone(Setup):
             if n > 0.: 
                 Wi_class = Wi(n, self.IN, self.lifetime_class, self.time_chosen, self.Z_v, self.SFR_v, self.IMF, self.yields_SNIa_class, self.models_lc18, self.models_k10, self.ZA_sorted)
                 self.Rate_SNII[n], self.Rate_LIMs[n], self.Rate_SNIa[n] = Wi_class.compute_rates()
-                Wi_comp = [Wi_class.compute("Massive"), Wi_class.compute("LIMs")]
-                #yield_SNII = Wi_class.yield_array('Massive', Wi_class.Massive_mass_grid, Wi_class.Massive_birthtime_grid)
+                Wi_comp = [Wi_class.compute("SNII"), Wi_class.compute("LIMs")]
+                #yield_SNII = Wi_class.yield_array('SNII', Wi_class.SNII_mass_grid, Wi_class.SNII_birthtime_grid)
                 #yield_LIMs = Wi_class.yield_array('LIMs', Wi_class.LIMs_mass_grid, Wi_class.LIMs_birthtime_grid)
                 for i, _ in enumerate(self.ZA_sorted): 
                     self.file1.write('i = %d\n'%i)
@@ -231,80 +243,34 @@ class OneZone(Setup):
             self.Z_v[n] = np.divide(np.sum(self.Mass_i_v[:,n]), self.Mgas_v[n])
         self.Xi_v[:,-1] = np.divide(self.Mass_i_v[:,-1], self.Mgas_v[-1]) 
 
-    '''
-    class OneZone_Plots(Setup):
+
+class Plots(Setup):
     """
     PLOTTING
     """    
-    '''
-    #def __init__(self, IN, outdir='runs/mygcrun/'):
-    #    super().__init__(IN, outdir=outdir)
+    def __init__(self, outdir = 'runs/mygcrun/'):
+        self.tic = []
+        IN = pickle.load(open(outdir + 'inputs.pkl','rb'))
+        super().__init__(IN, outdir=outdir)
+        self.tic.append(time.process_time())
+        # Record load time
+        self.tic.append(time.process_time())
+        package_loading_time = self.tic[-1]
+        print('Lodaded the plotting class in %.1e seconds.'%package_loading_time)   
         
     def plots(self):
         self.tic.append(time.process_time())
+        print('Starting to plot')
+        self.iso_abundance()
         self.iso_evolution()
         self.iso_evolution_comp()
-        self.iso_abundance()
         self.observational()
         self.observational_lelemZ()
-        self.ZA_sorted_plot()
         self.phys_integral_plot()
         self.lifetimeratio_test_plot()
+        self.ZA_sorted_plot()
         # self.elem_abundance() # currently has errors
         self.aux.tic_count(string="Plots saved in", tic=self.tic)
-        
-    def phys_integral_plot(self, logAge=False):
-        # Requires running "phys_integral()" in onezone.py beforehand
-        from matplotlib import pyplot as plt
-        plt.style.use(self._dir+'/galcem.mplstyle')
-        phys = np.loadtxt(self._dir_out + 'phys.dat')
-        time_chosen = phys[:,0]
-        Mtot = phys[:,1]
-        Mgas_v = phys[:,2]
-        Mstar_v = phys[:,3]
-        SFR_v = phys[:,4]
-        Infall_rate = phys[:,5] 
-        Z_v = phys[:,6]
-        G_v = phys[:,7]
-        S_v = phys[:,8] 
-        Rate_SNII = phys[:,9]
-        Rate_SNIa = phys[:,10]
-        Rate_LIMs = phys[:,11]
-        fig, axs = plt.subplots(1, 2, figsize=(12,7))
-        time_plot = time_chosen
-        xscale = '_lin'
-        if logAge == True:
-            time_plot = np.log10(time_chosen)
-            xscale = '_log'
-        axs[0].hlines(self.IN.M_inf[self.IN.morphology], 0, self.IN.age_Galaxy, label=r'$M_{gal,f}$', linewidth = 1, linestyle = '-.')
-        axs[1].vlines(13.7, self.IN.MW_SFR-1., self.IN.MW_SFR-0.2, label=r'MW$_{SFR}$ CP11', linewidth = 3, linestyle = '-', color='red', alpha=0.8)
-        axs[0].semilogy(time_plot, Mtot, label=r'$M_{tot}$', linewidth=2)
-        axs[0].semilogy(time_plot, Mstar_v, label= r'$M_{star}$', linewidth=2)
-        axs[0].semilogy(time_plot, Mgas_v, label= r'$M_{gas}$', linewidth=2)
-        axs[0].semilogy(time_plot, Mstar_v + Mgas_v, label= r'$M_g + M_s$', linestyle = '--')
-        axs[0].semilogy(time_plot, self.Mstar_test, label= r'$M_{star,t}$', linewidth=2, linestyle = ':')
-        axs[1].semilogy(time_plot[:-1], np.divide(Rate_SNII[:-1],1e9), label= r'SNII', color = 'black', linestyle=':', linewidth=3)
-        axs[1].semilogy(time_plot[:-1], np.divide(Rate_SNIa[:-1],1e9), label= r'SNIa', color = 'blue', linestyle=':', linewidth=3)
-        axs[1].semilogy(time_plot[:-1], np.divide(Rate_LIMs[:-1],1e9), label= r'LIMs', color = 'magenta', linestyle=':', linewidth=3)
-        axs[1].semilogy(time_plot[:-1], Infall_rate[:-1], label= r'Infall', color = 'cyan', linestyle='-', linewidth=3)
-        axs[1].semilogy(time_plot[:-1], SFR_v[:-1], label= r'SFR', color = 'red', linestyle='--', linewidth=3)
-        if not logAge:
-            axs[0].set_xlim(0,13.8)
-            axs[1].set_xlim(0,13.8)
-        axs[0].set_ylim(1e8, 1e11)
-        axs[1].set_ylim(1e-2, 1e2)
-        axs[0].tick_params(right=True, which='both', direction='in')
-        axs[1].tick_params(right=True, which='both', direction='in')
-        axs[0].set_xlabel(r'Age [Gyr]', fontsize = 20)
-        axs[1].set_xlabel(r'Age [Gyr]', fontsize = 20)
-        axs[0].set_ylabel(r'Masses [$M_{\odot}$]', fontsize = 20)
-        axs[1].set_ylabel(r'Rates [$M_{\odot}/yr$]', fontsize = 20)
-        #axs[0].set_title(r'$f_{SFR} = $ %.2f' % (self.IN.SFR_rescaling), fontsize=15)
-        axs[0].legend(fontsize=18, loc='lower center', ncol=2, frameon=True, framealpha=0.8)
-        axs[1].legend(fontsize=18, loc='upper center', ncol=2, frameon=True, framealpha=0.8)
-        plt.tight_layout()
-        plt.show(block=False)
-        plt.savefig(self._dir_out_figs + 'total_physical'+str(xscale)+'.pdf')
         
     def ZA_sorted_plot(self, cmap_name='magma_r', cbins=10): # angle = 2 * np.pi / np.arctan(0.4) !!!!!!!
         from matplotlib import cm,pyplot as plt
@@ -341,7 +307,87 @@ class OneZone(Setup):
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'tracked_elements.pdf')
 
-    def iso_evolution(self, figsize=(32,10)):
+    def lifetimeratio_test_plot(self,colormap='Paired'):
+        from matplotlib import pyplot as plt
+        plt.style.use(self._dir+'/galcem.mplstyle')
+        fig, ax = plt.subplots(1,1, figsize=(7,5))
+        divid05 = np.divide(self.IN.s_lifetimes_p98['Z05'], self.IN.s_lifetimes_p98['Z0004'])
+        divid02 = np.divide(self.IN.s_lifetimes_p98['Z02'], self.IN.s_lifetimes_p98['Z0004'])
+        divid008 = np.divide(self.IN.s_lifetimes_p98['Z008'], self.IN.s_lifetimes_p98['Z0004'])
+        ax.semilogx(self.IN.s_lifetimes_p98['M'], divid05, color='blue', label='Z = 0.05')
+        ax.semilogx(self.IN.s_lifetimes_p98['M'], divid02, color='blue', linestyle='--', label='Z = 0.02')
+        ax.semilogx(self.IN.s_lifetimes_p98['M'], divid008, color='blue', linestyle=':', label='Z = 0.008')
+        ax.hlines(1, 0.6,120, color='orange', label='ratio=1')
+        ax.vlines(3, 0.75,2.6, color='red', label=r'$3 M_{\odot}$')
+        ax.vlines(6, 0.75,2.6, color='red', alpha=0.6, linestyle='--', label=r'$6 M_{\odot}$')
+        ax.vlines(9, 0.75,2.6, color='red', alpha=0.3, linestyle = ':', label=r'$9 M_{\odot}$')
+        cm = plt.cm.get_cmap(colormap)
+        sc=ax.scatter(self.IN.s_lifetimes_p98['M'], divid05, c=np.log10(self.IN.s_lifetimes_p98['Z05']), cmap=cm, s=50)
+        sc=ax.scatter(self.IN.s_lifetimes_p98['M'], divid02, c=np.log10(self.IN.s_lifetimes_p98['Z05']), cmap=cm, s=50)
+        sc=ax.scatter(self.IN.s_lifetimes_p98['M'], divid008, c=np.log10(self.IN.s_lifetimes_p98['Z05']), cmap=cm, s=50)
+        fig.colorbar(sc, label=r'$\tau(M_*)$')
+        ax.legend(loc='best', frameon=False, fontsize=13)
+        ax.set_ylabel(r'$\tau(X)/\tau(Z=0.0004)$', fontsize=15)
+        ax.set_xlabel('Mass', fontsize=15)
+        ax.set_ylim(0.81,1.95)
+        ax.set_xlim(0.6, 120)
+        fig.tight_layout()
+        plt.savefig(self._dir_out_figs + 'tauratio.pdf')
+     
+    def phys_integral_plot(self, logAge=False):
+        # Requires running "phys_integral()" in onezone.py beforehand
+        from matplotlib import pyplot as plt
+        plt.style.use(self._dir+'/galcem.mplstyle')
+        phys = np.loadtxt(self._dir_out + 'phys.dat')
+        time_chosen = phys[:,0]
+        Mtot = phys[:,1]
+        Mgas_v = phys[:,2]
+        Mstar_v = phys[:,3]
+        SFR_v = phys[:,4]
+        Infall_rate = phys[:,5] 
+        Z_v = phys[:,6]
+        G_v = phys[:,7]
+        S_v = phys[:,8] 
+        Rate_SNII = phys[:,9]
+        Rate_SNIa = phys[:,10]
+        Rate_LIMs = phys[:,11]
+        fig, axs = plt.subplots(1, 2, figsize=(12,7))
+        time_plot = time_chosen
+        xscale = '_lin'
+        if logAge == True:
+            time_plot = np.log10(time_chosen)
+            xscale = '_log'
+        axs[0].hlines(self.IN.M_inf, 0, self.IN.age_Galaxy, label=r'$M_{gal,f}$', linewidth = 1, linestyle = '-.')
+        axs[1].vlines(13.7, self.IN.MW_SFR-.4, self.IN.MW_SFR+0.4, label=r'MW$_{SFR}$ CP11', linewidth = 3, linestyle = '-', color='red', alpha=0.8)
+        axs[0].semilogy(time_plot, Mtot, label=r'$M_{tot}$', linewidth=2)
+        axs[0].semilogy(time_plot, Mstar_v, label= r'$M_{star}$', linewidth=2)
+        axs[0].semilogy(time_plot, Mgas_v, label= r'$M_{gas}$', linewidth=2)
+        axs[0].semilogy(time_plot, Mstar_v + Mgas_v, label= r'$M_g + M_s$', linestyle = '--')
+        axs[0].semilogy(time_plot, self.Mstar_test, label= r'$M_{star,t}$', linewidth=2, linestyle = ':')
+        axs[1].semilogy(time_plot[:-1], np.divide(Rate_SNII[:-1],1e9), label= r'SNII', color = 'black', linestyle=':', linewidth=3)
+        axs[1].semilogy(time_plot[:-1], np.divide(Rate_SNIa[:-1],1e9), label= r'SNIa', color = 'blue', linestyle=':', linewidth=3)
+        axs[1].semilogy(time_plot[:-1], np.divide(Rate_LIMs[:-1],1e9), label= r'LIMs', color = 'magenta', linestyle=':', linewidth=3)
+        axs[1].semilogy(time_plot[:-1], Infall_rate[:-1], label= r'Infall', color = 'cyan', linestyle='-', linewidth=3)
+        axs[1].semilogy(time_plot[:-1], SFR_v[:-1], label= r'SFR', color = 'red', linestyle='--', linewidth=3)
+        if not logAge:
+            axs[0].set_xlim(0,13.8)
+            axs[1].set_xlim(0,13.8)
+        axs[0].set_ylim(1e8, 1e11)
+        axs[1].set_ylim(1e-2, 1e2)
+        axs[0].tick_params(right=True, which='both', direction='in')
+        axs[1].tick_params(right=True, which='both', direction='in')
+        axs[0].set_xlabel(r'Age [Gyr]', fontsize = 20)
+        axs[1].set_xlabel(r'Age [Gyr]', fontsize = 20)
+        axs[0].set_ylabel(r'Masses [$M_{\odot}$]', fontsize = 20)
+        axs[1].set_ylabel(r'Rates [$M_{\odot}/yr$]', fontsize = 20)
+        #axs[0].set_title(r'$f_{SFR} = $ %.2f' % (self.IN.SFR_rescaling), fontsize=15)
+        axs[0].legend(fontsize=18, loc='lower center', ncol=2, frameon=True, framealpha=0.8)
+        axs[1].legend(fontsize=18, loc='upper center', ncol=2, frameon=True, framealpha=0.8)
+        plt.tight_layout()
+        plt.show(block=False)
+        plt.savefig(self._dir_out_figs + 'total_physical'+str(xscale)+'.pdf')
+        
+    def iso_evolution(self, figsize=(40,13)):
         from matplotlib import pyplot as plt
         plt.style.use(self._dir+'/galcem.mplstyle')
         import matplotlib.ticker as ticker
@@ -362,7 +408,7 @@ class OneZone(Setup):
                 ax.plot(timex, Masses[i])
                 ax.annotate('%s(%d,%d)'%(self.ZA_symb_list[i],Z[i],A[i]), xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
                 ax.set_ylim(-7.5, 10.5)
-                ax.set_xlim(0,13.8)
+                ax.set_xlim(0.1,13.8)
                 ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
                 ax.tick_params(width = 1, length = 2, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
                 ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=1))
@@ -381,7 +427,7 @@ class OneZone(Setup):
                     axs[i,j].set_xticklabels([])
         axs[nrow//2,0].set_ylabel(r'Masses [$M_{\odot}$]', fontsize = 15)
         axs[nrow-1, ncol//2].set_xlabel('Age [Gyr]', fontsize = 15)
-        plt.tight_layout(rect = [0.02, 0, 1, 1])
+        plt.tight_layout(rect = [0.05, 0, 1, .98])
         plt.subplots_adjust(wspace=0., hspace=0.)
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'iso_evolution.pdf')
@@ -399,7 +445,7 @@ class OneZone(Setup):
         #W_i_comp +=  100.
         W_i_comp = np.asarray(W_i_comp, dtype=float)
         W_i_comp = np.log10(W_i_comp)
-        Mass_massive = W_i_comp[:,:,0]
+        Mass_SNII = W_i_comp[:,:,0]
         Mass_AGB = W_i_comp[:,:,1]
         Mass_SNIa = W_i_comp[:,:,2]
         timex = phys[:,0]
@@ -414,7 +460,7 @@ class OneZone(Setup):
         for i, ax in enumerate(axs.flat):
             if i < len(Z):
                 #ax.plot(timex, Masses[i], color='black')
-                ax.plot(timex, Mass_massive[i], color='black', linestyle='-.', linewidth=3, alpha=0.5, label='SNII')
+                ax.plot(timex, Mass_SNII[i], color='black', linestyle='-.', linewidth=3, alpha=0.5, label='SNII')
                 ax.plot(timex, Mass_AGB[i], color='magenta', linestyle='--', linewidth=1, alpha=0.5, label='LIMs')
                 ax.plot(timex, Mass_SNIa[i], color='blue', linestyle=':', linewidth=2, alpha=0.5, label='SNIa')
                 ax.annotate('%s(%d,%d)'%(self.ZA_symb_list[i],Z[i],A[i]), xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
@@ -445,15 +491,14 @@ class OneZone(Setup):
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'iso_evolution_comp.pdf')
 
-    def iso_abundance(self, figsize=(32,10), elem_idx=99, c=5): # elem_idx=99 is Fe56, elem_idx=0 is H.
+    def iso_abundance(self, figsize=(40,13), elem_idx=99, c=5): 
         from matplotlib import pyplot as plt
         plt.style.use(self._dir+'/galcem.mplstyle')
         import matplotlib.ticker as ticker
         Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
-        #Masses = np.log10(np.divide(Mass_i[:,2:], Mass_i[elem_idx,2:]))
-        Fe = np.sum(Mass_i[np.where(self.ZA_sorted[:,0]==26)[0], c:], axis=0)
+        elem_idx = np.where(self.ZA_sorted[:,0]==26)[0]
+        Fe = np.sum(Mass_i[elem_idx, c:], axis=0)
         Masses = np.log10(np.divide(Mass_i[:,c:], Fe))
-        #XH = np.log10(np.divide(Mass_i[elem_idx,2:], Mass_i[0,2:])) 
         XH = np.log10(np.divide(Fe, Mass_i[0,c:])) 
         Z = self.ZA_sorted[:,0]
         A = self.ZA_sorted[:,1]
@@ -486,8 +531,9 @@ class OneZone(Setup):
                 if i != nrow-1:
                     axs[i,j].set_xticklabels([])
         axs[nrow//2,0].set_ylabel('Absolute Abundances', fontsize = 15)
-        axs[nrow-1, ncol//2].set_xlabel('[%s%s/H]'%(self.ZA_symb_list[elem_idx],A[elem_idx]), fontsize = 15)
-        plt.tight_layout(rect = [0.02, 0, 1, 1])
+        #axs[nrow-1, ncol//2].set_xlabel('[%s%s/H]'%(A[elem_idx][0], self.ZA_symb_list[elem_idx][0]), fontsize = 15)
+        axs[nrow-1, ncol//2].set_xlabel('[%s/H]'%(self.ZA_symb_list[elem_idx][0]), fontsize = 15)
+        plt.tight_layout(rect = [0.05, 0, 1, 1])
         plt.subplots_adjust(wspace=0., hspace=0.)
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'iso_abundance.pdf')
@@ -564,33 +610,7 @@ class OneZone(Setup):
         fig.subplots_adjust(wspace=0., hspace=0.)
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'elem_abundance.pdf')
-
-    def lifetimeratio_test_plot(self,colormap='Paired'):
-        from matplotlib import pyplot as plt
-        plt.style.use(self._dir+'/galcem.mplstyle')
-        fig, ax = plt.subplots(1,1, figsize=(7,5))
-        divid05 = np.divide(self.IN.s_lifetimes_p98['Z05'], self.IN.s_lifetimes_p98['Z0004'])
-        divid02 = np.divide(self.IN.s_lifetimes_p98['Z02'], self.IN.s_lifetimes_p98['Z0004'])
-        divid008 = np.divide(self.IN.s_lifetimes_p98['Z008'], self.IN.s_lifetimes_p98['Z0004'])
-        ax.semilogx(self.IN.s_lifetimes_p98['M'], divid05, color='blue', label='Z = 0.05')
-        ax.semilogx(self.IN.s_lifetimes_p98['M'], divid02, color='blue', linestyle='--', label='Z = 0.02')
-        ax.semilogx(self.IN.s_lifetimes_p98['M'], divid008, color='blue', linestyle=':', label='Z = 0.008')
-        ax.hlines(1, 0.6,120, color='orange', label='ratio=1')
-        ax.vlines(3, 0.75,2.6, color='red', label=r'$3 M_{\odot}$')
-        ax.vlines(6, 0.75,2.6, color='red', alpha=0.6, linestyle='--', label=r'$6 M_{\odot}$')
-        ax.vlines(9, 0.75,2.6, color='red', alpha=0.3, linestyle = ':', label=r'$9 M_{\odot}$')
-        cm = plt.cm.get_cmap(colormap)
-        sc=ax.scatter(self.IN.s_lifetimes_p98['M'], divid05, c=np.log10(self.IN.s_lifetimes_p98['Z05']), cmap=cm, s=50)
-        sc=ax.scatter(self.IN.s_lifetimes_p98['M'], divid02, c=np.log10(self.IN.s_lifetimes_p98['Z05']), cmap=cm, s=50)
-        sc=ax.scatter(self.IN.s_lifetimes_p98['M'], divid008, c=np.log10(self.IN.s_lifetimes_p98['Z05']), cmap=cm, s=50)
-        fig.colorbar(sc, label=r'$\tau(M_*)$')
-        ax.legend(loc='best', frameon=False, fontsize=13)
-        ax.set_ylabel(r'$\tau(X)/\tau(Z=0.0004)$', fontsize=15)
-        ax.set_xlabel('Mass', fontsize=15)
-        ax.set_ylim(0.81,1.95)
-        fig.tight_layout()
-        plt.savefig(self._dir_out_figs + 'tauratio.pdf')
-        
+   
     def observational(self, figsiz = (32,10), c=5):
         import glob
         import itertools
@@ -782,3 +802,4 @@ class OneZone(Setup):
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'elem_obs_lelemZ.pdf')
         return None
+    
