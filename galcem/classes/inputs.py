@@ -85,20 +85,22 @@ class Inputs:
         self.wind_efficiency = 0 # override: no overflow #self.default_params('wind_efficiency', self.morphology)
         
         _dir = os.path.join(os.path.dirname( __file__ ), '..')
-        self.p98_t14_df = pd.read_csv(_dir+'/input/starlifetime/portinari98table14.dat')
-        self.p98_t14_df.columns = [name.replace('#M','mass').replace('Z=','') 
-                                            for name in self.p98_t14_df.columns]
-        self.p98_t14_df = pd.melt(self.p98_t14_df, id_vars='mass', 
-                                        value_vars=list(self.p98_t14_df.columns[1:]), var_name='metallicity', value_name='lifetimes_yr')
-        self.p98_t14_df['mass_log10'] = np.log10(self.p98_t14_df['mass'])
-        self.p98_t14_df['metallicity'] = self.p98_t14_df['metallicity'].astype(float)
-        self.p98_t14_df['lifetimes_log10_Gyr'] = np.log10(self.p98_t14_df['lifetimes_yr']/1e9)
-        self.p98_t14_df['lifetimes_Gyr'] = self.p98_t14_df['lifetimes_yr']/1e9
-        self.s_lifetimes_p98 = pd.read_csv(_dir+'/input/starlifetime/portinari98table14.dat')
-        self.s_lifetimes_p98.columns = [name.replace('#M','M').replace('Z=0.','Z') for name in self.s_lifetimes_p98.columns]
-        self.time_start = np.min([self.s_lifetimes_p98[Z] for Z in ['Z0004', 'Z008', 'Z02', 'Z05']]) / 1e9 # [Gyr]
-        self.time_end = np.max([self.s_lifetimes_p98[Z] for Z in ['Z0004', 'Z008', 'Z02', 'Z05']]) / 1e9 # [Gyr]
-
+        p98_t14_df = pd.read_csv(_dir+'/input/starlifetime/portinari98table14.dat')
+        p98_t14_df.columns = [name.replace('#M','mass').replace('Z=','') 
+                                            for name in p98_t14_df.columns]
+        p98_t14_df = pd.melt(p98_t14_df, id_vars='mass', 
+                                        value_vars=list(p98_t14_df.columns[1:]), var_name='metallicity', value_name='lifetimes_yr')
+        p98_t14_df['mass_log10'] = np.log10(p98_t14_df['mass'])
+        p98_t14_df['metallicity'] = p98_t14_df['metallicity'].astype(float)
+        p98_t14_df['lifetimes_log10_Gyr'] = np.log10(p98_t14_df['lifetimes_yr']/1e9)
+        p98_t14_df['lifetimes_Gyr'] = p98_t14_df['lifetimes_yr']/1e9
+        s_lifetimes_p98 = pd.read_csv(_dir+'/input/starlifetime/portinari98table14.dat')
+        s_lifetimes_p98.columns = [name.replace('#M','M').replace('Z=0.','Z') for name in s_lifetimes_p98.columns]
+        self.time_start = np.min([s_lifetimes_p98[Z] for Z in ['Z0004', 'Z008', 'Z02', 'Z05']]) / 1e9 # [Gyr]
+        self.time_end = np.max([s_lifetimes_p98[Z] for Z in ['Z0004', 'Z008', 'Z02', 'Z05']]) / 1e9 # [Gyr]
+        self.s_lifetimes_p98 = s_lifetimes_p98
+        self.p98_t14_df = p98_t14_df
+        
         self.asplund1 = pd.read_csv(_dir+'/input/physics/asplund09/table1.dat', sep=',', comment='#')
         #self.asplund1 = self.asplund1.astype({'elemZ': int, 'elemSymb': str})
         self.asplund1['photospheric'] = pd.to_numeric(self.asplund1['photospheric'], errors='coerce')

@@ -2,6 +2,7 @@
 import time
 #import ruamel.yaml
 import numpy as np
+import pandas as pd
 import scipy.integrate as integr
 from scipy.interpolate import *
 import os
@@ -142,9 +143,16 @@ class OneZone(Setup):
         self.tic.append(time.process_time())
         self.file1 = open(self._dir_out + "Terminal_output.txt", "w")
         pickle.dump(self.IN,open(self._dir_out + 'inputs.pkl','wb'))
-        #with open(self._dir_out + 'inputs.txt', 'w') as yaml_file:
-        #    yaml.dump(self.IN.__dict__, stream=yaml_file, default_flow_style=False)
-        #ruamel.yaml.round_trip_dump(self.IN.__dict__, stream=open(self._dir_out + 'inputs.txt', 'wb'), indent=4) 
+        with open(self._dir_out + 'inputs.txt', 'w') as f: 
+            for key, value in self.IN.__dict__.items(): 
+                if type(value) is not pd.DataFrame:
+                    f.write('%s:\t%s\n' % (key, value))
+        with open(self._dir_out + 'inputs.txt', 'a') as f: 
+            for key, value in self.IN.__dict__.items(): 
+                if type(value) is pd.DataFrame:
+                    with open(self._dir_out + 'inputs.txt', 'a') as ff:
+                        ff.write('\n %s:\n'%(key))
+                    value.to_csv(self._dir_out + 'inputs.txt', mode='a', sep='\t', index=True, header=True)
         self.evolve()
         self.aux.tic_count(string="Computation time", tic=self.tic)
         #Z_v = np.divide(np.sum(self.Mass_i_v[elemZ_for_metallicity:,:]), Mgas_v)
@@ -231,7 +239,7 @@ class OneZone(Setup):
         '''Evolution routine'''
         for n in range(len(self.time_chosen[:self.idx_age_Galaxy])):
             print('time [Gyr] = %.2f'%self.time_chosen[n])
-            #self.file1.write('n = %d\n'%n)
+            self.file1.write('n = %d\n'%n)
             self.phys_integral(n)        
             self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
             if n > 0.: 
@@ -241,7 +249,6 @@ class OneZone(Setup):
                 #yield_SNII = Wi_class.yield_array('SNII', Wi_class.SNII_mass_grid, Wi_class.SNII_birthtime_grid)
                 #yield_LIMs = Wi_class.yield_array('LIMs', Wi_class.LIMs_mass_grid, Wi_class.LIMs_birthtime_grid)
                 for i, _ in enumerate(self.ZA_sorted): 
-                    self.file1.write('i = %d\n'%i)
                     Wi_SNIa = self.Rate_SNIa[n] * self.Y_i99[i]
                     if self.X_lc18[i].empty:
                         yields_lc18 = 0.
@@ -378,8 +385,8 @@ class Plots(Setup):
         MW_SFR_xcoord = 13.7
         axs[0].hlines(self.IN.M_inf, 0, self.IN.age_Galaxy, label=r'$M_{gal,f}$', linewidth = 1, linestyle = '-.', color='#8c00ff')
         axt.vlines(MW_SFR_xcoord, self.IN.MW_SFR-.4, self.IN.MW_SFR+0.4, label=r'SFR$_{MW}$ CP11', linewidth = 6, linestyle = '-', color='#ff8c00', alpha=0.8)
-        axt.vlines(MW_SFR_xcoord, self.IN.MW_RSNII[2], self.IN.MW_RSNII[1], label=r'R$_{SNII,MW}$ CP11', linewidth = 6, linestyle = '-', color='#0034ff', alpha=0.8)
-        axt.vlines(MW_SFR_xcoord, self.IN.MW_RSNIa[2], self.IN.MW_RSNIa[1], label=r'R$_{SNIa,MW}$ CP11', linewidth = 6, linestyle = '-', color='#00b3ff', alpha=0.8)
+        axt.vlines(MW_SFR_xcoord, self.IN.MW_RSNII[2], self.IN.MW_RSNII[1], label=r'R$_{SNII,MW}$ M05', linewidth = 6, linestyle = '-', color='#0034ff', alpha=0.8)
+        axt.vlines(MW_SFR_xcoord, self.IN.MW_RSNIa[2], self.IN.MW_RSNIa[1], label=r'R$_{SNIa,MW}$ M05', linewidth = 6, linestyle = '-', color='#00b3ff', alpha=0.8)
         axs[0].semilogy(time_plot, Mstar_v, label= r'$M_{star}$', linewidth=2, color='#ff8c00')
         axs[0].semilogy(time_plot, self.Mstar_test, label= r'$M_{star,t}$', linewidth=2, linestyle = ':', color='#ff8c00')
         axs[0].semilogy(time_plot, Mtot, label=r'$M_{tot}$', linewidth=4, color='black')
