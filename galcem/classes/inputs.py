@@ -53,6 +53,8 @@ class Inputs:
 
         self.sd = 530.96618 # surf density coefficient for the disk (normalized to the MW mass?) 
         self.MW_SFR = 1.9 #+-0.4 [Msun/yr] from Chomiuk & Povich (2011) Galactic SFR (z=0)
+        self.MW_RSNIa = np.divide([1699.5622597959612, 2348.4781118615615, 1013.0199016364531], 1e6/2.8) # 1.4*2 Msun, average SNIa mass
+        self.MW_RSNII = np.divide([7446.483293967046, 10430.201123624402, 4367.610510548821], 1e6/15) # 15 Msun, IMF-averaged mass
         self.Salpeter_IMF_Plaw = 1.35 # IMF Salpeter power law
 
         self.delta_max = 8e-2 # Convergence limit for eq. 28, Portinari+98
