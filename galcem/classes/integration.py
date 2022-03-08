@@ -2,6 +2,17 @@ import numpy as np
 import scipy.interpolate as interp
 import scipy.integrate as integr
 
+""""""""""""""""""""""""""""""""""""""""""""""""
+"                                              "
+"             INTEGRATION CLASSES              "
+"   Contains classes that solve the integral   " 
+"  part of the integro-differential equations  "
+"                                              "
+" LIST OF CLASSES:                             "
+"    __        Wi_grid                         "
+"    __        Wi                              "
+"                                              "
+""""""""""""""""""""""""""""""""""""""""""""""""
 
 class Wi_grid:
     # birthtime grid for Wi integral

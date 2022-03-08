@@ -1,10 +1,10 @@
-#TablefromAsplundetal.(2009).https://ui.adsabs.harvard.edu/abs/2009ARA%26A..47..481A/abstractSubmitdatacleaningbugstoGalacticCEM@gmail.com
+# Table from Asplund e tal. (2009). https://ui.adsabs.harvard.edu/abs/2009ARA%26A..47..481A/abstract Submit data cleaning bugs to GalacticCEM@gmail.com
 #
-#Table3:Representativeisotopicabundancefractions[bynumber?]inthesolarsystem.
-#MostoftheisotopicvaluesaretakenfromRosman&Taylor(1998)
-#withupdatesforsomeelements,asdiscussedinSect.3.10.
+# Table3: Representative isotopic abundance fractions [bynumber?] in the solar system.
+# Most of the isotopic values are taken from Rosman & Taylor (1998)
+# with updates for some elements -- as discussed in Sect.3.10.
 #
-elemSymb,Z,A,%
+elemSymb,elemZ,elemA,percentage
 H,1,1,99.998
 H,1,2,0.002
 He,2,3,0.0166

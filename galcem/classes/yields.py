@@ -3,28 +3,26 @@ import pandas as pd
 from pandas.core.common import flatten
 import os
 
-""""""""""""""""""""""""""""""""""""""""""""""""
-"                                              "
-"                YIELDS CLASSES                "
-" Tracks the contribution by individual events "
-"       Suggested upgrade:  superclasses       "
-"         for the functions in common          "
-"                                              "
-" LIST OF CLASSES:                             "
-"    __        Isotopes                           "
-"    __        Concentrations                     "
-"   __      Yields                             "
-"        __        Yields_BBN                     "
-"        __        Yields_SNIa                    "
-"        __        Yields_SNII                 "
-"        __        Yields_LIMs                    "
-"                                              "
-""""""""""""""""""""""""""""""""""""""""""""""""
+""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"                                                    "
+"                YIELDS CLASSES                      "
+" Tracks the contribution by individual events       "
+"       Suggested upgrade:  superclasses             "
+"         for the functions in common                "
+"                                                    "
+" LIST OF CLASSES:                                   "
+"    __        Isotopes                              "
+"    __        Concentrations                        "
+"    __        Yields (parent class to Yields_*)     "
+"    __        Yields_BBN (subclass)                 "
+"    __        Yields_SNIa (subclass)                "
+"    __        Yields_SNII (subclass)                "
+"    __        Yields_LIMs (subclass)                "
+"                                                    "
+""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 class Isotopes:
-    '''
-    Pick yields
-    '''
+    ''' Handles the isotope and yield selection '''
     def __init__(self, IN):
         self.IN = IN
         self.elemZ = self.IN.periodic['elemZ']
@@ -106,32 +104,35 @@ class Concentrations:
     def __init__(self, IN):
         self.IN = IN
         self.concentration = None
-        self.solarA09_vs_H_bynumb = (self.IN.asplund1['photospheric'] - self.IN.asplund1['photospheric'][1])
-        self.solarA09_vs_Fe_bynumb = (self.IN.asplund1['photospheric'] - self.IN.asplund1['photospheric'][26])
-        self.solarA09_vs_H_bymass = (self.IN.asplund1['photospheric'] - self.IN.asplund1['photospheric'][1] + 
-                            np.log10(np.divide(self.IN.periodic['elemA'],
-                            self.IN.periodic['elemA'][1]))[:self.IN.asplund1['photospheric'].shape[0]])
-        self.solarA09_vs_Fe_bymass = (self.IN.asplund1['photospheric'] - self.IN.asplund1['photospheric'][26] + 
-                             np.log10(np.divide(self.IN.periodic['elemA'],
-                             self.IN.periodic['elemA'][26]))[:self.IN.asplund1['photospheric'].shape[0]])
-        self.asplund3_pd = pd.DataFrame(self.IN.asplund3, columns=['elemN','elemZ','elemA','percentage'])
+        self.solarA09_photospheric = self.IN.asplund1['photospheric']
+        self.solarA09_meteoric = self.IN.asplund1['meteoric']
+        id_A09nan = np.where(np.isnan(self.solarA09_photospheric)==True)[0]
+        self.solarA09 = self.solarA09_photospheric
+        idx_Ap_intersect = np.intersect1d(self.IN.periodic['elemZ'].values, 
+                                          self.IN.asplund1['elemZ'].values, return_indices=True)[1] # selects idx for periodic
+        self.select_periodic = self.IN.periodic.iloc[idx_Ap_intersect, :]
+        self.solarA09[id_A09nan] = self.solarA09_meteoric[id_A09nan]
+        self.solarA09_vs_H_bynumb = (self.solarA09 - self.solarA09[1])
+        self.solarA09_vs_Fe_bynumb = (self.solarA09 - self.solarA09[26])
+        self.solarA09_vs_H_bymass = (self.solarA09_vs_H_bynumb + self.log10_avg_elem_vs_X(elemZ=1))
+        self.solarA09_vs_Fe_bymass = (self.solarA09_vs_Fe_bynumb + self.log10_avg_elem_vs_X(elemZ=26))
+        self.asplund3_pd = self.IN.asplund3 #pd.DataFrame(self.IN.asplund3, columns=['elemN','elemZ','elemA','percentage'])
         
     def log10_avg_elem_vs_X(self, elemZ=1):
-        '''
-        log10(<M all> / <M elemZ>)
-        '''
-        return np.log10(np.divide(self.IN.periodic['elemA'],
-                self.IN.periodic['elemA'][elemZ]))[:self.IN.asplund1['photospheric'].shape[0]]
+        ''' log10(<M all> / <M elemZ>) absolute abundance by mass'''
+        return np.log10(np.divide(self.select_periodic['elemA'],
+                self.select_periodic['elemA'][elemZ]))
     
-    def abund_percentage(self, asplund3_pd, ZA_sorted):
+    def abund_percentage(self, ZA_sorted):
+        ''' Isotopic abundances by number from Asplund et al. (2009)'''
         percentages = []
         for ZA_idx in ZA_sorted:
-            Z_select = asplund3_pd.loc[asplund3_pd['elemZ'] == ZA_idx[0]]
-            ZA_select = Z_select.loc[Z_select['elemA'] == ZA_idx[1]]
-            percentages.append(ZA_select.get(['percentage']).to_numpy(dtype=np.float16, na_value=0.).flatten())
+            Z_select = self.IN.asplund3.loc[self.IN.asplund3['elemZ'].values == ZA_idx[0]]
+            ZA_select = Z_select.loc[Z_select['elemA'].values == ZA_idx[1]]
+            percentages.append(ZA_select['percentage'].values)
         percentages_pd = np.array(percentages, dtype='object')
-        for i in range(len(percentages_pd)):
-            if percentages_pd[i].size <= 0:
+        for i, val in enumerate(percentages_pd):
+            if val.size <= 0:
                 percentages_pd[i] = np.array([1e-5])
         return np.array(percentages_pd, dtype=np.float16)
 
@@ -177,7 +178,7 @@ class Concentrations:
         return yieldchoice_idx
         
 class Yields:
-    ''' Parent class for all yields '''
+    ''' Parent class for all Yields_* classes '''
     def __init__(self):
         self.yields = None # mass fraction of a given isotope for a given set of properties
         self.elemZ = None # Atomic number
@@ -263,8 +264,7 @@ class Yields_SNII(Yields):
         self.option = self.IN.yields_SNII_option if option is None else option
         self.rotationalVelocity_bins = None
         super().__init__()
-
-        
+ 
     def import_yields(self):
         if self.option == 'lc18':
             self.metallicity_bins = np.power(10, [0., -1., -2., -3.])
@@ -307,8 +307,7 @@ class Yields_LIMs(Yields):
         self.option = self.IN.yields_LIMs_option if option is None else option
         self.Returned_stellar_mass = None
         super().__init__()
-
-        
+ 
     def is_unique(self, val, split_length):
         it_is = [t[val] for t in self.tables]
         unique = np.array([np.unique(ii) for ii in it_is], dtype=object) 
