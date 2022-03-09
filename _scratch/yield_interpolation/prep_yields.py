@@ -15,8 +15,8 @@ def lc18_example(filename='tab_yieldstot_iso_exp_pd.dec', loc='input/yields/snii
 
         split_size      in this case I know there are 12 tables, for 4 initial metallicities and 3 initial velocities
     '''
-    output_name = f'{loc}/{outfilename}'
-    print(f'output name\n{output_name}')
+    output_name = loc + outfilename
+    print(f'output name\n',output_name)
     if not os.path.exists(output_name):
         Zini = np.power(10, [0., -1., -2., -3.])
         vel = [0., 150., 300.]
@@ -25,10 +25,10 @@ def lc18_example(filename='tab_yieldstot_iso_exp_pd.dec', loc='input/yields/snii
         numerics = header[1:]
         print('Processing yields')
         df = pd.read_table(f'{loc}/{filename}', sep=',  ', dtype={'ID': object}, header=None)
-        print(f'Table import. \n {df}\n\n')
+        print(f'Table import. \n ',df,'\n\n')
         d = np.array_split(df, len(Zini))
         df = [np.array_split(f, len(vel)) for f in d]
-        print(f'Table split. \n {df}\n\n')
+        print(f'Table split. \n ',df,'\n\n')
         # If you want to rename the headers
         #new_headers = [d.iloc[0].values for d in df]
         #f = [pd.DataFrame(d[1:]) for d in df]
@@ -45,11 +45,11 @@ def lc18_example(filename='tab_yieldstot_iso_exp_pd.dec', loc='input/yields/snii
                 df[i][j][numerics] = df[i][j][numerics].apply(pd.to_numeric)
                 df[i][j] = df[i][j][['vel_ini', 'Z_ini']+header]
         df = pd.concat(list(itertools.chain(*df)), axis=0)
-        print(f'Saving table \n {df}\n\n')
+        print(f'Saving table \n ',df,'\n\n')
         with open(output_name, 'w') as f:
             f.write(f'# From file: {loc}/{filename}\n')
         df.to_csv(output_name, mode='a', header=True, index=False)
-        print(f'Processed yields saved in \n{output_name}')
+        print(f'Processed yields saved in \n',output_name)
     return None
 
 def k10_example(filename=['Z0.0001.dat', 'Z0.008.dat', 'Z0.004.dat', 'Z0.02.dat'], 

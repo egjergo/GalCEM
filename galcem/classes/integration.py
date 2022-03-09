@@ -15,7 +15,7 @@ import scipy.integrate as integr
 """"""""""""""""""""""""""""""""""""""""""""""""
 
 class Wi_grid:
-    # birthtime grid for Wi integral
+    ''' grids for the Wi integral '''
     def __init__(self, metallicity, age_idx, IN, lifetime_class, time_chosen):
         self.metallicity = metallicity #* np.ones(IN.num_MassGrid) # !!!!!!!
         self.age_idx = age_idx
@@ -42,12 +42,13 @@ class Wi:
     # Gyr_age    (t)     is the Galactic age
     # birthtime (t')     is the stellar birthtime
     # lifetime (tau)    is the stellar lifetime
-    def __init__(self, age_idx, IN, lifetime_class, time_chosen, Z_v, SFR_v, IMF, yields_SNIa_class, models_lc18, models_k10, ZA_sorted):
+    def __init__(self, age_idx, IN, lifetime_class, time_chosen, Z_v, SFR_v, F_SNIa_v, IMF, yields_SNIa_class, models_lc18, models_k10, ZA_sorted):
         self.IN = IN
         self.lifetime_class = lifetime_class
         self.time_chosen = time_chosen
         self.Z_v = Z_v
         self.SFR_v = SFR_v
+        self.F_SNIa_v = F_SNIa_v
         self.IMF = IMF
         self.yields_SNIa_class = yields_SNIa_class
         self.models_lc18 = models_lc18
@@ -154,7 +155,8 @@ class Wi:
         nu_test = np.linspace(0.5, 1, num=len(mass_grid))
         IMF_v = np.divide(mass_grid, nu_test)
         int_SNIa = f_nu(nu_test) * self.IMF_component(IMF_v)
-        F_SNIa = integr.simps(int_SNIa, x=nu_test)    
+        F_SNIa = integr.simps(int_SNIa, x=nu_test)   
+        self.F_SNIa_v[self.age_idx] = F_SNIa 
         SFR_comp = self.SFR_component(birthtime_grid)
         integrand = np.multiply(SFR_comp, F_SNIa)
         return integr.simps(integrand, x=birthtime_grid)

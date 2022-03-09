@@ -1,8 +1,6 @@
 # I only achieve simplicity with enormous effort (Clarice Lispector)
 import time
-#import ruamel.yaml
 import numpy as np
-import pandas as pd
 import scipy.integrate as integr
 from scipy.interpolate import *
 import os
@@ -89,6 +87,7 @@ class Setup:
         self.Mgas_v = self.IN.epsilon * np.ones(len(self.time_chosen)) 
         self.returned_Mass_v = self.IN.epsilon * np.ones(len(self.time_chosen)) 
         self.SFR_v = self.IN.epsilon * np.ones(len(self.time_chosen)) #
+        self.F_SNIa_v = self.IN.epsilon * np.ones(len(self.time_chosen))
         self.Mass_i_v = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)))    # Gass mass (i,j) where the i rows are the isotopes and j are the timesteps, [:,j] follows the timesteps
         self.W_i_comp = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen), 3), dtype=object)    # Gass mass (i,j) where the i rows are the isotopes and j are the timesteps, [:,j] follows the timesteps
         self.Xi_inf = isotope_class.construct_yield_vector(yields_BBN_class, self.ZA_sorted)
@@ -140,6 +139,7 @@ class OneZone(Setup):
     
     def main(self):
         ''' Run the OneZone program '''
+        import pandas as pd
         self.tic.append(time.process_time())
         self.file1 = open(self._dir_out + "Terminal_output.txt", "w")
         pickle.dump(self.IN,open(self._dir_out + 'inputs.pkl','wb'))
@@ -159,9 +159,8 @@ class OneZone(Setup):
         G_v = np.divide(self.Mgas_v, self.Mtot)
         S_v = 1 - G_v
         print("Saving the output...")
-        np.savetxt(self._dir_out + 'phys.dat', np.column_stack((self.time_chosen, self.Mtot, self.Mgas_v,
-                self.Mstar_v, self.SFR_v/1e9, self.Infall_rate/1e9, self.Z_v, G_v, S_v, self.Rate_SNII, self.Rate_SNIa, self.Rate_LIMs)), fmt='%-12.4e', #SFR is divided by 1e9 to get the /Gyr to /yr conversion 
-                header = ' (0) time_chosen [Gyr]    (1) Mtot [Msun]    (2) Mgas_v [Msun]    (3) Mstar_v [Msun]    (4) SFR_v [Msun/yr]    (5)Infall_v [Msun/yr]    (6) Z_v    (7) G_v    (8) S_v     (9) Rate_SNII     (10) Rate_SNIa     (11) Rate_LIMs')
+        np.savetxt(self._dir_out + 'phys.dat', np.column_stack((self.time_chosen, self.Mtot, self.Mgas_v, self.Mstar_v, self.SFR_v/1e9, self.Infall_rate/1e9, self.Z_v, G_v, S_v, self.Rate_SNII, self.Rate_SNIa, self.Rate_LIMs, self.F_SNIa_v)), fmt='%-12.4e', #SFR is divided by 1e9 to get the /Gyr to /yr conversion 
+                header = ' (0) time_chosen [Gyr]    (1) Mtot [Msun]    (2) Mgas_v [Msun]    (3) Mstar_v [Msun]    (4) SFR_v [Msun/yr]    (5)Infall_v [Msun/yr]    (6) Z_v    (7) G_v    (8) S_v     (9) Rate_SNII     (10) Rate_SNIa     (11) Rate_LIMs     (12) DTD SNIa')
         np.savetxt(self._dir_out +  'Mass_i.dat', np.column_stack((self.ZA_sorted, self.Mass_i_v)), fmt=' '.join(['%5.i']*2 + ['%12.4e']*self.Mass_i_v[0,:].shape[0]),
                 header = ' (0) elemZ,    (1) elemA,    (2) masses [Msun] of every isotope for every timestep')
         np.savetxt(self._dir_out +  'X_i.dat', np.column_stack((self.ZA_sorted, self.Xi_v)), fmt=' '.join(['%5.i']*2 + ['%12.4e']*self.Xi_v[0,:].shape[0]),
@@ -243,7 +242,8 @@ class OneZone(Setup):
             self.phys_integral(n)        
             self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
             if n > 0.: 
-                Wi_class = Wi(n, self.IN, self.lifetime_class, self.time_chosen, self.Z_v, self.SFR_v, self.IMF, self.yields_SNIa_class, self.models_lc18, self.models_k10, self.ZA_sorted)
+                Wi_class = Wi(n, self.IN, self.lifetime_class, self.time_chosen, self.Z_v, self.SFR_v, self.F_SNIa_v,
+                              self.IMF, self.yields_SNIa_class, self.models_lc18, self.models_k10, self.ZA_sorted)
                 self.Rate_SNII[n], self.Rate_LIMs[n], self.Rate_SNIa[n] = Wi_class.compute_rates()
                 Wi_comp = [Wi_class.compute("SNII"), Wi_class.compute("LIMs")]
                 #yield_SNII = Wi_class.yield_array('SNII', Wi_class.SNII_mass_grid, Wi_class.SNII_birthtime_grid)
@@ -292,7 +292,8 @@ class Plots(Setup):
         self.phys_integral_plot(logAge=True)
         self.lifetimeratio_test_plot()
         self.ZA_sorted_plot()
-        # self.elem_abundance() # currently has errors
+        #self.DTD_plot()
+        # self.elem_abundance() # compares and requires multiple runs (IMF & SFR variations)
         self.aux.tic_count(string="Plots saved in", tic=self.tic)
         
     def ZA_sorted_plot(self, cmap_name='magma_r', cbins=10): # angle = 2 * np.pi / np.arctan(0.4) !!!!!!!
@@ -331,6 +332,23 @@ class Plots(Setup):
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'tracked_elements.pdf')
 
+    def DTD_plot(self):
+        print('Starting DTD_plot()')
+        from matplotlib import pyplot as plt
+        plt.style.use(self._dir+'/galcem.mplstyle')
+        phys = np.loadtxt(self._dir_out + 'phys.dat')
+        time = phys[:-1,0]
+        DTD_SNIa = phys[:-1,12]
+        fig, ax = plt.subplots(1,1, figsize=(7,5))
+        ax.loglog(time, DTD_SNIa, color='blue', label='SNIa')
+        ax.legend(loc='best', frameon=False, fontsize=13)
+        ax.set_ylabel(r'Normalized DTD', fontsize=15)
+        ax.set_xlabel('Age [Gyr]', fontsize=15)
+        ax.set_ylim(1e-3,1e0)
+        ax.set_xlim(1e-2, 1.9e1)
+        fig.tight_layout()
+        plt.savefig(self._dir_out_figs + 'DTD.pdf')
+        
     def lifetimeratio_test_plot(self,colormap='Paired'):
         print('Starting lifetimeratio_test_plot()')
         from matplotlib import pyplot as plt
@@ -593,7 +611,7 @@ class Plots(Setup):
         normalized_abundances = np.array(abund_i)
         return normalized_abundances, FeH
 
-    def elem_abundance(self, figsiz = (32,10), c=5, setylim = (-6, 6), setxlim=(-6.5, 0.5)):
+    def elem_abundance(self, figsiz = (32,10), c=3, setylim = (-6, 6), setxlim=(-6.5, 0.5)):
         print('Starting elem_abundance()')
         from matplotlib import pyplot as plt
         plt.style.use(self._dir+'/galcem.mplstyle')
@@ -606,13 +624,13 @@ class Plots(Setup):
             nrow = ncol + 1
         Z_symb_list = self.IN.periodic['elemSymb'][Z_list] # name of elements for all isotopes
         
-        normalized_abundances, FeH = self.extract_normalized_abundances(Z_list, Mass_i_loc=self._dir_out + 'baseline/Mass_i.dat', c=c)
-        normalized_abundances_lowZ, FeH_lowZ = self.extract_normalized_abundances(Z_list, Mass_i_loc=self._dir_out + 'lifetimeZ0003/Mass_i.dat', c=c)
-        normalized_abundances_highZ, FeH_highZ = self.extract_normalized_abundances(Z_list, Mass_i_loc=self._dir_out + 'lifetimeZ06/Mass_i.dat', c=c)
-        normalized_abundances_lowIMF, FeH_lowIMF = self.extract_normalized_abundances(Z_list, Mass_i_loc=self._dir_out + 'Mass_i_IMF1pt2.dat', c=c)
-        normalized_abundances_highIMF, FeH_highIMF = self.extract_normalized_abundances(Z_list, Mass_i_loc=self._dir_out + 'Mass_i_IMF1pt7.dat', c=c)
-        normalized_abundances_lowSFR, FeH_lowSFR = self.extract_normalized_abundances(Z_list, Mass_i_loc=self._dir_out + 'Mass_i_fiducial.dat', c=c)
-        normalized_abundances_highSFR, FeH_highSFR = self.extract_normalized_abundances(Z_list, Mass_i_loc=self._dir_out + 'Mass_i_k_SFR_2.dat', c=c)
+        normalized_abundances, FeH = self.extract_normalized_abundances(Z_list, Mass_i_loc='runs/baseline/Mass_i.dat', c=c+2)
+        normalized_abundances_lowZ, FeH_lowZ = self.extract_normalized_abundances(Z_list, Mass_i_loc='runs/lifetimeZ0003/Mass_i.dat', c=c+2)
+        normalized_abundances_highZ, FeH_highZ = self.extract_normalized_abundances(Z_list, Mass_i_loc='runs/lifetimeZ06/Mass_i.dat', c=c+2)
+        normalized_abundances_lowIMF, FeH_lowIMF = self.extract_normalized_abundances(Z_list, Mass_i_loc='runs/IMF1pt2/Mass_i.dat', c=c+2)
+        normalized_abundances_highIMF, FeH_highIMF = self.extract_normalized_abundances(Z_list, Mass_i_loc='runs/IMF1pt7/Mass_i.dat', c=c+2)
+        normalized_abundances_lowSFR, FeH_lowSFR = self.extract_normalized_abundances(Z_list, Mass_i_loc='runs/k_SFR_0.5/Mass_i.dat', c=c+2)
+        normalized_abundances_highSFR, FeH_highSFR = self.extract_normalized_abundances(Z_list, Mass_i_loc='runs/k_SFR_2/Mass_i.dat', c=c+2)
         
         fig, axs = plt.subplots(nrow, ncol, figsize =figsiz)#, sharex=True)
         for i, ax in enumerate(axs.flat):
@@ -701,12 +719,17 @@ class Plots(Setup):
 
         markerlist = itertools.cycle(('o', 'v', '^', '<', '>', 'P', '*', 'd', 'X'))
         colorlist = itertools.cycle(('#00ccff', '#ffb300', '#ff004d'))
+        colorlist_websafe = itertools.cycle(('#ff3399', '#5d8aa8', '#e32636', '#ffbf00', '#9966cc', '#a4c639',
+                                             '#cd9575', '#008000', '#fbceb1', '#00ffff', '#4b5320', '#a52a2a',
+                                             '#007fff', '#ff2052', '#21abcd', '#e97451', '#592720', '#fad6a5',
+                                             '#36454f', '#e4d00a', '#ff3800', '#ffbcd9', '#008b8b', '#8b008b',
+                                             '#03c03c', '#00009c', '#ccff00', '#673147', '#0f0f0f', '#324ab2'))
         lenlist = len(li)
     
         for i, ax in enumerate(axs.flat):
             for j, ll in enumerate(li):
                 idx_obs = np.where(ll.iloc[:,0] == i)[0]
-                ax.scatter(ll.iloc[idx_obs,1], ll.iloc[idx_obs,2], label=ll.iloc[idx_obs, 4], alpha=0.1, marker=next(markerlist), color=next(colorlist))
+                ax.scatter(ll.iloc[idx_obs,1], ll.iloc[idx_obs,2], label=ll.iloc[idx_obs, 4], alpha=0.1, marker=next(markerlist), color=next(colorlist_websafe))
             if i < len(Z_list):
                 ax.plot(FeH, Masses2[i], color='black', linewidth=2)
                 ax.annotate(f"{Z_list[i]}{Z_symb_list[Z_list[i]]}", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
@@ -785,12 +808,17 @@ class Plots(Setup):
         markerlist =itertools.cycle(('o', 'v', '^', '<', '>', 'P', '*', 'd', 'X'))
         #colorlist = itertools.cycle(('#00ccff', '#ffb300', '#ff004d', '#003662', '#620005', '#366200'))
         colorlist = itertools.cycle(('#00ccff', '#ffb300', '#ff004d'))
+        colorlist_websafe = itertools.cycle(('#ff3399', '#5d8aa8', '#e32636', '#ffbf00', '#9966cc', '#a4c639',
+                                             '#cd9575', '#008000', '#fbceb1', '#00ffff', '#4b5320', '#a52a2a',
+                                             '#007fff', '#ff2052', '#21abcd', '#e97451', '#592720', '#fad6a5',
+                                             '#36454f', '#e4d00a', '#ff3800', '#ffbcd9', '#008b8b', '#8b008b',
+                                             '#03c03c', '#00009c', '#ccff00', '#673147', '#0f0f0f', '#324ab2'))
         lenlist = len(li)
 
         for i, ax in enumerate(axs.flat):
             for j, ll in enumerate(li):
                 idx_obs = np.where(ll.iloc[:,0] == i)[0]
-                ax.scatter(ll.iloc[idx_obs,1], ll.iloc[idx_obs,2], label=ll.iloc[idx_obs, 4], alpha=0.1, marker=next(markerlist), color=next(colorlist))
+                ax.scatter(ll.iloc[idx_obs,1], ll.iloc[idx_obs,2], label=ll.iloc[idx_obs, 4], alpha=0.1, marker=next(markerlist), color=next(colorlist_websafe))
             if i < nrow*ncol:
                 #ax.plot(FeH, Masses[i], color='blue')
                 ax.plot(FeH, Masses2[i], color='black', linewidth=2)
