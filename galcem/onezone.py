@@ -464,9 +464,7 @@ class Plots(Setup):
         phys = np.loadtxt(self._dir_out + 'phys.dat')
         W_i_comp = pickle.load(open(self._dir_out + 'W_i_comp.pkl','rb'))
         W_i_comp +=  self.IN.epsilon
-        W_i_comp = np.log10(W_i_comp)
-        print('W_i_comp.shape = ', W_i_comp.shape)
-        print('W_i_comp[0,0].size = ', W_i_comp[0,0].size)
+        W_i_comp = np.log10(W_i_comp.astype(float))
         Mass_massive = W_i_comp[:,:,0]
         Mass_AGB = W_i_comp[:,:,1]
         Mass_SNIa = W_i_comp[:,:,2]
@@ -575,9 +573,7 @@ class Plots(Setup):
         Masses = np.log10(Mass_i[:,2:])
         phys = np.loadtxt(self._dir_out + 'phys.dat')
         W_i_comp = pickle.load(open(self._dir_out + 'W_i_comp.pkl','rb'))
-        #W_i_comp +=  100.
-        W_i_comp = np.asarray(W_i_comp, dtype=float)
-        W_i_comp = np.log10(W_i_comp)
+        W_i_comp = np.log10(W_i_comp.astype(float))
         Mass_SNII = W_i_comp[:,:,0]
         Mass_AGB = W_i_comp[:,:,1]
         Mass_SNIa = W_i_comp[:,:,2]
