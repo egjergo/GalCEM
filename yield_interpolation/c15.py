@@ -5,7 +5,7 @@ import os
 
 if __name__ == '__main__':
     # parameters
-    combine_input_data = False
+    combine_input_data = True
     debug = True
     root_c15 = 'galcem/input/yields/lims/c15/'
     yield_eps = 1e-13
@@ -16,7 +16,7 @@ if __name__ == '__main__':
         df = pd.DataFrame({col:[] for col in ['Isotope','A','Z','YIELD','MASS','METALLICITY','IRV']})
         for txt_og in txts:
             if '.DS_Store' in txt_og: continue
-            df_txt = pd.read_fwf(root_c15_data+txt_og)
+            df_txt = pd.read_fwf(root_c15_data+txt_og, infer_nrows=400)
             txt = txt_og.replace('zsun','z1.4m2').replace('_20210617_33100.txt','').replace('yields_tot_m','')
             prts = txt.split('_')
             prts = prts[0].split('z')+[prts[1]]
@@ -27,6 +27,7 @@ if __name__ == '__main__':
             df_txt['MASS'] = mass
             df_txt['METALLICITY'] = metallicity
             df_txt['IRV'] = irv
+            
             df = df.append(df_txt)
             if debug:
                 print(txt_og)

@@ -18,12 +18,14 @@ class GalCemInterpolant(object):
         self.linear_nd_interpolator = interp.LinearNDInterpolator(self.dfx[self.xnames].to_numpy(),self.s_ytf.to_numpy(),rescale=True)
         self.nearest_nd_interpolator = interp.NearestNDInterpolator(self.dfx[self.xnames].to_numpy(),self.s_ytf.to_numpy(),rescale=True)
         self.train_metrics = self.get_train_metrics()
+        
     def tf_dfx(self,dfx):
         dfx2 = dfx.copy()
         for xcol in self.xlog10cols:
             if 'log10_'+xcol not in dfx.columns:
                 dfx2['log10_'+xcol] = np.log10(dfx2[xcol])
         return dfx2
+    
     def __call__(self,dfx,return_yhattf=False):
         dfx2 = self.tf_dfx(dfx)
         x = dfx2[self.xnames].to_numpy()
@@ -38,6 +40,7 @@ class GalCemInterpolant(object):
             s_yhat = s_yhattf
         s_yhat.name = self.s_y.name
         return s_yhat
+    
     def get_train_metrics(self,by={}):
         dfx2 = self.dfx.copy()
         s_y2 = self.s_y.copy()
@@ -53,12 +56,14 @@ class GalCemInterpolant(object):
             'Mean Absoute Error': np.mean(eps_abs),
             'Max Abs Error': eps_abs.max()}
         return train_metrics
+    
     def __repr__(self):
         s = 'GalChemInterpolan(%s)\n'%','.join(self.xnames)
         s += '\ttrain data description\n\t\t%s'%str(self.descrip).replace('\n','\n\t\t')
         s += '\n\ttrain data metrics\n'
         for metric,val in self.train_metrics.items(): s += '\t\t%25s: %.2e\n'%(metric,val)
         return s
+    
     def plot(self,xcols,xfixed={},figroot=None,title=None,view_angle=135):
         xcols = ['log10_'+xcol if xcol in self.xlog10cols else xcol for xcol in xcols]
         nticks = 64

@@ -1,3 +1,2 @@
-from .onezone import OneZone
-#from .onezone import OneZone_Plots
-from .inputs import Inputs
+from .onezone import Setup, OneZone, Plots
+from .classes.inputs import Inputs

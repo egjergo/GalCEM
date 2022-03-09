@@ -4,7 +4,7 @@ if __name__ == '__main__':
     idxs = np.arange(len(ZA_sorted)) # [11,19,99,103] # carbon12, oxygen, iron56, iron60
     interpolants = []
     for idx in idxs:
-        print(f'{idx=}')
+        print('idx=', idx)
         if dfxs[idx].empty:
             interpolants.append(None)
         else:

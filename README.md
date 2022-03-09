@@ -9,13 +9,10 @@ Eda Gjergo (Wuhan University) <GalacticCEM@gmail.com>
 - build interpolation models based on `galcem/input/yields/lims/c15/...dat` and the corresponding .txt files
 - delete/merge code from `_scratch/`
 - update docs using `docs/index.rst` and `docs/components.rst` and in-code docstrings
-- modify/delete `examples/GalCEM_notebook.ipynb`
 - update `yield_interpolation/` files
-- update `OneZone.elem_abundance()`, currently broken
 - compile pkl files when init is first called instead of distributing with MANIFEST.in
 - use `'%d'%my_num` format instead of `f'...'` format
 - remove `pandas` req
-- refine `setup.py`
 - refine `MANIFEST.IN`
 - make `verbose` option for printing output
 

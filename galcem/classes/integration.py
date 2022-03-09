@@ -2,9 +2,20 @@ import numpy as np
 import scipy.interpolate as interp
 import scipy.integrate as integr
 
+""""""""""""""""""""""""""""""""""""""""""""""""
+"                                              "
+"             INTEGRATION CLASSES              "
+"   Contains classes that solve the integral   " 
+"  part of the integro-differential equations  "
+"                                              "
+" LIST OF CLASSES:                             "
+"    __        Wi_grid                         "
+"    __        Wi                              "
+"                                              "
+""""""""""""""""""""""""""""""""""""""""""""""""
 
 class Wi_grid:
-    # birthtime grid for Wi integral
+    ''' grids for the Wi integral '''
     def __init__(self, metallicity, age_idx, IN, lifetime_class, time_chosen):
         self.metallicity = metallicity #* np.ones(IN.num_MassGrid) # !!!!!!!
         self.age_idx = age_idx
@@ -31,12 +42,13 @@ class Wi:
     # Gyr_age    (t)     is the Galactic age
     # birthtime (t')     is the stellar birthtime
     # lifetime (tau)    is the stellar lifetime
-    def __init__(self, age_idx, IN, lifetime_class, time_chosen, Z_v, SFR_v, IMF, yields_SNIa_class, models_lc18, models_k10, ZA_sorted):
+    def __init__(self, age_idx, IN, lifetime_class, time_chosen, Z_v, SFR_v, F_SNIa_v, IMF, yields_SNIa_class, models_lc18, models_k10, ZA_sorted):
         self.IN = IN
         self.lifetime_class = lifetime_class
         self.time_chosen = time_chosen
         self.Z_v = Z_v
         self.SFR_v = SFR_v
+        self.F_SNIa_v = F_SNIa_v
         self.IMF = IMF
         self.yields_SNIa_class = yields_SNIa_class
         self.models_lc18 = models_lc18
@@ -45,8 +57,8 @@ class Wi:
         self.metallicity = self.Z_v[age_idx]
         self.age_idx = age_idx
         self.Wi_grid_class = Wi_grid(self.metallicity, self.age_idx, self.IN, lifetime_class, self.time_chosen)
-        #print('Massive channel')
-        self.Massive_birthtime_grid, self.Massive_lifetime_grid, self.Massive_mass_grid = self.Wi_grid_class.grids(self.IN.Ml_Massive, self.IN.Mu_Massive)
+        #print('SNII channel')
+        self.SNII_birthtime_grid, self.SNII_lifetime_grid, self.SNII_mass_grid = self.Wi_grid_class.grids(self.IN.Ml_SNII, self.IN.Mu_SNII)
         #print('LIMs channel')
         self.LIMs_birthtime_grid, self.LIMs_lifetime_grid, self.LIMs_mass_grid = self.Wi_grid_class.grids(self.IN.Ml_LIMs, self.IN.Mu_LIMs) # !!!!!!! you should subtract SNIa fraction
         #print('SNIa channel')
@@ -55,7 +67,7 @@ class Wi:
         
     def grid_picker(self, channel_switch, grid_type):
         # Selects e.g. "self.LIMs_birthtime_grid"
-        # channel_switch:        can be 'LIMs', 'SNIa', 'Massive'
+        # channel_switch:        can be 'LIMs', 'SNIa', 'SNII'
         # grid_type:            can be 'birthtime', 'lifetime', 'mass' 
         return self.__dict__[channel_switch+'_'+grid_type+'_grid']
     
@@ -89,7 +101,7 @@ class Wi:
         if channel_switch == 'SNIa': 
             y = self.yields_SNIa_class
         else:  
-            if channel_switch == 'Massive':
+            if channel_switch == 'SNII':
                 X_sample = np.column_stack([Z_comp, vel_idx * np.ones(len_X), mass_grid])
                 models = self.models_lc18
             elif channel_switch == 'LIMs':
@@ -116,7 +128,7 @@ class Wi:
         IMF_comp = self.IMF_component(mass_grid) # overwrite continuously in __init__
         return IMF_comp, IMF_comp * self.dMdtauM_component(np.log10(lifetime_grid)) 
 
-    def compute_rate(self, channel_switch='Massive'):
+    def compute_rate(self, channel_switch='SNII'):
         # Computes the Type II SNae rate 
         birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
         mass_grid = self.grid_picker(channel_switch, 'mass')
@@ -143,14 +155,15 @@ class Wi:
         nu_test = np.linspace(0.5, 1, num=len(mass_grid))
         IMF_v = np.divide(mass_grid, nu_test)
         int_SNIa = f_nu(nu_test) * self.IMF_component(IMF_v)
-        F_SNIa = integr.simps(int_SNIa, x=nu_test)    
+        F_SNIa = integr.simps(int_SNIa, x=nu_test)   
+        self.F_SNIa_v[self.age_idx] = F_SNIa 
         SFR_comp = self.SFR_component(birthtime_grid)
         integrand = np.multiply(SFR_comp, F_SNIa)
         return integr.simps(integrand, x=birthtime_grid)
  
     def compute_rates(self):
-        if len(self.grid_picker('Massive', 'birthtime')) > 0.:
-            rateSNII = self.compute_rate(channel_switch='Massive')
+        if len(self.grid_picker('SNII', 'birthtime')) > 0.:
+            rateSNII = self.compute_rate(channel_switch='SNII')
         else:
             rateSNII = self.IN.epsilon
         if len(self.grid_picker('LIMs', 'birthtime')) > 0.:
