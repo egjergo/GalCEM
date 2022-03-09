@@ -145,6 +145,5 @@ runs/
 !/galcem/input/yields/lims/c15/data/*.txt
 /galcem/input/yields/snia/k20/*.dat
 yield_interpolation/**/*.pdf
-yield_interpolation/**/*.pkl
 yield_interpolation/figs/c15/*.pdf
 !/galcem/input/observations/*.txt
