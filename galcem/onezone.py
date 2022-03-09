@@ -211,11 +211,11 @@ class OneZone(Setup):
     def Mgas_func(self, t_n, y_n, n, i=None):
         # Explicit general diff eq GCE function
         # Mgas(t)
-        return self.Infall_rate[n] - self.SFR_tn(n) + np.sum(self.W_i_comp[:,n,:])
+        return self.Infall_rate[n] - self.SFR_tn(n) #+ np.sum(self.W_i_comp[:,n,:])
     
     def Mstar_func(self, t_n, y_n, n, i=None):
         # Mstar(t)
-        return self.SFR_tn(n) - np.sum(self.W_i_comp[:,n,:])
+        return y_n + self.SFR_tn(n) #- np.sum(self.W_i_comp[:,n,:])
 
     def SFR_tn(self, timestep_n):
         '''
@@ -231,7 +231,7 @@ class OneZone(Setup):
         '''Integral for the total physical quantities'''
         self.SFR_v[n] = self.SFR_tn(n)
         self.Mstar_v[n+1] = self.aux.RK4(self.Mstar_func, self.time_chosen[n], self.Mstar_v[n], n, self.IN.nTimeStep) 
-        self.Mstar_test[n] = self.Mtot[n] - self.Mgas_v[n]
+        self.Mstar_test[n+1] = self.Mtot[n-1] - self.Mgas_v[n]
         self.Mgas_v[n+1] = self.aux.RK4(self.Mgas_func, self.time_chosen[n], self.Mgas_v[n], n, self.IN.nTimeStep)    
 
     def evolve(self):
@@ -414,15 +414,15 @@ class Plots(Setup):
         axt.vlines(MW_SFR_xcoord, self.IN.MW_SFR-.4, self.IN.MW_SFR+0.4, label=r'SFR$_{MW}$ CP11', linewidth = 6, linestyle = '-', color='#ff8c00', alpha=0.8)
         axt.vlines(MW_SFR_xcoord, self.IN.MW_RSNII[2], self.IN.MW_RSNII[1], label=r'R$_{SNII,MW}$ M05', linewidth = 6, linestyle = '-', color='#0034ff', alpha=0.8)
         axt.vlines(MW_SFR_xcoord, self.IN.MW_RSNIa[2], self.IN.MW_RSNIa[1], label=r'R$_{SNIa,MW}$ M05', linewidth = 6, linestyle = '-', color='#00b3ff', alpha=0.8)
-        #axs[0].semilogy(time_plot, self.Mstar_test, label= r'$M_{star,t}$', linewidth=2, linestyle = ':', color='#ff0d00')
-        axs[0].semilogy(time_plot, Mstar_v, label= r'$M_{star}$', linewidth=3, color='#ff8c00')
-        axs[0].semilogy(time_plot, Mgas_v, label= r'$M_{gas}$', linewidth=3, color='#0d00ff')
-        axs[0].semilogy(time_plot, np.sum(Mass_i[:,2:], axis=0), label = r'$M_{g,tot,i}$', linewidth=2, linestyle=':', color='#0073ff')
+        axs[0].semilogy(time_plot, Mstar_v, label= r'$M_{star}$', linewidth=2, color='#ff8c00')
+        axs[0].semilogy(time_plot, self.Mstar_test, label= r'$M_{star,t}$', linewidth=2, linestyle = ':', color='#ff8c00')
         axs[0].semilogy(time_plot, Mtot, label=r'$M_{tot}$', linewidth=4, color='black')
         axs[0].semilogy(time_plot, Mstar_v + Mgas_v, label= r'$M_g + M_s$', linewidth = 3, linestyle = '--', color='#a9a9a9')
-        axs[1].semilogy(time_plot[:-1], np.divide(Rate_SNII[:-1],1e9), label= r'$R_{SNII}$', color = '#0034ff', linestyle=':', linewidth=3)
-        axs[1].semilogy(time_plot[:-1], np.divide(Rate_SNIa[:-1],1e9), label= r'$R_{SNIa}$', color = '#00b3ff', linestyle=':', linewidth=3)
-        axs[1].semilogy(time_plot[:-1], np.divide(Rate_LIMs[:-1],1e9), label= r'$R_{LIMs}$', color = '#ff00b3', linestyle=':', linewidth=3)
+        axs[0].semilogy(time_plot, Mgas_v, label= r'$M_{gas}$', linewidth=2, color='#0d00ff')
+        axs[0].semilogy(time_plot, np.sum(Mass_i[:,2:], axis=0), label = r'$M_{g,tot,i}$', linewidth=2, linestyle=':', color='#0073ff')
+        axs[1].semilogy(time_plot[:-1], np.divide(Rate_SNII[:-1],1e9), label= r'SNII', color = '#0034ff', linestyle=':', linewidth=3)
+        axs[1].semilogy(time_plot[:-1], np.divide(Rate_SNIa[:-1],1e9), label= r'SNIa', color = '#00b3ff', linestyle=':', linewidth=3)
+        axs[1].semilogy(time_plot[:-1], np.divide(Rate_LIMs[:-1],1e9), label= r'LIMs', color = '#ff00b3', linestyle=':', linewidth=3)
         axs[1].semilogy(time_plot[:-1], Infall_rate[:-1], label= r'Infall', color = 'black', linestyle='-', linewidth=3)
         axs[1].semilogy(time_plot[:-1], SFR_v[:-1], label= r'SFR', color = '#ff8c00', linestyle='--', linewidth=3)
         axs[0].set_ylim(1e6, 1e11)
@@ -464,9 +464,7 @@ class Plots(Setup):
         phys = np.loadtxt(self._dir_out + 'phys.dat')
         W_i_comp = pickle.load(open(self._dir_out + 'W_i_comp.pkl','rb'))
         W_i_comp +=  self.IN.epsilon
-        W_i_comp = np.log10(W_i_comp)
-        print('W_i_comp.shape = ', W_i_comp.shape)
-        print('W_i_comp[0,0].size = ', W_i_comp[0,0].size)
+        W_i_comp = np.log10(W_i_comp.astype(float))
         Mass_massive = W_i_comp[:,:,0]
         Mass_AGB = W_i_comp[:,:,1]
         Mass_SNIa = W_i_comp[:,:,2]
@@ -575,9 +573,7 @@ class Plots(Setup):
         Masses = np.log10(Mass_i[:,2:])
         phys = np.loadtxt(self._dir_out + 'phys.dat')
         W_i_comp = pickle.load(open(self._dir_out + 'W_i_comp.pkl','rb'))
-        #W_i_comp +=  100.
-        W_i_comp = np.asarray(W_i_comp, dtype=float)
-        W_i_comp = np.log10(W_i_comp)
+        W_i_comp = np.log10(W_i_comp.astype(float))
         Mass_SNII = W_i_comp[:,:,0]
         Mass_AGB = W_i_comp[:,:,1]
         Mass_SNIa = W_i_comp[:,:,2]
@@ -665,7 +661,7 @@ class Plots(Setup):
                     axs[i,j].set_xticklabels([])
         axs[nrow//2,0].set_ylabel('Absolute Abundances', fontsize = 15)
         #axs[nrow-1, ncol//2].set_xlabel('[%s%s/H]'%(A[elem_idx][0], self.ZA_symb_list[elem_idx][0]), fontsize = 15)
-        axs[nrow-1, ncol//2].set_xlabel('[%s/H]'%(self.ZA_symb_list[26].values[0]), fontsize = 15)
+        axs[nrow-1, ncol//2].set_xlabel('[%s/H]'%(self.ZA_symb_list.values[26]), fontsize = 15)
         plt.tight_layout(rect = [0.05, 0, 1, 1])
         plt.subplots_adjust(wspace=0., hspace=0.)
         plt.show(block=False)
