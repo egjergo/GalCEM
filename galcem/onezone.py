@@ -103,10 +103,11 @@ class Setup:
         
         # Load Interpolation Models
         self._dir = os.path.dirname(__file__)
+
         self.X_lc18, self.Y_lc18, self.models_lc18, self.averaged_lc18 = self.load_processed_yields(func_name=self.IN.yields_SNII_option, loc=self._dir + '/input/yields/snii/'+ self.IN.yields_SNII_option + '/tab_R', df_list=['X', 'Y', 'models', 'avgmassfrac'])
         self.X_k10, self.Y_k10, self.models_k10, self.averaged_k10 = self.load_processed_yields(func_name=self.IN.yields_LIMs_option, loc=self._dir + '/input/yields/lims/' + self.IN.yields_LIMs_option, df_list=['X', 'Y', 'models', 'avgmassfrac'])
         self.Y_i99 = self.load_processed_yields_snia(func_name=self.IN.yields_SNIa_option, loc=self._dir + '/input/yields/snia/' + self.IN.yields_SNIa_option, df_list='Y')
-        
+
     def load_processed_yields(self,func_name, loc, df_list):
         df_dict = {}
         for df_l in df_list:
@@ -188,7 +189,7 @@ class OneZone(Setup):
         if n <= 0:
             val = self.Infall_rate[n] * self.Xi_inf[i]  - np.multiply(self.SFR_v[n], self.Xi_v[i,n])
         else:
-            Wi_vals = []
+            Wi_vals = [0., 0.]
             for j,val in enumerate(Wi_comps):
                 if len(val[1]) > 0.:
                     Wi_vals.append(integr.simps(val[0] * yields[j], x=val[1]))  
@@ -229,7 +230,6 @@ class OneZone(Setup):
     def phys_integral(self, n):
         '''Integral for the total physical quantities'''
         self.SFR_v[n] = self.SFR_tn(n)
-        #self.Mstar_v[n+1] = self.Mstar_v[n] + self.SFR_v[n] * self.IN.nTimeStep
         self.Mstar_v[n+1] = self.aux.RK4(self.Mstar_func, self.time_chosen[n], self.Mstar_v[n], n, self.IN.nTimeStep) 
         self.Mstar_test[n] = self.Mtot[n] - self.Mgas_v[n]
         self.Mgas_v[n+1] = self.aux.RK4(self.Mgas_func, self.time_chosen[n], self.Mgas_v[n], n, self.IN.nTimeStep)    
@@ -241,6 +241,11 @@ class OneZone(Setup):
             self.file1.write('n = %d\n'%n)
             self.phys_integral(n)        
             self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
+            gas_iso_sum = np.sum(self.Mass_i_v[:,n])
+            #if gas_iso_sum == self.Mgas_v[n]:
+            #    print('gas isotope sum equals tot gas')
+            #else:
+            #    print('gas_iso_sum - Mgas = ', gas_iso_sum - self.Mgas_v[n])
             if n > 0.: 
                 Wi_class = Wi(n, self.IN, self.lifetime_class, self.time_chosen, self.Z_v, self.SFR_v, self.F_SNIa_v,
                               self.IMF, self.yields_SNIa_class, self.models_lc18, self.models_k10, self.ZA_sorted)
@@ -262,7 +267,11 @@ class OneZone(Setup):
                         yields_k10 = self.averaged_k10[i][0][idx_LIMs]
                     yields = [yields_lc18, yields_k10]
                     self.Mass_i_v[i, n+1] = self.aux.RK4(self.solve_integral, self.time_chosen[n], self.Mass_i_v[i,n], n, self.IN.nTimeStep, i=i, Wi_comp=Wi_comp, Wi_SNIa=Wi_SNIa, yields=yields)
-            self.Z_v[n] = np.divide(np.sum(self.Mass_i_v[:,n]), self.Mgas_v[n])
+            returned_Mass = np.sum(self.Mass_i_v[:,n+1]) - gas_iso_sum
+            self.returned_Mass_v[n] = returned_Mass
+            self.Mgas_v[n] = self.Mgas_v[n] + returned_Mass
+            #self.Mstar_v[n] = self.Mstar_v[n] - returned_Mass
+            self.Z_v[n] = np.divide(gas_iso_sum, self.Mgas_v[n])
         self.Xi_v[:,-1] = np.divide(self.Mass_i_v[:,-1], self.Mgas_v[-1]) 
 
 
@@ -295,7 +304,7 @@ class Plots(Setup):
         #self.DTD_plot()
         # self.elem_abundance() # compares and requires multiple runs (IMF & SFR variations)
         self.aux.tic_count(string="Plots saved in", tic=self.tic)
-        
+
     def ZA_sorted_plot(self, cmap_name='magma_r', cbins=10): # angle = 2 * np.pi / np.arctan(0.4) !!!!!!!
         print('Starting ZA_sorted_plot()')
         from matplotlib import cm,pyplot as plt
@@ -453,6 +462,14 @@ class Plots(Setup):
         Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
         Masses = np.log10(Mass_i[:,2:])
         phys = np.loadtxt(self._dir_out + 'phys.dat')
+        W_i_comp = pickle.load(open(self._dir_out + 'W_i_comp.pkl','rb'))
+        W_i_comp +=  self.IN.epsilon
+        W_i_comp = np.log10(W_i_comp)
+        print('W_i_comp.shape = ', W_i_comp.shape)
+        print('W_i_comp[0,0].size = ', W_i_comp[0,0].size)
+        Mass_massive = W_i_comp[:,:,0]
+        Mass_AGB = W_i_comp[:,:,1]
+        Mass_SNIa = W_i_comp[:,:,2]
         timex = phys[:,0]
         Z = self.ZA_sorted[:,0]
         A = self.ZA_sorted[:,1]
@@ -490,6 +507,64 @@ class Plots(Setup):
         plt.subplots_adjust(wspace=0., hspace=0.)
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'iso_evolution.pdf')
+        
+
+    def iso_evolution_comp(self, figsize=(40,13)):
+        from matplotlib import pyplot as plt
+        plt.style.use(self._dir+'/galcem.mplstyle')
+        import matplotlib.ticker as ticker
+        Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
+        Masses = np.log10(Mass_i[:,2:])
+        phys = np.loadtxt(self._dir_out + 'phys.dat')
+        W_i_comp = pickle.load(open(self._dir_out + 'W_i_comp.pkl','rb'))
+        print(f"{np.max(W_i_comp)=}")
+        print(f"{np.min(W_i_comp)=}")
+        W_i_comp +=  100.
+        W_i_comp = np.asarray(W_i_comp, dtype=float)
+        W_i_comp = np.log10(W_i_comp)
+        Mass_massive = W_i_comp[:,:,0]
+        Mass_AGB = W_i_comp[:,:,1]
+        Mass_SNIa = W_i_comp[:,:,2]
+        timex = phys[:,0]
+        Z = self.ZA_sorted[:,0]
+        A = self.ZA_sorted[:,1]
+        ncol = self.aux.find_nearest(np.power(np.arange(20),2), len(Z))
+        if len(self.ZA_sorted) > ncol:
+            nrow = ncol
+        else:
+            nrow = ncol + 1
+        fig, axs = plt.subplots(nrow, ncol, figsize=figsize)#, sharex=True)
+        for i, ax in enumerate(axs.flat):
+            if i < len(Z):
+                #ax.plot(timex, Masses[i], color='black')
+                ax.plot(timex, Mass_massive[i]-2, color='blue', linestyle=':', linewidth=3, alpha=0.3)
+                ax.plot(timex, Mass_AGB[i]-2, color='magenta', linestyle='--', linewidth=1, alpha=0.3)
+                ax.plot(timex, Mass_SNIa[i]-2, color='grey', linestyle=':', linewidth=2, alpha=0.3)
+                ax.annotate('%s(%d,%d)'%(self.ZA_symb_list[i],Z[i],A[i]), xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
+                ax.set_ylim(-2, 10)
+                ax.set_xlim(0.01,13.8)
+                ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
+                ax.tick_params(width = 1, length = 2, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
+                ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=1))
+                ax.tick_params(width = 1, length = 2, axis = 'y', which = 'minor', left = True, right = True, direction = 'in')
+                ax.xaxis.set_major_locator(ticker.MultipleLocator(base=5))
+                ax.tick_params(width = 1, length = 5, axis = 'x', which = 'major', bottom = True, top = True, direction = 'in')
+                ax.yaxis.set_major_locator(ticker.MultipleLocator(base=5))
+                ax.tick_params(width = 1, length = 5, axis = 'y', which = 'major', left = True, right = True, direction = 'in')
+            else:
+                fig.delaxes(ax)
+        for i in range(nrow):
+            for j in range(ncol):
+                if j != 0:
+                    axs[i,j].set_yticklabels([])
+                if i != nrow-1:
+                    axs[i,j].set_xticklabels([])
+        axs[nrow//2,0].set_ylabel(r'Masses [$10^{10}M_{\odot}$]', fontsize = 15)
+        axs[nrow-1, ncol//2].set_xlabel('Age [Gyr]', fontsize = 15)
+        plt.tight_layout(rect = [0.02, 0, 1, 1])
+        plt.subplots_adjust(wspace=0., hspace=0.)
+        plt.show(block=False)
+        plt.savefig(self._dir_out_figs + 'iso_evolution_comp.pdf')
 
     def iso_evolution_comp(self, figsize=(40,13)):
         print('Starting iso_evolution_comp()')
@@ -806,7 +881,6 @@ class Plots(Setup):
             li.append(df)
 
         markerlist =itertools.cycle(('o', 'v', '^', '<', '>', 'P', '*', 'd', 'X'))
-        #colorlist = itertools.cycle(('#00ccff', '#ffb300', '#ff004d', '#003662', '#620005', '#366200'))
         colorlist = itertools.cycle(('#00ccff', '#ffb300', '#ff004d'))
         colorlist_websafe = itertools.cycle(('#ff3399', '#5d8aa8', '#e32636', '#ffbf00', '#9966cc', '#a4c639',
                                              '#cd9575', '#008000', '#fbceb1', '#00ffff', '#4b5320', '#a52a2a',
@@ -851,4 +925,3 @@ class Plots(Setup):
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'elem_obs_lelemZ.pdf')
         return None
-    
