@@ -4,7 +4,7 @@ setuptools.setup(
     name='galcem',
     version="0.0.1a",
     author="Eda Gjergo, Aleksei Sorokin",
-    author_email="eda.gjergo@outlook.com",
+    author_email="eda.gjergo@gmail.com",
     license='GNU General Public License',
     description="Galactic Chemical Evolution",
     #long_description="",
