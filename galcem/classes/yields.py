@@ -226,11 +226,10 @@ class Yields_SNIa(Yields):
         super().__init__()
         
     def import_yields(self):
-        if self.option == 'km20':
-            yd = self._dir + '/input/yields/snia/km20/'
-            self.tables = np.genfromtxt(yd + 'yield_nucl.d', names=['elemName','elemA','elemZ','Yield'], 
-                         dtype=[('elemName', '<U5'), ('elemA', '<i8'), ('elemZ', '<i8'), ('Yield','<f8')])
-            self.yields = self.tables['Yield']
+        if self.option == 'k20':
+            yd = self._dir + '/input/yields/snia/k20/'
+            self.tables = pd.read_fwf(yd + 'yield_nucl.d', comment='#')
+            self.yields = self.tables['yields']
             self.elemA = self.tables['elemA']
             self.elemZ = self.tables['elemZ']
             
@@ -244,13 +243,6 @@ class Yields_SNIa(Yields):
                          ('WDD1','<f8'), ('WDD2','<f8'), ('WDD3','<f8'), 
                          ('CDD1','<f8'), ('CDD2','<f8')])
             self.yields = self.tables['W7'] 
-            self.elemA = self.tables['elemA']
-            self.elemZ = self.tables['elemZ']
-
-        if self.option == 'k20':
-            yd = self._dir + '/input/yields/snia/k20/'
-            self.tables = pd.read_csv(yd + 'yield_nucl.dat', comment='#', sep=',')
-            self.yields = self.tables['yields']
             self.elemA = self.tables['elemA']
             self.elemZ = self.tables['elemZ']
 
