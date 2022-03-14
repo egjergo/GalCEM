@@ -284,6 +284,7 @@ class Plots(Setup):
         self.tic.append(time.process_time())
         print('Starting to plot')
         self.FeH_evolution()
+        #self.DTD_plot()
         self.iso_abundance()
         self.iso_evolution()
         self.iso_evolution_comp()
@@ -293,7 +294,6 @@ class Plots(Setup):
         self.phys_integral_plot(logAge=True)
         self.lifetimeratio_test_plot()
         self.ZA_sorted_plot()
-        #self.DTD_plot()
         # self.elem_abundance() # compares and requires multiple runs (IMF & SFR variations)
         self.aux.tic_count(string="Plots saved in", tic=self.tic)
         

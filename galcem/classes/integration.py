@@ -128,22 +128,7 @@ class Wi:
         IMF_comp = self.IMF_component(mass_grid) # overwrite continuously in __init__
         return IMF_comp, IMF_comp * self.dMdtauM_component(np.log10(lifetime_grid)) 
 
-    def compute_rate(self, channel_switch='SNII'):
-        # Computes the Type II SNae rate 
-        birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
-        mass_grid = self.grid_picker(channel_switch, 'mass')
-        SFR_comp = self.SFR_component(birthtime_grid)
-        SFR_comp[SFR_comp<0] = 0.
-        IMF_comp = self.IMF_component(mass_grid)
-        integrand = np.multiply(SFR_comp, IMF_comp)
-        #print(f"For compute_rateSNII, {SFR_comp=}")
-        #print(f"For compute_rateSNII, {IMF_comp=}")
-        #print(f"For compute_rateSNII, {integrand=}")
-        return integr.simps(integrand, x=mass_grid)
-    
-    def compute_rateSNIa(self, channel_switch='SNIa'):
-        birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
-        mass_grid = self.grid_picker(channel_switch, 'mass')
+    def DTD_SNIa(self, mass_grid):
         f_nu = lambda nu: 24 * (1 - nu)**2
         #M1_min = 0.5 * IN.Ml_SNIa
         #M1_max = IN.Mu_SNIa
@@ -157,10 +142,28 @@ class Wi:
         int_SNIa = f_nu(nu_test) * self.IMF_component(IMF_v)
         F_SNIa = integr.simps(int_SNIa, x=nu_test)   
         self.F_SNIa_v[self.age_idx] = F_SNIa 
+        return F_SNIa
+    
+    def compute_rateSNIa(self, channel_switch='SNIa'):
+        birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
+        mass_grid = self.grid_picker(channel_switch, 'mass')
         SFR_comp = self.SFR_component(birthtime_grid)
-        integrand = np.multiply(SFR_comp, F_SNIa)
+        integrand = np.multiply(SFR_comp, self.DTD_SNIa(mass_grid))
         return integr.simps(integrand, x=birthtime_grid)
  
+    def compute_rate(self, channel_switch='SNII'):
+        # Computes the Type II SNae rate 
+        birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
+        mass_grid = self.grid_picker(channel_switch, 'mass')
+        SFR_comp = self.SFR_component(birthtime_grid)
+        SFR_comp[SFR_comp<0] = 0.
+        if channel_switch == 'SNIa':
+            IMF_comp = self.DTD_SNIa(mass_grid)
+        else:
+            IMF_comp = self.IMF_component(mass_grid)
+        integrand = np.multiply(SFR_comp, IMF_comp)
+        return integr.simps(integrand, x=mass_grid)
+    
     def compute_rates(self):
         if len(self.grid_picker('SNII', 'birthtime')) > 0.:
             rateSNII = self.compute_rate(channel_switch='SNII')
@@ -189,4 +192,4 @@ class Wi:
         #integrand = np.prod(np.vstack[SFR_comp, mass_comp, self.yield_load[i]])
         integrand = np.prod(np.vstack([SFR_comp, mass_comp]), axis=0)
         #return integr.simps(integrand, x=birthtime_grid)
-        return [integrand, birthtime_grid]
+        return [integrand, mass_grid]
