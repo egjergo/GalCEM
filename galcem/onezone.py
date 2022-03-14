@@ -199,9 +199,9 @@ class OneZone(Setup):
             
             infall_comp = self.Infall_rate[n] * self.Xi_inf[i]
             sfr_comp = self.SFR_v[n] * self.Xi_v[i,n] 
-            self.W_i_comp[i,n,0] = returned[0] / self.IN.nTimeStep # rate
-            self.W_i_comp[i,n,1] = returned[1] / self.IN.nTimeStep # rate
-            self.W_i_comp[i,n,2] = returned[2] / self.IN.nTimeStep # rate
+            self.W_i_comp[i,n,0] = returned[0] 
+            self.W_i_comp[i,n,1] = returned[1] 
+            self.W_i_comp[i,n,2] = returned[2]
             val = infall_comp  - sfr_comp + np.sum(returned)
             if val < 0.:
                 val = 0.
@@ -552,9 +552,9 @@ class Plots(Setup):
         for i, ax in enumerate(axs.flat):
             if i < len(Z):
                 #ax.plot(timex, Masses[i], color='black')
-                ax.plot(timex, Mass_SNII[i], color='black', linestyle='-.', linewidth=3, alpha=0.5, label='SNII')
-                ax.plot(timex, Mass_AGB[i], color='magenta', linestyle='--', linewidth=1, alpha=0.5, label='LIMs')
-                ax.plot(timex, Mass_SNIa[i], color='blue', linestyle=':', linewidth=2, alpha=0.5, label='SNIa')
+                ax.plot(timex, Mass_SNII[i], color='#0034ff', linestyle='-.', linewidth=3, alpha=0.8, label='SNII')
+                ax.plot(timex, Mass_AGB[i], color='#ff00b3', linestyle='--', linewidth=3, alpha=0.8, label='LIMs')
+                ax.plot(timex, Mass_SNIa[i], color='#00b3ff', linestyle=':', linewidth=3, alpha=0.8, label='SNIa')
                 ax.annotate('%s(%d,%d)'%(self.ZA_symb_list.values[i],Z[i],A[i]), xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
                 ax.set_ylim(-4.9, 9.9)
                 ax.set_xlim(0.01,13.8)
@@ -575,7 +575,7 @@ class Plots(Setup):
                 if i != nrow-1:
                     axs[i,j].set_xticklabels([])
                     
-        axs[nrow//2,0].set_ylabel(r'Masses [log10 $M_{\odot}$]', fontsize = 15)
+        axs[nrow//2,0].set_ylabel(r'Masses [ $\log_{10}$($M_{\odot}$/yr)]', fontsize = 15)
         axs[nrow-1, ncol//2].set_xlabel('Age [Gyr]', fontsize = 15)
         axs[0, ncol//2].legend(ncol=3, loc='upper center', bbox_to_anchor=(0.5, 1.5), frameon=False, fontsize=15)
         plt.tight_layout(rect = [0.03, 0, 1, .98])
@@ -767,18 +767,18 @@ class Plots(Setup):
             if i < len(Z_list):
                 ax.plot(FeH, Masses2[i], color='black', linewidth=2)
                 ax.annotate(f"{Z_list[i]}{Z_symb_list[Z_list[i]]}", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
-                #ax.set_ylim(-6, 6)
-                ax.set_ylim(-1.5, 1.5)
+                ax.set_ylim(-5.9, 5.9)
+                #ax.set_ylim(-1.5, 1.5)
                 #ax.set_xlim(-11, -2)
                 #ax.set_xlim(-6.5, 0.5)
                 ax.set_xlim(-6.5, 0.5)
                 ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=.5))
                 ax.tick_params(width = 1, length = 2, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
-                ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=.2))
+                ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=.5))
                 ax.tick_params(width = 1, length = 2, axis = 'y', which = 'minor', left = True, right = True, direction = 'in')
                 ax.xaxis.set_major_locator(ticker.MultipleLocator(base=2))
                 ax.tick_params(width = 1, length = 5, axis = 'x', which = 'major', bottom = True, top = True, direction = 'in')
-                ax.yaxis.set_major_locator(ticker.MultipleLocator(base=1))
+                ax.yaxis.set_major_locator(ticker.MultipleLocator(base=3))
                 ax.tick_params(width = 1, length = 5, axis = 'y', which = 'major', left = True, right = True, direction = 'in')
             else:
                 fig.delaxes(ax)
