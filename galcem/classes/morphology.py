@@ -291,8 +291,8 @@ class Star_Formation_Rate:
     def SFRgal(self, k=None, Mgas=[], Mtot=[], timestep_n=0): 
         ''' Talbot & Arnett (1975)'''
         k = self.IN.k_SFR if k is None else k
-        return np.multiply(self.IN.nu  * (Mgas[timestep_n])**(k) 
-            / (Mtot[timestep_n])**(k-1), self.IN.SFR_rescaling)
+        f_g = Mgas[timestep_n] / Mtot[timestep_n]
+        return self.IN.nu  * (Mgas[timestep_n]) * f_g**(k-1) * self.IN.SFR_rescaling
     
     
     def SFR_G(self, k=None, G=[], Mtot=[], timestep_n=0): 

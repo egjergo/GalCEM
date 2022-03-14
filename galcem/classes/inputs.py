@@ -47,7 +47,7 @@ class Inputs:
         self.Mu_collapsars = 120 # [Msun] !!!!!!! temporary. Import from yield tables
 
         # Time parameters
-        self.nTimeStep = 0.002 # 0.01 # Picked to smooth the mapping between stellar masses and lifetimes
+        self.nTimeStep = 0.01 #0.002 # Picked to smooth the mapping between stellar masses and lifetimes
         self.numTimeStep = 2000 # Like FM
         self.num_MassGrid = 200
 
@@ -56,11 +56,6 @@ class Inputs:
         self.MW_RSNIa = np.divide([1699.5622597959612, 2348.4781118615615, 1013.0199016364531], 1e6/2.8) # 1.4*2 Msun, average SNIa mass
         self.MW_RSNII = np.divide([7446.483293967046, 10430.201123624402, 4367.610510548821], 1e6/15) # 15 Msun, IMF-averaged mass
         self.Salpeter_IMF_Plaw = 1.35 # IMF Salpeter power law
-
-        self.delta_max = 8e-2 # Convergence limit for eq. 28, Portinari+98
-        self.epsilon = 1e-32 # Avoid numerical errors - consistent with BBN
-        self.SFR_rescaling = 1 # !!!!!!! Constrained by observations at z=0 of the galaxy of interest
-        self.derlog = True
 
         self.custom_IMF = None
         self.custom_SFR = None
@@ -83,6 +78,11 @@ class Inputs:
         self.tau_inf = self.default_params('tau_inf', self.morphology)
         self.nu = self.default_params('nu', self.morphology)
         self.wind_efficiency = 0 # override: no overflow #self.default_params('wind_efficiency', self.morphology)
+        
+        self.delta_max = 8e-2 # Convergence limit for eq. 28, Portinari+98
+        self.epsilon = 1e-32 # Avoid numerical errors - consistent with BBN
+        self.SFR_rescaling = 1 #np.reciprocal(self.M_inf) # !!!!!!! Constrained by observations at z=0 of the galaxy of interest
+        self.derlog = True
         
         _dir = os.path.join(os.path.dirname( __file__ ), '..')
         p98_t14_df = pd.read_csv(_dir+'/input/starlifetime/portinari98table14.dat')
