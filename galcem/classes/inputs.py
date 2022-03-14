@@ -47,7 +47,7 @@ class Inputs:
         self.Mu_collapsars = 120 # [Msun] !!!!!!! temporary. Import from yield tables
 
         # Time parameters
-        self.nTimeStep = 0.01 # Picked to smooth the mapping between stellar masses and lifetimes
+        self.nTimeStep = 0.002 # 0.01 # Picked to smooth the mapping between stellar masses and lifetimes
         self.numTimeStep = 2000 # Like FM
         self.num_MassGrid = 200
 

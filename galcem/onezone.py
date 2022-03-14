@@ -283,6 +283,7 @@ class Plots(Setup):
     def plots(self):
         self.tic.append(time.process_time())
         print('Starting to plot')
+        self.FeH_evolution()
         self.iso_abundance()
         self.iso_evolution()
         self.iso_evolution_comp()
@@ -445,6 +446,39 @@ class Plots(Setup):
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'total_physical'+str(xscale)+'.pdf')
         
+    def FeH_evolution(self, c=2, logAge=False):
+        print('Starting FeH_evolution()')
+        from matplotlib import pyplot as plt
+        import pandas as pd
+        plt.style.use(self._dir+'/galcem.mplstyle')
+        Z_list = np.unique(self.ZA_sorted[:,0])
+        phys = np.loadtxt(self._dir_out + 'phys.dat')
+        time = phys[c:,0]
+        observ = pd.read_table(self._dir + '/input/observations/meusinger91.txt', sep=',')
+        solar_norm_H = self.c_class.solarA09_vs_H_bymass[Z_list]
+        solar_norm_Fe = self.c_class.solarA09_vs_Fe_bymass[Z_list]
+        Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
+        #Fe = np.sum(Mass_i[np.intersect1d(np.where(ZA_sorted[:,0]==26)[0], np.where(ZA_sorted[:,1]==56)[0]), c+2:], axis=0)
+        Fe = np.sum(Mass_i[self.select_elemZ_idx(26), c+2:], axis=0)
+        H = np.sum(Mass_i[self.select_elemZ_idx(1), c+2:], axis=0)
+        FeH = np.log10(np.divide(Fe, H)) - solar_norm_H[26]
+        fig, ax = plt.subplots(1,1, figsize=(7,5))
+        ax.plot(time, FeH, color='black', label='SNIa', linewidth=3)
+        ax.errorbar(self.IN.age_Galaxy - observ['age'], observ['FeH'], yerr=observ['FeHerr'], marker='s', label='Meusinger+91', mfc='gray', ecolor='gray', ls='none')
+        ax.legend(loc='lower right', frameon=False, fontsize=17)
+        ax.set_ylabel(r'[Fe/H]', fontsize=20)
+        ax.set_xlabel('Age [Gyr]', fontsize=20)
+        ax.set_ylim(-2,0.5)
+        xscale = '_lin'
+        if not logAge:
+            ax.set_xlim(0,13.8)
+        else:
+            ax.set_xscale('log')
+            xscale = '_log'
+        #ax.set_xlim(1e-2, 1.9e1)
+        fig.tight_layout()
+        plt.savefig(self._dir_out_figs + 'FeH_evolution'+str(xscale)+'.pdf')
+
     def iso_evolution(self, figsize=(40,13)):
         print('Starting iso_evolution()')
         from matplotlib import pyplot as plt
@@ -595,7 +629,7 @@ class Plots(Setup):
         plt.subplots_adjust(wspace=0., hspace=0.)
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'iso_abundance.pdf')
-
+        
     def extract_normalized_abundances(self, Z_list, Mass_i_loc, c=3):
         solar_norm_H = self.c_class.solarA09_vs_H_bymass[Z_list]
         solar_norm_Fe = self.c_class.solarA09_vs_Fe_bymass[Z_list]
@@ -702,7 +736,7 @@ class Plots(Setup):
             nrow = ncol + 1
         fig, axs = plt.subplots(nrow, ncol, figsize =figsiz)#, sharex=True)
     
-        path = self._dir + r'/input/observations' # use your path
+        path = self._dir + r'/input/observations/abund' # use your path
         all_files = glob.glob(path + "/*.txt")
 
         li = []
@@ -790,7 +824,7 @@ class Plots(Setup):
         ncol = 6
         fig, axs = plt.subplots(nrow, ncol, figsize =figsiz)#, sharex=True)
 
-        path = self._dir + r'/input/observations' # use your path
+        path = self._dir + r'/input/observations/abund' # use your path
         all_files = glob.glob(path + "/*.txt")
 
         li = []
