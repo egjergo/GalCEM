@@ -166,6 +166,16 @@ def i99_test(i_elemZ, i_elemA, loc='input/yields/snia/i99', filename='table3.csv
     else:
         return df_pick[value_name].values[0]
 
+def snia_test(i_elemZ, i_elemA, loc='galcem/input/yields/snia/k20', filename='yield_nucl.d', value_name='yields'):
+    df = pd.read_fwf(f'{loc}/{filename}', comment='#')
+    print(df.columns)
+    select = (df['elemZ'] == i_elemZ) & (df['elemA'] == i_elemA)
+    df_pick = df.loc[select]
+    if df_pick[value_name].empty:
+        return 0. 
+    else:
+        return df_pick[value_name].values[0]
+    
 def test_for_ZA_sorted(func):
     X, Y, models = [], [], []
     for i, val in enumerate(ZA_sorted):
@@ -180,8 +190,8 @@ def test_for_ZA_sorted(func):
             print('X is empty')
     return X, Y, models
 
-def test_for_ZA_sorted_nomodel(func=i99_test):
-    '''For yields with no X dependence e.g. i99_test'''
+def test_for_ZA_sorted_nomodel(func=snia_test):
+    '''For yields with no X dependence e.g. snia_test'''
     yields = np.zeros(len(ZA_sorted))
     for i, val in enumerate(ZA_sorted):
         yields[i] = func(val[0], val[1])

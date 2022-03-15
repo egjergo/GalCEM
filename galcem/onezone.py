@@ -76,6 +76,7 @@ class Setup:
         self.Infall_rate = self.infall(self.time_chosen)
         self.ZA_sorted = self.c_class.ZA_sorted(ZA_all) # [Z, A] VERY IMPORTANT! 321 isotopes with yields_SNIa_option = 'km20', 192 isotopes for 'i99' 
         self.ZA_sorted = self.ZA_sorted[1:,:]
+        print(self.ZA_sorted.shape)
         self.ZA_symb_list = self.IN.periodic['elemSymb'][self.ZA_sorted[:,0]] # name of elements for all isotopes
         self.asplund3_percent = self.c_class.abund_percentage(self.ZA_sorted)
         #ZA_symb_iso_list = np.asarray([ str(A) for A in self.IN.periodic['elemA'][self.ZA_sorted]])  # name of elements for all isotopes
@@ -104,7 +105,7 @@ class Setup:
         self._dir = os.path.dirname(__file__)
         self.X_lc18, self.Y_lc18, self.models_lc18, self.averaged_lc18 = self.load_processed_yields(func_name=self.IN.yields_SNII_option, loc=self._dir + '/input/yields/snii/'+ self.IN.yields_SNII_option + '/tab_R', df_list=['X', 'Y', 'models', 'avgmassfrac'])
         self.X_k10, self.Y_k10, self.models_k10, self.averaged_k10 = self.load_processed_yields(func_name=self.IN.yields_LIMs_option, loc=self._dir + '/input/yields/lims/' + self.IN.yields_LIMs_option, df_list=['X', 'Y', 'models', 'avgmassfrac'])
-        self.Y_i99 = self.load_processed_yields_snia(func_name=self.IN.yields_SNIa_option, loc=self._dir + '/input/yields/snia/' + self.IN.yields_SNIa_option, df_list='Y')
+        self.Y_snia = self.load_processed_yields_snia(func_name=self.IN.yields_SNIa_option, loc=self._dir + '/input/yields/snia/' + self.IN.yields_SNIa_option, df_list='Y')
         
     def load_processed_yields(self,func_name, loc, df_list):
         df_dict = {}
@@ -191,7 +192,7 @@ class OneZone(Setup):
             Wi_vals = []
             for j,val in enumerate(Wi_comps):
                 if len(val[1]) > 0.:
-                    Wi_vals.append(integr.simps(val[0] * yields[j], x=val[1]))  
+                    Wi_vals.append(integr.simps(np.multiply(val[0], yields[j]), x=val[1]))
                     #Wi_vals.append(integr.simps(val[0] * yield_interp[j](mass_grid, metallicity_func[birthtime_grid]), x=val[1]))   
                 else:
                     Wi_vals.append(0.)
@@ -205,6 +206,7 @@ class OneZone(Setup):
     def Mgas_func(self, t_n, y_n, n, i=None):
         # Explicit general diff eq GCE function
         # Mgas(t)
+        #print(f'{self.SFR_tn(n)==self.SFR_v[n]=}')
         return self.Infall_rate[n] - self.SFR_tn(n) + np.sum(self.W_i_comp[:,n,:])
     
     def Mstar_func(self, t_n, y_n, n, i=None):
@@ -242,7 +244,7 @@ class OneZone(Setup):
                 #yield_SNII = Wi_class.yield_array('SNII', Wi_class.SNII_mass_grid, Wi_class.SNII_birthtime_grid)
                 #yield_LIMs = Wi_class.yield_array('LIMs', Wi_class.LIMs_mass_grid, Wi_class.LIMs_birthtime_grid)
                 for i, _ in enumerate(self.ZA_sorted): 
-                    Wi_SNIa = self.Rate_SNIa[n] * self.Y_i99[i]
+                    Wi_SNIa = self.Rate_SNIa[n] * self.Y_snia[i]
                     if self.X_lc18[i].empty:
                         yields_lc18 = 0.
                     else:
@@ -376,6 +378,7 @@ class Plots(Setup):
         print('Starting phys_integral_plot()')
         # Requires running "phys_integral()" in onezone.py beforehand
         from matplotlib import pyplot as plt
+        import matplotlib.ticker as ticker
         plt.style.use(self._dir+'/galcem.mplstyle')
         phys = np.loadtxt(self._dir_out + 'phys.dat')
         Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
@@ -422,6 +425,14 @@ class Plots(Setup):
             axs[0].set_xlim(0,13.8)
             axs[1].set_xlim(0,13.8)
             axt.set_xlim(0,13.8)
+            axs[0].xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
+            axs[0].tick_params(width = 1, length = 10, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
+            axs[0].xaxis.set_major_locator(ticker.MultipleLocator(base=5))
+            axs[0].tick_params(width = 2, length = 15, axis = 'x', which = 'major', bottom = True, top = True, direction = 'in')
+            axs[1].xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
+            axs[1].tick_params(width = 1, length = 10, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
+            axs[1].xaxis.set_major_locator(ticker.MultipleLocator(base=5))
+            axs[1].tick_params(width = 2, length = 15, axis = 'x', which = 'major', bottom = True, top = True, direction = 'in')
         else:
             axs[0].set_xscale('log')
             axs[1].set_xscale('log')
@@ -547,7 +558,6 @@ class Plots(Setup):
         fig, axs = plt.subplots(nrow, ncol, figsize=figsize)#, sharex=True)
         for i, ax in enumerate(axs.flat):
             if i < len(Z):
-                #ax.plot(timex, Masses[i], color='black')
                 ax.plot(timex, Mass_SNII[i], color='#0034ff', linestyle='-.', linewidth=3, alpha=0.8, label='SNII')
                 ax.plot(timex, Mass_AGB[i], color='#ff00b3', linestyle='--', linewidth=3, alpha=0.8, label='LIMs')
                 ax.plot(timex, Mass_SNIa[i], color='#00b3ff', linestyle=':', linewidth=3, alpha=0.8, label='SNIa')
