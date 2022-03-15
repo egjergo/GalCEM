@@ -184,10 +184,8 @@ class OneZone(Setup):
         i = kwargs['i']
         yields = kwargs['yields']
         channel_switch = ['SNII', 'LIMs']
-        infall_comp = self.Infall_rate[n] * self.Xi_inf[i]
-        sfr_comp = self.SFR_v[n] * self.Xi_v[i,n] 
         if n <= 0:
-            val = infall_comp - sfr_comp
+            val = self.Infall_rate[n] * self.Xi_inf[i]  - np.multiply(self.SFR_v[n], self.Xi_v[i,n])
         else:
             Wi_vals = []
             for j,val in enumerate(Wi_comps):
@@ -197,10 +195,16 @@ class OneZone(Setup):
                 else:
                     Wi_vals.append(0.)
             returned = [Wi_vals[0], Wi_vals[1], Wi_SNIa]
+            
+            infall_comp = self.Infall_rate[n] * self.Xi_inf[i]
+            sfr_comp = self.SFR_v[n] * self.Xi_v[i,n] 
             self.W_i_comp[i,n,0] = returned[0] 
             self.W_i_comp[i,n,1] = returned[1] 
             self.W_i_comp[i,n,2] = returned[2]
-            val = infall_comp - sfr_comp + np.sum(returned)
+            val = infall_comp  - sfr_comp + np.sum(returned)
+            #if val < 0.:
+            #    print('val is zero at n=%d and i=%d'%(n,i))
+            #    val = 0.
         return val
 
     def Mgas_func(self, t_n, y_n, n, i=None):
@@ -248,12 +252,12 @@ class OneZone(Setup):
                     if self.X_lc18[i].empty:
                         yields_lc18 = 0.
                     else:
-                        idx_SNII = np.digitize(self.Z_v[n-1] - self.IN.solar_metallicity, self.averaged_lc18[i][1])
+                        idx_SNII = np.digitize(self.Z_v[n-1], self.averaged_lc18[i][1])
                         yields_lc18 = self.averaged_lc18[i][0][idx_SNII]
                     if self.X_k10[i].empty:
                         yields_k10 = 0.
                     else:
-                        idx_LIMs = np.digitize(self.Z_v[n-1] - self.IN.solar_metallicity, self.averaged_k10[i][1])
+                        idx_LIMs = np.digitize(self.Z_v[n-1], self.averaged_k10[i][1])
                         yields_k10 = self.averaged_k10[i][0][idx_LIMs]
                     yields = [yields_lc18, yields_k10]
                     self.Mass_i_v[i, n+1] = self.aux.RK4(self.solve_integral, self.time_chosen[n], self.Mass_i_v[i,n], n, self.IN.nTimeStep, i=i, Wi_comp=Wi_comp, Wi_SNIa=Wi_SNIa, yields=yields)
@@ -282,7 +286,7 @@ class Plots(Setup):
         self.FeH_evolution()
         #self.DTD_plot()
         self.iso_abundance()
-        #self.iso_evolution()
+        self.iso_evolution()
         self.iso_evolution_comp()
         self.observational()
         self.observational_lelemZ()
@@ -890,92 +894,5 @@ class Plots(Setup):
         fig.subplots_adjust(wspace=0., hspace=0.)
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'elem_obs_lelemZ.pdf')
-        return None
-    
-    def obs_lelemZ(self, figsiz = (32,6), c=3):
-        print('Starting observational_lelemZ()')
-        import glob
-        import itertools
-        import pandas as pd
-        from matplotlib import pyplot as plt
-        import matplotlib.ticker as ticker
-        plt.style.use(self._dir+'/galcem.mplstyle')
-        Mass_i = np.loadtxt(self._dir_out+'Mass_i.dat')
-        Z_list = np.unique(self.ZA_sorted[:,0])
-        Z_symb_list = self.IN.periodic['elemSymb'][Z_list] # name of elements for all isotopes
-        solar_norm_H = self.c_class.solarA09_vs_H_bymass[Z_list]
-        solar_norm_Fe = self.c_class.solarA09_vs_Fe_bymass[Z_list]
-        Masses_i = []
-        Masses2_i = []
-        Fe = np.sum(Mass_i[self.select_elemZ_idx(26), c+2:], axis=0)
-        H = np.sum(Mass_i[self.select_elemZ_idx(1), c+2:], axis=0)
-        for i,val in enumerate(Z_list):
-            mass = np.sum(Mass_i[self.select_elemZ_idx(val), c+2:], axis=0)
-            Masses2_i.append(np.log10(np.divide(mass,Fe)) - solar_norm_Fe[val])
-            Masses_i.append(mass)
-        Masses = np.log10(np.divide(Masses_i, Fe))
-        Masses2 = np.array(Masses2_i) 
-        FeH = np.log10(np.divide(Fe, H)) - solar_norm_H[26]
-        nrow = 4
-        ncol = 7
-        fig, axs = plt.subplots(nrow, ncol, figsize =figsiz)#, sharex=True)
-
-        path = self._dir + r'/input/observations/abund' # use your path
-        all_files = glob.glob(path + "/*.txt")
-
-        li = []
-        elemZmin = 12
-        elemZmax = 12
-
-        for filename in all_files:
-            df = pd.read_table(filename, sep=',')
-            elemZmin0 = np.min(df.iloc[:,0])
-            elemZmax0 = np.max(df.iloc[:,0])
-            elemZmin = np.min([elemZmin0, elemZmin])
-            elemZmax = np.max([elemZmax0, elemZmax])
-            li.append(df)
-
-        markerlist =itertools.cycle(('o', 'v', '^', '<', '>', 'P', '*', 'd', 'X'))
-        #colorlist = itertools.cycle(('#00ccff', '#ffb300', '#ff004d', '#003662', '#620005', '#366200'))
-        colorlist = itertools.cycle(('#00ccff', '#ffb300', '#ff004d'))
-        colorlist_websafe = itertools.cycle(('#ff3399', '#5d8aa8', '#e32636', '#ffbf00', '#9966cc', '#a4c639',
-                                             '#cd9575', '#008000', '#fbceb1', '#00ffff', '#4b5320', '#a52a2a',
-                                             '#007fff', '#ff2052', '#21abcd', '#e97451', '#592720', '#fad6a5',
-                                             '#36454f', '#e4d00a', '#ff3800', '#ffbcd9', '#008b8b', '#8b008b',
-                                             '#03c03c', '#00009c', '#ccff00', '#673147', '#0f0f0f', '#324ab2'))
-        lenlist = len(li)
-
-        for i, ax in enumerate(axs.flat):
-            for j, ll in enumerate(li):
-                idx_obs = np.where(ll.iloc[:,0] == i)[0]
-                ax.scatter(ll.iloc[idx_obs,1], ll.iloc[idx_obs,2], label=ll.iloc[idx_obs, 4], alpha=0.1, marker=next(markerlist), color=next(colorlist_websafe))
-            if i < nrow*ncol:
-                #ax.plot(FeH, Masses[i], color='blue')
-                ax.plot(FeH, Masses2[i], color='black', linewidth=2)
-                ax.annotate(f"{Z_list[i]}{Z_symb_list[Z_list[i]]}", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
-                ax.set_ylim(-5.9, 5.9)
-                ax.set_xlim(-6.5, 0.5)
-                ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=.5))
-                ax.tick_params(width = 1, length = 2, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
-                ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=.5))
-                ax.tick_params(width = 1, length = 2, axis = 'y', which = 'minor', left = True, right = True, direction = 'in')
-                ax.xaxis.set_major_locator(ticker.MultipleLocator(base=2))
-                ax.tick_params(width = 1, length = 5, axis = 'x', which = 'major', bottom = True, top = True, direction = 'in')
-                ax.yaxis.set_major_locator(ticker.MultipleLocator(base=3))
-                ax.tick_params(width = 1, length = 5, axis = 'y', which = 'major', left = True, right = True, direction = 'in')
-            else:
-                fig.delaxes(ax)
-        for i in range(nrow):
-            for j in range(ncol):
-                if j != 0:
-                    axs[i,j].set_yticklabels([])
-                if i != nrow-1:
-                    axs[i,j].set_xticklabels([])
-        axs[nrow//2,0].set_ylabel('[X/Fe]', fontsize = 15)
-        axs[nrow-1, ncol//2].set_xlabel(f'[Fe/H]', fontsize = 15)
-        fig.tight_layout(rect = [0.03, 0, 1, 1])
-        fig.subplots_adjust(wspace=0., hspace=0.)
-        plt.show(block=False)
-        plt.savefig(self._dir_out_figs + 'elem_obs_lZ.pdf')
         return None
     
