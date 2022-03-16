@@ -207,11 +207,11 @@ class OneZone(Setup):
         # Explicit general diff eq GCE function
         # Mgas(t)
         #print(f'{self.SFR_tn(n)==self.SFR_v[n]=}')
-        return self.Infall_rate[n] - self.SFR_tn(n) + np.sum(self.W_i_comp[:,n,:])
+        return self.Infall_rate[n] - self.SFR_tn(n) * np.sum(self.Xi_v[:,n]) + np.sum(self.W_i_comp[:,n,:])
     
     def Mstar_func(self, t_n, y_n, n, i=None):
         # Mstar(t)
-        return self.SFR_tn(n) - np.sum(self.W_i_comp[:,n,:])
+        return self.SFR_tn(n) * np.sum(self.Xi_v[:,n]) - np.sum(self.W_i_comp[:,n,:])
 
     def SFR_tn(self, timestep_n):
         '''
@@ -231,6 +231,7 @@ class OneZone(Setup):
 
     def evolve(self):
         '''Evolution routine'''
+        self.Mass_i_v[:,1] = np.multiply(self.Mtot[1], self.Xi_inf)
         for n in range(len(self.time_chosen[:self.idx_age_Galaxy])):
             print('time [Gyr] = %.2f'%self.time_chosen[n])
             self.file1.write('n = %d\n'%n)
@@ -416,11 +417,10 @@ class Plots(Setup):
         axs[1].semilogy(time_plot[:-1], np.divide(Rate_LIMs[:-1],1e9), label= r'$R_{LIMs}$', color = '#ff00b3', linestyle=':', linewidth=3)
         axs[1].semilogy(time_plot[:-1], Infall_rate[:-1], label= r'Infall', color = 'black', linestyle='-', linewidth=3)
         axs[1].semilogy(time_plot[:-1], SFR_v[:-1], label= r'SFR', color = '#ff8c00', linestyle='--', linewidth=3)
-        axs[0].set_ylim(1e6, 1e11)
+        #axs[0].set_ylim(1e6, 1e11)
         axs[1].set_ylim(1e-3, 1e2)
         axt.set_ylim(1e-3, 1e2)
         axt.set_yscale('log')
-        axt.set_ylim(1e-3, 1e2)
         if not logAge:
             axs[0].set_xlim(0,13.8)
             axs[1].set_xlim(0,13.8)
@@ -475,7 +475,7 @@ class Plots(Setup):
         ax.legend(loc='lower right', frameon=False, fontsize=17)
         ax.set_ylabel(r'[Fe/H]', fontsize=20)
         ax.set_xlabel('Age [Gyr]', fontsize=20)
-        ax.set_ylim(-2,0.5)
+        #ax.set_ylim(-2,0.5)
         xscale = '_lin'
         if not logAge:
             ax.set_xlim(0,13.8)

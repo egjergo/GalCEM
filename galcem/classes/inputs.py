@@ -47,7 +47,7 @@ class Inputs:
         self.Mu_collapsars = 120 # [Msun] !!!!!!! temporary. Import from yield tables
 
         # Time parameters
-        self.nTimeStep = 0.002 #0.01 # Picked to smooth the mapping between stellar masses and lifetimes
+        self.nTimeStep = 0.01 #0.002 # Picked to smooth the mapping between stellar masses and lifetimes
         self.numTimeStep = 2000 # Like FM
         self.num_MassGrid = 200
 
@@ -70,7 +70,7 @@ class Inputs:
         self.yields_LIMs_option = 'k10'
         self.yields_SNII_option = 'lc18'
         self.LC18_vel_idx = 0 # !!!!!!! eventually you should write a function about this
-        self.yields_SNIa_option = 'k20' #'i99' 
+        self.yields_SNIa_option = 'i99' #'k20' 
         self.yields_BBN_option = 'gp13'
 
         self.M_inf = self.default_params('M_inf', self.morphology)
