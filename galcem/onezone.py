@@ -207,11 +207,11 @@ class OneZone(Setup):
         # Explicit general diff eq GCE function
         # Mgas(t)
         #print(f'{self.SFR_tn(n)==self.SFR_v[n]=}')
-        return self.Infall_rate[n] - self.SFR_tn(n) * np.sum(self.Xi_v[:,n]) + np.sum(self.W_i_comp[:,n,:])
+        return self.Infall_rate[n] + np.sum(self.W_i_comp[:,n,:]) - self.SFR_tn(n) #* np.sum(self.Xi_v[:,n])
     
     def Mstar_func(self, t_n, y_n, n, i=None):
         # Mstar(t)
-        return self.SFR_tn(n) * np.sum(self.Xi_v[:,n]) - np.sum(self.W_i_comp[:,n,:])
+        return - np.sum(self.W_i_comp[:,n,:]) + self.SFR_tn(n) #* np.sum(self.Xi_v[:,n])
 
     def SFR_tn(self, timestep_n):
         '''
@@ -237,6 +237,7 @@ class OneZone(Setup):
             self.file1.write('n = %d\n'%n)
             self.phys_integral(n)        
             self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
+            self.file1.write(' sum X_i at n %d= %.3f\n'%(n, np.sum(self.Xi_v[:,n])))
             if n > 0.: 
                 Wi_class = Wi(n, self.IN, self.lifetime_class, self.time_chosen, self.Z_v, self.SFR_v, self.f_SNIa_v,
                               self.IMF, self.yields_SNIa_class, self.models_lc18, self.models_k10, self.ZA_sorted)
@@ -259,7 +260,9 @@ class OneZone(Setup):
                     yields = [yields_lc18, yields_k10]
                     self.Mass_i_v[i, n+1] = self.aux.RK4(self.solve_integral, self.time_chosen[n], self.Mass_i_v[i,n], n, self.IN.nTimeStep, i=i, Wi_comp=Wi_comp, Wi_SNIa=Wi_SNIa, yields=yields)
             #self.Z_v[n] = np.divide(np.sum(self.Mass_i_v[self.elemZ_for_metallicity:,n]), self.Mgas_v[n])
+            self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
             self.Z_v[n] = np.divide(np.sum(self.Mass_i_v[:,n]), self.Mgas_v[n])
+        self.Z_v[-1] = np.divide(np.sum(self.Mass_i_v[:,-1]), self.Mgas_v[-1])
         self.Xi_v[:,-1] = np.divide(self.Mass_i_v[:,-1], self.Mgas_v[-1]) 
 
 
@@ -287,6 +290,7 @@ class Plots(Setup):
         self.iso_evolution_comp()
         self.observational()
         self.observational_lelemZ()
+        self.obs_lelemZ()
         self.phys_integral_plot()
         self.phys_integral_plot(logAge=True)
         self.lifetimeratio_test_plot()
@@ -417,7 +421,7 @@ class Plots(Setup):
         axs[1].semilogy(time_plot[:-1], np.divide(Rate_LIMs[:-1],1e9), label= r'$R_{LIMs}$', color = '#ff00b3', linestyle=':', linewidth=3)
         axs[1].semilogy(time_plot[:-1], Infall_rate[:-1], label= r'Infall', color = 'black', linestyle='-', linewidth=3)
         axs[1].semilogy(time_plot[:-1], SFR_v[:-1], label= r'SFR', color = '#ff8c00', linestyle='--', linewidth=3)
-        #axs[0].set_ylim(1e6, 1e11)
+        axs[0].set_ylim(1e6, 1e11)
         axs[1].set_ylim(1e-3, 1e2)
         axt.set_ylim(1e-3, 1e2)
         axt.set_yscale('log')
@@ -475,7 +479,7 @@ class Plots(Setup):
         ax.legend(loc='lower right', frameon=False, fontsize=17)
         ax.set_ylabel(r'[Fe/H]', fontsize=20)
         ax.set_xlabel('Age [Gyr]', fontsize=20)
-        #ax.set_ylim(-2,0.5)
+        ax.set_ylim(-2,0.5)
         xscale = '_lin'
         if not logAge:
             ax.set_xlim(0,13.8)
