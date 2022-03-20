@@ -772,7 +772,7 @@ class Plots(Setup):
     
         for i, ax in enumerate(axs.flat):
             for j, ll in enumerate(li):
-                idx_obs = np.where(ll.iloc[:,0] == i)[0]
+                idx_obs = np.where(ll.iloc[:,0] == i+1)[0]
                 ax.scatter(ll.iloc[idx_obs,1], ll.iloc[idx_obs,2], label=ll.iloc[idx_obs, 4], alpha=0.1, marker=next(markerlist), color=next(colorlist_websafe))
             if i < len(Z_list):
                 ax.plot(FeH, Masses2[i], color='black', linewidth=2)
@@ -861,7 +861,7 @@ class Plots(Setup):
 
         for i, ax in enumerate(axs.flat):
             for j, ll in enumerate(li):
-                idx_obs = np.where(ll.iloc[:,0] == i)[0]
+                idx_obs = np.where(ll.iloc[:,0] == i+1)[0]
                 ax.scatter(ll.iloc[idx_obs,1], ll.iloc[idx_obs,2], label=ll.iloc[idx_obs, 4], alpha=0.1, marker=next(markerlist), color=next(colorlist_websafe))
             if i < nrow*ncol:
                 #ax.plot(FeH, Masses[i], color='blue')
@@ -951,7 +951,7 @@ class Plots(Setup):
 
         for i, ax in enumerate(axs.flat):
             for j, ll in enumerate(li):
-                idx_obs = np.where(ll.iloc[:,0] == i)[0]
+                idx_obs = np.where(ll.iloc[:,0] == i+1)[0]
                 ax.scatter(ll.iloc[idx_obs,1], ll.iloc[idx_obs,2], label=ll.iloc[idx_obs, 4], alpha=0.1, marker=next(markerlist), color=next(colorlist_websafe))
             if i < nrow*ncol:
                 #ax.plot(FeH, Masses[i], color='blue')
