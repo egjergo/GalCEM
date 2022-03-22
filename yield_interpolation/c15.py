@@ -27,7 +27,6 @@ if __name__ == '__main__':
             df_txt['MASS'] = mass
             df_txt['METALLICITY'] = metallicity
             df_txt['IRV'] = irv
-            
             df = df.append(df_txt)
             if debug:
                 print(txt_og)
@@ -44,7 +43,7 @@ if __name__ == '__main__':
     print('\n'+'~'*75+'\n')
     dfs = dict(tuple(df.groupby(['isotope','a','z'])))
     for ids,_df in dfs.items():
-        tag = '%s.a%d.z%d.irv0'%ids
+        tag = 'a%d.z%d.irv0.%s'%(*ids[1:],ids[0])
         print('fitting interpolant %s\n'%tag)
         _df = _df[_df['irv']==0]
         # fit model
@@ -59,13 +58,13 @@ if __name__ == '__main__':
         interpolant.plot(
             xcols = ['mass','metallicity'],
             xfixed = {},
-            figroot = 'yield_interpolation/figs/c15/c15_%s'%tag,
+            figroot = 'yield_interpolation/figs/c15/%s'%tag,
             title = 'Lifetime by Mass, Metallicity',
             view_angle = -45)
         #   save model
-        pickle.dump(interpolant,open('yield_interpolation/interpolants/c15/c15_%s.pkl'%tag,'wb'))
+        pickle.dump(interpolant,open('yield_interpolation/interpolants/c15/%s.pkl'%tag,'wb'))
         #   load model
-        interpolant_loaded = pickle.load(open('yield_interpolation/interpolants/c15/c15_%s.pkl'%tag,'rb'))
+        interpolant_loaded = pickle.load(open('yield_interpolation/interpolants/c15/%s.pkl'%tag,'rb'))
         #   example model use
         xquery = pd.DataFrame({'mass':[15],'metallicity':[0.01648]})
         yquery = interpolant_loaded(xquery)

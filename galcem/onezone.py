@@ -76,7 +76,6 @@ class Setup:
         self.Infall_rate = self.infall(self.time_chosen)
         self.ZA_sorted = self.c_class.ZA_sorted(ZA_all) # [Z, A] VERY IMPORTANT! 321 isotopes with yields_SNIa_option = 'km20', 192 isotopes for 'i99' 
         self.ZA_sorted = self.ZA_sorted[1:,:]
-        print(self.ZA_sorted.shape)
         self.ZA_symb_list = self.IN.periodic['elemSymb'][self.ZA_sorted[:,0]] # name of elements for all isotopes
         self.asplund3_percent = self.c_class.abund_percentage(self.ZA_sorted)
         #ZA_symb_iso_list = np.asarray([ str(A) for A in self.IN.periodic['elemA'][self.ZA_sorted]])  # name of elements for all isotopes
