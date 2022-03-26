@@ -34,11 +34,13 @@ class Wi_grid:
 
             
 class Wi:
-    # Solves each integration item by integrating over birthtimes.
-    # Input upper and lower mass limits (to be mapped onto birthtimes)
-    # Gyr_age    (t)     is the Galactic age
-    # birthtime (t')     is the stellar birthtime
-    # lifetime (tau)    is the stellar lifetime
+    '''
+    Solves each integration item by integrating over birthtimes.
+    Input upper and lower mass limits (to be mapped onto birthtimes)
+    Gyr_age    (t)     is the Galactic age
+    birthtime (t')     is the stellar birthtime
+    lifetime (tau)    is the stellar lifetime
+    '''
     def __init__(self, age_idx, IN, lifetime_class, time_chosen, Z_v, SFR_v, f_SNIa_v, IMF, yields_SNIa_class, models_lc18, models_k10, ZA_sorted):
         self.IN = IN
         self.lifetime_class = lifetime_class
@@ -116,6 +118,9 @@ class Wi:
                     y.append(np.zeros(len_X))
         return 0.005 * np.ones(len(self.ZA_sorted)) #y # len consistent with ZA_sorted
 
+    def yield_component(self, channel_switch, mass_grid, birthtime_grid, vel_idx=None):
+        return interpolation(mass_grid, metallicity(birthtime_grid))
+    
     def mass_component(self, channel_switch, mass_grid, lifetime_grid): #
         # Portinari+98, page 22, last eq. first column
         birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
