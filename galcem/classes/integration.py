@@ -157,6 +157,15 @@ class Wi:
         integrand = np.multiply(SFR_comp, F_SNIa)
         return integr.simps(integrand, x=birthtime_grid)
  
+    def _compute_rateSNIa(self, channel_switch='SNIa'):
+        from .morphology import DTD
+        DTD_class = DTD()
+        birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
+        SFR_comp = self.SFR_component(birthtime_grid)
+        F_SNIa = [DTD_class.MaozMannucci12(t) for t in birthtime_grid]
+        integrand = np.multiply(SFR_comp, F_SNIa)
+        return integr.simps(integrand, x=birthtime_grid)
+ 
     def compute_rate(self, channel_switch='SNII'):
         # Computes the Type II SNae rate 
         birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
