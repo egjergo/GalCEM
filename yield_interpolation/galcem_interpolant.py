@@ -1,6 +1,7 @@
 import scipy.interpolate as interp
 import numpy as np
 import pandas as pd
+import pickle
 
 class GalCemInterpolant(object):
     def __init__(self,s_y,dfx,xlog10cols,ylog10col):
@@ -99,3 +100,35 @@ class GalCemInterpolant(object):
         fig.suptitle(title)
         if figroot: fig.savefig('%s.pdf'%figroot,format='pdf',bbox_inches='tight')
         else: fig.show()
+
+def fit_isotope_interpolants_irv0(df,root):
+    # iterate over a,z pairs and save interpolants based on irv=0
+    print('\n'+'~'*75+'\n')
+    dfs = dict(tuple(df.groupby(['isotope','a','z'])))
+    for ids,_df in dfs.items():
+        tag = 'a%d.z%d.irv0.%s'%(*ids[1:],ids[0])
+        print('fitting interpolant %s\n'%tag)
+        _df = _df[_df['irv']==0]
+        # fit model
+        interpolant = GalCemInterpolant(
+            s_y = _df['yield'],
+            dfx = _df[['mass','metallicity']],
+            xlog10cols = ['metallicity'],
+            ylog10col = True)
+        #   print model
+        print(interpolant)
+        #   plot model
+        interpolant.plot(
+            xcols = ['mass','metallicity'],
+            xfixed = {},
+            figroot = root+'figs/%s'%tag,
+            title = 'Yield by Mass, Metallicity',
+            view_angle = -45)
+        #   save model
+        pickle.dump(interpolant,open(root+'models/%s.pkl'%tag,'wb'))
+        #   load model
+        interpolant_loaded = pickle.load(open(root+'models/%s.pkl'%tag,'rb'))
+        #   example model use
+        xquery = pd.DataFrame({'mass':[15],'metallicity':[0.01648]})
+        yquery = interpolant_loaded(xquery)
+        print('~'*75+'\n')
