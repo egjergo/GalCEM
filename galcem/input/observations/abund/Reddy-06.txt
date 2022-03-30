@@ -1,3 +1,4 @@
+elemZ,[Fe/H]sun by mass (Asplund09),[X/Fe]sun by mass(Neutral),[X/Fe]sun by mass(Ionized),paperName
 6,-0.233,0.147,-30.0,Reddy-06-LTE
 6,-0.653,0.287,-30.0,Reddy-06-LTE
 6,-0.503,0.357,-30.0,Reddy-06-LTE
