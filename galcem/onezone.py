@@ -283,7 +283,7 @@ class Plots(Setup):
         self.tic.append(time.process_time())
         print('Starting to plot')
         self.FeH_evolution()
-        #self.DTD_plot()
+        self.DTD_plot()
         self.iso_abundance()
         #self.iso_evolution()
         self.iso_evolution_comp()
@@ -300,7 +300,7 @@ class Plots(Setup):
     def ZA_sorted_plot(self, cmap_name='magma_r', cbins=10): # angle = 2 * np.pi / np.arctan(0.4) !!!!!!!
         print('Starting ZA_sorted_plot()')
         from matplotlib import cm,pyplot as plt
-        plt.style.use(self._dir+'/galcem.mplstyle')
+        #plt.style.use(self._dir+'/galcem.mplstyle')
         import matplotlib.colors as colors
         import matplotlib.ticker as ticker
         x = self.ZA_sorted[:,1]#- ZA_sorted[:,0]
@@ -336,7 +336,7 @@ class Plots(Setup):
     def DTD_plot(self):
         print('Starting DTD_plot()')
         from matplotlib import pyplot as plt
-        plt.style.use(self._dir+'/galcem.mplstyle')
+        #plt.style.use(self._dir+'/galcem.mplstyle')
         phys = np.loadtxt(self._dir_out + 'phys.dat')
         time = phys[:-1,0]
         DTD_SNIa = phys[:-1,12]
@@ -353,7 +353,7 @@ class Plots(Setup):
     def lifetimeratio_test_plot(self,colormap='Paired'):
         print('Starting lifetimeratio_test_plot()')
         from matplotlib import pyplot as plt
-        plt.style.use(self._dir+'/galcem.mplstyle')
+        #plt.style.use(self._dir+'/galcem.mplstyle')
         fig, ax = plt.subplots(1,1, figsize=(7,5))
         divid05 = np.divide(self.IN.s_lifetimes_p98['Z05'], self.IN.s_lifetimes_p98['Z0004'])
         divid02 = np.divide(self.IN.s_lifetimes_p98['Z02'], self.IN.s_lifetimes_p98['Z0004'])
@@ -383,7 +383,7 @@ class Plots(Setup):
         # Requires running "phys_integral()" in onezone.py beforehand
         from matplotlib import pyplot as plt
         import matplotlib.ticker as ticker
-        plt.style.use(self._dir+'/galcem.mplstyle')
+        #plt.style.use(self._dir+'/galcem.mplstyle')
         phys = np.loadtxt(self._dir_out + 'phys.dat')
         Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
         time_chosen = phys[:,0]
@@ -460,7 +460,7 @@ class Plots(Setup):
         print('Starting FeH_evolution()')
         from matplotlib import pyplot as plt
         import pandas as pd
-        plt.style.use(self._dir+'/galcem.mplstyle')
+        #plt.style.use(self._dir+'/galcem.mplstyle')
         Z_list = np.unique(self.ZA_sorted[:,0])
         phys = np.loadtxt(self._dir_out + 'phys.dat')
         time = phys[c:,0]
@@ -492,7 +492,7 @@ class Plots(Setup):
     def iso_evolution(self, figsize=(40,13)):
         print('Starting iso_evolution()')
         from matplotlib import pyplot as plt
-        plt.style.use(self._dir+'/galcem.mplstyle')
+        #plt.style.use(self._dir+'/galcem.mplstyle')
         import matplotlib.ticker as ticker
         Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
         Masses = np.log10(Mass_i[:,2:])
@@ -538,7 +538,7 @@ class Plots(Setup):
     def iso_evolution_comp(self, figsize=(40,13)):
         print('Starting iso_evolution_comp()')
         from matplotlib import pyplot as plt
-        plt.style.use(self._dir+'/galcem.mplstyle')
+        #plt.style.use(self._dir+'/galcem.mplstyle')
         import matplotlib.ticker as ticker
         Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
         Masses = np.log10(Mass_i[:,2:])
@@ -595,7 +595,7 @@ class Plots(Setup):
     def iso_abundance(self, figsize=(40,13), c=3): 
         print('Starting iso_abundance()')
         from matplotlib import pyplot as plt
-        plt.style.use(self._dir+'/galcem.mplstyle')
+        #plt.style.use(self._dir+'/galcem.mplstyle')
         import matplotlib.ticker as ticker
         Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
         Fe = np.sum(Mass_i[self.select_elemZ_idx(26), c+2:], axis=0)
@@ -657,7 +657,7 @@ class Plots(Setup):
     def elem_abundance(self, figsiz = (32,10), c=3, setylim = (-6, 6), setxlim=(-6.5, 0.5)):
         print('Starting elem_abundance()')
         from matplotlib import pyplot as plt
-        plt.style.use(self._dir+'/galcem.mplstyle')
+        #plt.style.use(self._dir+'/galcem.mplstyle')
         import matplotlib.ticker as ticker
         Z_list = np.unique(self.ZA_sorted[:,0])
         ncol = self.aux.find_nearest(np.power(np.arange(20),2), len(Z_list))
@@ -724,7 +724,7 @@ class Plots(Setup):
         import pandas as pd
         from matplotlib import pyplot as plt
         import matplotlib.ticker as ticker
-        plt.style.use(self._dir+'/galcem.mplstyle')
+        #plt.style.use(self._dir+'/galcem.mplstyle')
         Mass_i = np.loadtxt(self._dir_out+'Mass_i.dat')
         Z_list = np.unique(self.ZA_sorted[:,0])
         Z_symb_list = self.IN.periodic['elemSymb'][Z_list] # name of elements for all isotopes
@@ -747,8 +747,10 @@ class Plots(Setup):
     
         path = self._dir + r'/input/observations/abund' # use your path
         all_files = glob.glob(path + "/*.txt")
+        all_files = sorted(all_files, key=len)
 
         li = []
+        linames = []
         elemZmin = 12
         elemZmax = 12
 
@@ -759,27 +761,47 @@ class Plots(Setup):
             elemZmin = np.min([elemZmin0, elemZmin])
             elemZmax = np.max([elemZmax0, elemZmax])
             li.append(df)
+            linames.append(df['paperName'][0])
 
-        markerlist = itertools.cycle(('o', 'v', '^', '<', '>', 'P', '*', 'd', 'X'))
-        colorlist = itertools.cycle(('#00ccff', '#ffb300', '#ff004d'))
-        colorlist_websafe = itertools.cycle(('#ff3399', '#5d8aa8', '#e32636', '#ffbf00', '#9966cc', '#a4c639',
-                                             '#cd9575', '#008000', '#fbceb1', '#00ffff', '#4b5320', '#a52a2a',
-                                             '#007fff', '#ff2052', '#21abcd', '#e97451', '#592720', '#fad6a5',
-                                             '#36454f', '#e4d00a', '#ff3800', '#ffbcd9', '#008b8b', '#8b008b',
-                                             '#03c03c', '#00009c', '#ccff00', '#673147', '#0f0f0f', '#324ab2'))
+        lenlist = len(li)
+        listmarkers = [r"$\mathcal{A}$",  r"$\mathcal{B}$",  r"$\mathcal{C}$",
+                                    r"$\mathcal{D}$", r"$\mathcal{E}$", r"$\mathcal{F}$",
+                                    r"$\mathcal{G}$", r"$\mathcal{H}$", r"$\mathcal{I}$",
+                                    r"$\mathcal{J}$", r"$\mathcal{K}$", r"$\mathcal{L}$",
+                                    r"$\mathcal{M}$", r"$\mathcal{N}$", r"$\mathcal{O}$",
+                                    r"$\mathcal{P}$", r"$\mathcal{Q}$", r"$\mathcal{R}$",
+                                    r"$\mathcal{S}$", r"$\mathcal{T}$", r"$\mathcal{U}$",
+                                    r"$\mathcal{V}$", r"$\mathcal{X}$", r"$\mathcal{Y}$",
+                                    "$1$", "$2$", "$3$", "$4$", "$5$", "$6$", 
+                                    "$7$", "$8$", "$9$", "$f$", "$\u266B$",
+                                    r"$\frac{1}{2}$",  'o', '+', 'x', 'v', '^', '<', '>',
+                                    'P', '*', 'd', 'X',  "_", '|']
+        markerlist =itertools.cycle((listmarkers))
+        listcolors = ['#252525', '#525252', '#737373', '#969696', '#bdbdbd', '#d9d9d9',           
+        '#7f0000', '#cc0000', '#ff4444', '#ff7f7f', '#ffb2b2', '#995100', 
+        '#cc6c00', '#ff8800', '#ffbb33', '#ffe564', '#2c4c00', '#436500',
+        '#669900', '#99cc00', '#d2fe4c', '#3c1451', '#6b238e', '#9933cc',
+        '#aa66cc', '#bc93d1', '#004c66', '#007299', '#0099cc', '#33b5e5',
+        '#8ed5f0', '#660033', '#b20058', '#e50072', '#ff3298', '#ff7fbf']
+                     #['#ff3399', '#5d8aa8', '#e32636', '#ffbf00', '#9966cc', '#a4c639',
+                     # '#cd9575', '#008000', '#fbceb1', '#00ffff', '#4b5320', '#a52a2a',
+                     # '#007fff', '#ff2052', '#21abcd', '#e97451', '#592720', '#fad6a5',
+                     # '#36454f', '#e4d00a', '#ff3800', '#ffbcd9', '#008b8b', '#8b008b',
+                     # '#03c03c', '#00009c', '#ccff00', '#673147', '#0f0f0f', '#324ab2',
+                     # '#ffcc33', '#ffcccc', '#ff66ff', '#ff0033', '#ccff33', '#ccccff']
+        colorlist_websafe = itertools.cycle((listcolors))
         lenlist = len(li)
     
         for i, ax in enumerate(axs.flat):
             for j, ll in enumerate(li):
                 idx_obs = np.where(ll.iloc[:,0] == i+1)[0]
-                ax.scatter(ll.iloc[idx_obs,1], ll.iloc[idx_obs,2], label=ll.iloc[idx_obs, 4], alpha=0.1, marker=next(markerlist), color=next(colorlist_websafe))
+                ax.scatter(ll.iloc[idx_obs,1], ll.iloc[idx_obs,2], label=linames[j], alpha=0.3, marker=listmarkers[j], c=listcolors[j], s=20)
+            if i == len(Z_list)-1:
+                    ax.legend(ncol=4, loc='upper left', bbox_to_anchor=(1, 1), frameon=False, fontsize=7)
             if i < len(Z_list):
                 ax.plot(FeH, Masses2[i], color='black', linewidth=2)
                 ax.annotate(f"{Z_list[i]}{Z_symb_list[Z_list[i]]}", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
                 ax.set_ylim(-5.9, 5.9)
-                #ax.set_ylim(-1.5, 1.5)
-                #ax.set_xlim(-11, -2)
-                #ax.set_xlim(-6.5, 0.5)
                 ax.set_xlim(-6.5, 0.5)
                 ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=.5))
                 ax.tick_params(width = 1, length = 2, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
@@ -802,7 +824,7 @@ class Plots(Setup):
         fig.tight_layout(rect = [0.03, 0, 1, 1])
         fig.subplots_adjust(wspace=0., hspace=0.)
         plt.show(block=False)
-        plt.savefig(self._dir_out_figs + 'elem_obs.pdf')
+        plt.savefig(self._dir_out_figs + 'elem_obs.pdf', bbox_inches='tight')
         return None
 
     def observational_lelemZ(self, figsiz = (32,10), c=3):
@@ -812,7 +834,7 @@ class Plots(Setup):
         import pandas as pd
         from matplotlib import pyplot as plt
         import matplotlib.ticker as ticker
-        plt.style.use(self._dir+'/galcem.mplstyle')
+        #plt.style.use(self._dir+'/galcem.mplstyle')
         Mass_i = np.loadtxt(self._dir_out+'Mass_i.dat')
         Z_list = np.unique(self.ZA_sorted[:,0])
         Z_symb_list = self.IN.periodic['elemSymb'][Z_list] # name of elements for all isotopes
@@ -835,8 +857,10 @@ class Plots(Setup):
 
         path = self._dir + r'/input/observations/abund' # use your path
         all_files = glob.glob(path + "/*.txt")
+        all_files = sorted(all_files, key=len)#list(np.sort(all_files))
 
         li = []
+        linames = []
         elemZmin = 12
         elemZmax = 12
 
@@ -847,38 +871,60 @@ class Plots(Setup):
             elemZmin = np.min([elemZmin0, elemZmin])
             elemZmax = np.max([elemZmax0, elemZmax])
             li.append(df)
+            linames.append(df['paperName'][0])
 
-        markerlist =itertools.cycle(('o', 'v', '^', '<', '>', 'P', '*', 'd', 'X'))
-        #colorlist = itertools.cycle(('#00ccff', '#ffb300', '#ff004d', '#003662', '#620005', '#366200'))
-        colorlist = itertools.cycle(('#00ccff', '#ffb300', '#ff004d'))
-        colorlist_websafe = itertools.cycle(('#ff3399', '#5d8aa8', '#e32636', '#ffbf00', '#9966cc', '#a4c639',
-                                             '#cd9575', '#008000', '#fbceb1', '#00ffff', '#4b5320', '#a52a2a',
-                                             '#007fff', '#ff2052', '#21abcd', '#e97451', '#592720', '#fad6a5',
-                                             '#36454f', '#e4d00a', '#ff3800', '#ffbcd9', '#008b8b', '#8b008b',
-                                             '#03c03c', '#00009c', '#ccff00', '#673147', '#0f0f0f', '#324ab2'))
         lenlist = len(li)
+        listmarkers = [r"$\mathcal{A}$",  r"$\mathcal{B}$",  r"$\mathcal{C}$",
+                                    r"$\mathcal{D}$", r"$\mathcal{E}$", r"$\mathcal{F}$",
+                                    r"$\mathcal{G}$", r"$\mathcal{H}$", r"$\mathcal{I}$",
+                                    r"$\mathcal{J}$", r"$\mathcal{K}$", r"$\mathcal{L}$",
+                                    r"$\mathcal{M}$", r"$\mathcal{N}$", r"$\mathcal{O}$",
+                                    r"$\mathcal{P}$", r"$\mathcal{Q}$", r"$\mathcal{R}$",
+                                    r"$\mathcal{S}$", r"$\mathcal{T}$", r"$\mathcal{U}$",
+                                    r"$\mathcal{V}$", r"$\mathcal{X}$", r"$\mathcal{Y}$",
+                                    "$1$", "$2$", "$3$", "$4$", "$5$", "$6$", 
+                                    "$7$", "$8$", "$9$", "$f$", "$\u266B$",
+                                    r"$\frac{1}{2}$",  'o', '+', 'x', 'v', '^', '<', '>',
+                                    'P', '*', 'd', 'X',  "_", '|']
+        markerlist =itertools.cycle((listmarkers))
+        listcolors = ['#252525', '#525252', '#737373', '#969696', '#bdbdbd', '#d9d9d9',           
+        '#7f0000', '#cc0000', '#ff4444', '#ff7f7f', '#ffb2b2', '#995100', 
+        '#cc6c00', '#ff8800', '#ffbb33', '#ffe564', '#2c4c00', '#436500',
+        '#669900', '#99cc00', '#d2fe4c', '#3c1451', '#6b238e', '#9933cc',
+        '#aa66cc', '#bc93d1', '#004c66', '#007299', '#0099cc', '#33b5e5',
+        '#8ed5f0', '#660033', '#b20058', '#e50072', '#ff3298', '#ff7fbf']
+                     #['#ff3399', '#5d8aa8', '#e32636', '#ffbf00', '#9966cc', '#a4c639',
+                     # '#cd9575', '#008000', '#fbceb1', '#00ffff', '#4b5320', '#a52a2a',
+                     # '#007fff', '#ff2052', '#21abcd', '#e97451', '#592720', '#fad6a5',
+                     # '#36454f', '#e4d00a', '#ff3800', '#ffbcd9', '#008b8b', '#8b008b',
+                     # '#03c03c', '#00009c', '#ccff00', '#673147', '#0f0f0f', '#324ab2',
+                     # '#ffcc33', '#ffcccc', '#ff66ff', '#ff0033', '#ccff33', '#ccccff']
+        colorlist_websafe = itertools.cycle((listcolors))
+
 
         for i, ax in enumerate(axs.flat):
             for j, ll in enumerate(li):
                 idx_obs = np.where(ll.iloc[:,0] == i+1)[0]
-                ax.scatter(ll.iloc[idx_obs,1], ll.iloc[idx_obs,2], label=ll.iloc[idx_obs, 4], alpha=0.1, marker=next(markerlist), color=next(colorlist_websafe))
+                ax.scatter(ll.iloc[idx_obs,1], ll.iloc[idx_obs,2], label=linames[j], alpha=0.3, marker=listmarkers[j], c=listcolors[j], s=20)
+            if i == 0:
+                    ax.legend(ncol=7, loc='lower left', bbox_to_anchor=(-.2, 1.), frameon=False, fontsize=9)
             if i < nrow*ncol:
                 #ax.plot(FeH, Masses[i], color='blue')
                 ax.plot(FeH, Masses2[i], color='black', linewidth=2)
                 ax.annotate(f"{Z_list[i]}{Z_symb_list[Z_list[i]]}", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
                 #ax.set_ylim(-6, 6)
-                ax.set_ylim(-1.5, 1.5)
+                ax.set_ylim(-2.5, 2.5)
                 #ax.set_xlim(-11, -2)
                 #ax.set_xlim(-6.5, 0.5)
                 ax.set_xlim(-6.5, 0.5)
                 ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=.5))
-                ax.tick_params(width = 1, length = 2, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
-                ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=.2))
-                ax.tick_params(width = 1, length = 2, axis = 'y', which = 'minor', left = True, right = True, direction = 'in')
+                ax.tick_params(width = 1, length = 5, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
+                ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=.5))
+                ax.tick_params(width = 1, length = 5, axis = 'y', which = 'minor', left = True, right = True, direction = 'in')
                 ax.xaxis.set_major_locator(ticker.MultipleLocator(base=2))
-                ax.tick_params(width = 1, length = 5, axis = 'x', which = 'major', bottom = True, top = True, direction = 'in')
-                ax.yaxis.set_major_locator(ticker.MultipleLocator(base=1))
-                ax.tick_params(width = 1, length = 5, axis = 'y', which = 'major', left = True, right = True, direction = 'in')
+                ax.tick_params(width = 1, length = 7, axis = 'x', which = 'major', bottom = True, top = True, direction = 'in')
+                ax.yaxis.set_major_locator(ticker.MultipleLocator(base=2))
+                ax.tick_params(width = 1, length = 7, axis = 'y', which = 'major', left = True, right = True, direction = 'in')
             else:
                 fig.delaxes(ax)
         for i in range(nrow):
@@ -889,20 +935,20 @@ class Plots(Setup):
                     axs[i,j].set_xticklabels([])
         axs[nrow//2,0].set_ylabel('[X/Fe]', fontsize = 15)
         axs[nrow-1, ncol//2].set_xlabel(f'[Fe/H]', fontsize = 15)
-        fig.tight_layout(rect = [0.03, 0, 1, 1])
+        fig.tight_layout(rect=[0., 0, 1, .9])
         fig.subplots_adjust(wspace=0., hspace=0.)
         plt.show(block=False)
-        plt.savefig(self._dir_out_figs + 'elem_obs_lelemZ.pdf')
+        plt.savefig(self._dir_out_figs + 'elem_obs_lelemZ.pdf', bbox_inches='tight')
         return None
     
-    def obs_lelemZ(self, figsiz = (32,6), c=3):
+    def obs_lelemZ(self, figsiz = (21,7), c=3):
         print('Starting observational_lelemZ()')
         import glob
         import itertools
         import pandas as pd
         from matplotlib import pyplot as plt
         import matplotlib.ticker as ticker
-        plt.style.use(self._dir+'/galcem.mplstyle')
+        #plt.style.use(self._dir+'/galcem.mplstyle')
         Mass_i = np.loadtxt(self._dir_out+'Mass_i.dat')
         Z_list = np.unique(self.ZA_sorted[:,0])
         Z_symb_list = self.IN.periodic['elemSymb'][Z_list] # name of elements for all isotopes
@@ -925,8 +971,10 @@ class Plots(Setup):
 
         path = self._dir + r'/input/observations/abund' # use your path
         all_files = glob.glob(path + "/*.txt")
+        all_files = sorted(all_files, key=len)
 
         li = []
+        linames = []
         elemZmin = 12
         elemZmax = 12
 
@@ -937,21 +985,43 @@ class Plots(Setup):
             elemZmin = np.min([elemZmin0, elemZmin])
             elemZmax = np.max([elemZmax0, elemZmax])
             li.append(df)
+            linames.append(df['paperName'][0])
 
-        markerlist =itertools.cycle(('o', 'v', '^', '<', '>', 'P', '*', 'd', 'X'))
-        #colorlist = itertools.cycle(('#00ccff', '#ffb300', '#ff004d', '#003662', '#620005', '#366200'))
-        colorlist = itertools.cycle(('#00ccff', '#ffb300', '#ff004d'))
-        colorlist_websafe = itertools.cycle(('#ff3399', '#5d8aa8', '#e32636', '#ffbf00', '#9966cc', '#a4c639',
-                                             '#cd9575', '#008000', '#fbceb1', '#00ffff', '#4b5320', '#a52a2a',
-                                             '#007fff', '#ff2052', '#21abcd', '#e97451', '#592720', '#fad6a5',
-                                             '#36454f', '#e4d00a', '#ff3800', '#ffbcd9', '#008b8b', '#8b008b',
-                                             '#03c03c', '#00009c', '#ccff00', '#673147', '#0f0f0f', '#324ab2'))
+        lenlist = len(li)
+        listmarkers = [r"$\mathcal{A}$",  r"$\mathcal{B}$",  r"$\mathcal{C}$",
+                                    r"$\mathcal{D}$", r"$\mathcal{E}$", r"$\mathcal{F}$",
+                                    r"$\mathcal{G}$", r"$\mathcal{H}$", r"$\mathcal{I}$",
+                                    r"$\mathcal{J}$", r"$\mathcal{K}$", r"$\mathcal{L}$",
+                                    r"$\mathcal{M}$", r"$\mathcal{N}$", r"$\mathcal{O}$",
+                                    r"$\mathcal{P}$", r"$\mathcal{Q}$", r"$\mathcal{R}$",
+                                    r"$\mathcal{S}$", r"$\mathcal{T}$", r"$\mathcal{U}$",
+                                    r"$\mathcal{V}$", r"$\mathcal{X}$", r"$\mathcal{Y}$",
+                                    "$1$", "$2$", "$3$", "$4$", "$5$", "$6$", 
+                                    "$7$", "$8$", "$9$", "$f$", "$\u266B$",
+                                    r"$\frac{1}{2}$",  'o', '+', 'x', 'v', '^', '<', '>',
+                                    'P', '*', 'd', 'X',  "_", '|']
+        markerlist =itertools.cycle((listmarkers))
+        listcolors = ['#252525', '#525252', '#737373', '#969696', '#bdbdbd', '#d9d9d9',           
+        '#7f0000', '#cc0000', '#ff4444', '#ff7f7f', '#ffb2b2', '#995100', 
+        '#cc6c00', '#ff8800', '#ffbb33', '#ffe564', '#2c4c00', '#436500',
+        '#669900', '#99cc00', '#d2fe4c', '#3c1451', '#6b238e', '#9933cc',
+        '#aa66cc', '#bc93d1', '#004c66', '#007299', '#0099cc', '#33b5e5',
+        '#8ed5f0', '#660033', '#b20058', '#e50072', '#ff3298', '#ff7fbf']
+                     #['#ff3399', '#5d8aa8', '#e32636', '#ffbf00', '#9966cc', '#a4c639',
+                     # '#cd9575', '#008000', '#fbceb1', '#00ffff', '#4b5320', '#a52a2a',
+                     # '#007fff', '#ff2052', '#21abcd', '#e97451', '#592720', '#fad6a5',
+                     # '#36454f', '#e4d00a', '#ff3800', '#ffbcd9', '#008b8b', '#8b008b',
+                     # '#03c03c', '#00009c', '#ccff00', '#673147', '#0f0f0f', '#324ab2',
+                     # '#ffcc33', '#ffcccc', '#ff66ff', '#ff0033', '#ccff33', '#ccccff']
+        colorlist_websafe = itertools.cycle((listcolors))
         lenlist = len(li)
 
         for i, ax in enumerate(axs.flat):
             for j, ll in enumerate(li):
                 idx_obs = np.where(ll.iloc[:,0] == i+1)[0]
-                ax.scatter(ll.iloc[idx_obs,1], ll.iloc[idx_obs,2], label=ll.iloc[idx_obs, 4], alpha=0.1, marker=next(markerlist), color=next(colorlist_websafe))
+                ax.scatter(ll.iloc[idx_obs,1], ll.iloc[idx_obs,2], label=linames[j], alpha=0.3, marker=listmarkers[j], c=listcolors[j], s=20)
+            if i == 0:
+                    ax.legend(ncol=7, loc='lower left', bbox_to_anchor=(-0.2, 1.05), frameon=False, fontsize=9)
             if i < nrow*ncol:
                 #ax.plot(FeH, Masses[i], color='blue')
                 ax.plot(FeH, Masses2[i], color='black', linewidth=2)
@@ -974,11 +1044,11 @@ class Plots(Setup):
                     axs[i,j].set_yticklabels([])
                 if i != nrow-1:
                     axs[i,j].set_xticklabels([])
-        axs[nrow//2,0].set_ylabel('[X/Fe]', fontsize = 15)
-        axs[nrow-1, ncol//2].set_xlabel(f'[Fe/H]', fontsize = 15)
-        fig.tight_layout(rect = [0.03, 0, 1, 1])
+        axs[nrow//2,0].set_ylabel('[X/Fe]', fontsize=15, loc='top')
+        axs[nrow-1, ncol//2].set_xlabel(f'[Fe/H]', fontsize=15, loc='center')
+        fig.tight_layout(rect=[0.0, 0, 1, .8])
         fig.subplots_adjust(wspace=0., hspace=0.)
         plt.show(block=False)
-        plt.savefig(self._dir_out_figs + 'elem_obs_lZ.pdf')
+        plt.savefig(self._dir_out_figs + 'elem_obs_lZ.pdf', bbox_inches='tight')
         return None
     
