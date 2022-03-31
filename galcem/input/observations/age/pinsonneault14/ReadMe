@@ -1,0 +1,211 @@
+J/ApJS/215/19     APOKASC catalog of Kepler red giants     (Pinsonneault+, 2014)
+================================================================================
+The APOKASC catalog: an asteroseismic and spectroscopic joint survey of targets
+in the Kepler fields.
+    Pinsonneault M.H., Elsworth Y., Epstein C., Hekker S., Meszaros SZ.,
+    Chaplin W.J., Johnson J.A., Garcia R.A., Holtzman J., Mathur S.,
+    Garcia Perez A., Silva Aguirre V., Girardi L., Basu S., Shetrone M.,
+    Stello D., Allende Prieto C., An D., Beck P., Beers T.C., Bizyaev D.,
+    Bloemen S., Bovy J., Cunha K., De Ridder J., Frinchaboy P.M.,
+    Garcia-Hernandez D.A., Gilliland R., Harding P., Hearty F.R., Huber D.,
+    Ivans I., Kallinger T., Majewski S.R., Metcalfe T.S., Miglio A., Mosser B.,
+    Muna D., Nidever D.L., Schneider D.P., Serenelli A., Smith V.V., Tayar J.,
+    Zamora O., Zasowski G.
+   <Astrophys. J. Suppl. Ser., 215, 19 (2014)>
+   =2014ApJS..215...19P
+================================================================================
+ADC_Keywords: Stars, giant ; Abundances ; Stars, masses ;
+              Effective temperatures ; Surveys
+Keywords: catalogs; stars: abundances; stars: fundamental parameters;
+          stars: oscillations, including pulsations; surveys
+
+Abstract:
+    We present the first APOKASC catalog of spectroscopic and
+    asteroseismic properties of 1916 red giants observed in the Kepler
+    fields. The spectroscopic parameters provided from the Apache Point
+    Observatory Galactic Evolution Experiment project are complemented
+    with asteroseismic surface gravities, masses, radii, and mean
+    densities determined by members of the Kepler Asteroseismology Science
+    Consortium. We assess both random and systematic sources of error and
+    include a discussion of sample selection for giants in the Kepler
+    fields. Total uncertainties in the main catalog properties are of the
+    order of 80K in T_eff_, 0.06dex in [M/H], 0.014dex in logg, and 12%
+    and 5% in mass and radius, respectively; these reflect a combination
+    of systematic and random errors. Asteroseismic surface gravities are
+    substantially more precise and accurate than spectroscopic ones, and
+    we find good agreement between their mean values and the calibrated
+    spectroscopic surface gravities. There are, however, systematic
+    underlying trends with T_eff_ and logg. Our effective temperature
+    scale is between 0 and 200K cooler than that expected from the
+    infrared flux method, depending on the adopted extinction map, which
+    provides evidence for a lower value on average than that inferred for
+    the Kepler Input Catalog (KIC). We find a reasonable correspondence
+    between the photometric KIC and spectroscopic APOKASC metallicity
+    scales, with increased dispersion in KIC metallicities as the absolute
+    metal abundance decreases, and offsets in T_eff_ and logg consistent
+    with those derived in the literature. We present mean fitting
+    relations between APOKASC and KIC observables and discuss future
+    prospects, strengths, and limitations of the catalog data.
+
+Description:
+    In this paper we present the first release of the joint APOKASC
+    asteroseismic and spectroscopic survey for targets with both
+    high-resolution Apache Point Observatory Galactic Evolution Experiment
+    (APOGEE) spectra analyzed by members of the third Sloan Digital Sky
+    Survey (SDSS-III) and asteroseismic data obtained by the Kepler
+    mission and analyzed by members of the Kepler Asteroseismology Science
+    Consortium (KASC).
+
+File Summary:
+--------------------------------------------------------------------------------
+ FileName   Lrecl  Records   Explanations
+--------------------------------------------------------------------------------
+ReadMe         80        .   This file
+table2.dat     32      673  *Gold standard surface gravities
+table3.dat    149     1989   APOKASC catalog basic data
+table4.dat    148     1989  *Scale 1 asteroseismic results (uncorrected)
+table5.dat    148     1989  *Scale 2 asteroseismic results (corrected)
+--------------------------------------------------------------------------------
+Note on table2.dat: The candidates of the gold standard sample were
+  selected to be those with the most complete time coverage; see Hekker et al.
+  (2012A&A...544A..90H) for a discussion of the criteria. See section 3.3 for
+  more explanations about this sample.
+Note on table4.dat and table5.dat: In Table 4 we present the asteroseismic
+  properties derived from the uncorrected spectroscopic parameters; we refer
+  to this set of measurement as Scale 1. Table 5 has an identical format except
+  that it was derived using the corrected spectroscopic parameters, and we
+  refer to these measurements as Scale 2. See section 5.
+--------------------------------------------------------------------------------
+
+See also:
+ V/133   : Kepler Input Catalog (Kepler Mission Team, 2009)
+ VII/233 : The 2MASS Extended sources (IPAC/UMass, 2003-2006)
+ J/A+A/572/A34  : Pulsating solar-like stars rotation (Garcia+, 2014)
+ J/ApJS/211/24  : Rotation periods of Kepler MS stars (McQuillan+, 2014)
+ J/ApJS/211/2   : Revised properties of Q1-16 Kepler targets (Huber+, 2014)
+ J/ApJS/210/1   : Asteroseismic study of solar-type stars (Chaplin+, 2014)
+ J/AJ/146/156   : APOGEE M-dwarf survey. I. First year (Deshpande+, 2013)
+ J/AJ/146/133   : Stellar parameters from SDSS-III APOGEE DR10 (Meszaros+, 2013)
+ J/ApJ/767/127  : Asteroseismic solutions for 77 Kepler stars (Huber+, 2013)
+ J/ApJ/765/L41  : Asteroseismic classification of KIC objects (Stello+, 2013)
+ J/ApJ/749/152  : Asteroseismic analysis of 22 solar-type stars (Mathur+, 2012)
+ J/A+A/543/A160 : Normalized spectra of 82 Kepler red giants (Thygesen+, 2012)
+ J/ApJS/199/30  : Effective temperature scale of KIC stars (Pinsonneault+, 2012)
+ J/A+A/540/A143 : Oscillations of red giants observed by Kepler (Mosser+, 2012)
+ J/AJ/142/112   : KIC photometric calibration (Brown+, 2011)
+ J/ApJ/729/L10  : KIC stars properties in NGC 6791 and NGC 6819 (Basu+, 2011)
+ J/MNRAS/412/1210 : Kepler asteroseismic targets (Molenda-Zakowicz+, 2011)
+ J/A+A/525/A131 : Solar-like oscillations in Kepler red giants (Hekker+, 2011)
+ J/A+A/512/A54  : Teff and Fbol from Infrared Flux Method (Casagrande+, 2010)
+ J/ApJ/718/L97  : Early asteroseismic results from Kepler (Van Grootel+, 2010)
+ J/AJ/137/4377  : List of SEGUE plate pairs (Yanny+, 2009)
+ http://www.sdss3.org/surveys/apogee.php : SDSS-III APOGEE home page
+ http://kasoc.phys.au.dk/ : KASOC (Kepler Asteroseismic Science Operations
+                            Center) home page
+
+Byte-by-byte Description of file: table2.dat
+--------------------------------------------------------------------------------
+   Bytes Format Units     Label   Explanations
+--------------------------------------------------------------------------------
+   1-  8  I8    ---       KIC     Star number in the Kepler Input Catalog
+  10- 13  I4    K         Teff    [4273/5420]?=0 Effective temperature (1)
+  15- 20  F6.3  [-]       [Fe/H]  [-1.5/0.6]?=0 Metallicity in the Kepler Input
+                                   Catalog (V/133)
+  22- 26  F5.3  [cm/s2]   log(g)  [1.4/3.4] Asteroseismic surface gravity
+  28- 32  F5.3  [cm/s2] e_log(g)  [0.007/0.04] Error in the surface gravity
+--------------------------------------------------------------------------------
+Note (1): Taken from the Pinsonneault+ (2012, J/ApJS/199/30) SDSS calibration.
+--------------------------------------------------------------------------------
+
+Byte-by-byte Description of file: table3.dat
+--------------------------------------------------------------------------------
+   Bytes Format Units   Label    Explanations
+--------------------------------------------------------------------------------
+   1-  8 I8     ---     KIC      Star number in the Kepler Input Catalog
+  10- 26 A17    ---     2MASS    Star identifier in the 2MASS catalog
+                                   (II/246; JHHMMSSss+DDMMSSs)
+  28- 34 F7.3   deg     RAdeg    Right Ascension in decimal degrees (J2000)
+  36- 41 F6.3   deg     DEdeg    Declination in decimal degrees (J2000)
+  43- 48 F6.3   deg     GLAT     Galactic latitude
+  50- 55 F6.3   deg     GLON     Galactic longitude
+  57- 61 I5     K       Teffc    [4083/5524]?=-9999 Effective temperature using
+                                  KIC extinction (Teff-KICAv) (1)
+  63- 67 I5     K     e_Teffc    ?=-9999 Error in Teffc
+  69- 73 I5     K       Teff     [4082/5342]?=-9999 Effective temperature
+                                  using zero extinction (Teff-ZeroAv) (2)
+  75- 79 I5     K     e_Teff     ?=-9999 Error in Teff
+  81- 85 F5.2   uHz     Dnu      [0.2/18.2] Large frequency spacing {Delta}{Nu}
+  87- 90 F4.2   uHz   e_Dnu      Error in Dnu
+  92- 97 F6.2   uHz     numax    [1/247] Frequency of maximum power
+  99-103 F5.2   uHz   e_numax    Error in numax
+ 105-149 A45    ---     Notes    Targeting notes
+--------------------------------------------------------------------------------
+Note (1): Using Gonzalez-Hernandez & Bonifacio (2009, J/A+A/497/497)
+           calibration, KIC A_V_.
+Note (2): Using Gonzalez-Hernandez & Bonifacio (2009, J/A+A/497/497)
+           calibration, zero A_V_.
+--------------------------------------------------------------------------------
+
+Byte-by-byte Description of file: table4.dat
+--------------------------------------------------------------------------------
+   Bytes Format Units     Label   Explanations
+--------------------------------------------------------------------------------
+   1-  8 I8     ---       KIC     Kepler ID number
+  10- 13 I4     K         Teff1   [3790/5141] Uncorrected ASPCAP Teff (G1)
+  15- 17 I3     K       e_Teff1   [66/166] Uncertainty in Teff1
+  19- 23 F5.2   [Sun]     [M/H]1  [-2.3/0.7] Uncorrected ASPCAP Metallicity (G1)
+  25- 28 F4.2   [Sun]   e_[M/H]1  [0.04/0.2] Uncertainty in [M/H]
+  30- 37 F8.2   [Msun]    M1      [0.7/3.6]?=-9999 Asteroseismic Mass
+  39- 46 F8.2   [Msun]  E_M1      ?=-9999 Positive uncertainty in M1
+  48- 55 F8.2   [Msun]  e_M1      ?=-9999 Negative uncertainty in M1
+  57- 64 F8.2   [Rsun]    R1      ?=-9999 Asteroseismic radius
+  66- 73 F8.2   [Rsun]  E_R1      ?=-9999 Positive uncertainty in R1
+  75- 82 F8.2   [Rsun]  e_R1      ?=-9999 Negative uncertainty in R1
+  84- 92 F9.3   [cm/s2]   log.g1  ?=-9999 Asteroseismic surface gravity
+  94-102 F9.3   [cm/s2] E_log.g1  ?=-9999 Positive uncertainty in log.g1
+ 104-112 F9.3   [cm/s2] e_log.g1  ?=-9999 Negative uncertainty in log.g2
+ 114-124 F11.5  [Sun]     rho1    [0/0.02]?=-9999 Density relative to the
+                                    Sun (G2)
+ 126-136 F11.5  [Sun]   E_rho1    ?=-9999 Positive uncertainty in rho1
+ 138-148 F11.5  [Sun]   e_rho1    ?=-9999 Negative uncertainty in rho1
+--------------------------------------------------------------------------------
+
+Byte-by-byte Description of file: table5.dat
+--------------------------------------------------------------------------------
+   Bytes Format Units     Label    Explanations
+--------------------------------------------------------------------------------
+   1-  8 I8     ---       KIC      Kepler ID number
+  10- 13 I4     K         Teff2    [3790/5141] Corrected ASPCAP Teff (G1)
+  15- 17 I3     K       e_Teff2    [66/166] Uncertainty in Teff
+  19- 23 F5.2   [Sun]     [M/H]2   [-2.3/0.7] Corrected ASPCAP Metallicity (G1)
+  25- 28 F4.2   [Sun]   e_[M/H]2   [0.04/0.2] Uncertainty in [M/H]
+  30- 37 F8.2   [Msun]    M2       [0.7/3.6]?=-9999 Asteroseismic Mass
+  39- 46 F8.2   [Msun]  E_M2       ?=-9999 Positive uncertainty in M2
+  48- 55 F8.2   [Msun]  e_M2       ?=-9999 Negative uncertainty in M2
+  57- 64 F8.2   [Rsun]    R2       ?=-9999 Asteroseismic radius
+  66- 73 F8.2   [Rsun]  E_R2       ?=-9999 Positive uncertainty in R2
+  75- 82 F8.2   [Rsun]  e_R2       ?=-9999 Negative uncertainty in R2
+  84- 92 F9.3   [cm/s2]   log.g2   ?=-9999 Asteroseismic surface gravity
+  94-102 F9.3   [cm/s2] E_log.g2   ?=-9999 Positive uncertainty in log.g2
+ 104-112 F9.3   [cm/s2] e_log.g2   ?=-9999 Negative uncertainty in log.g2
+ 114-124 F11.5  [Sun]     rho2     [0/0.02]?=-9999 Density relative to the
+                                    Sun (G2)
+ 126-136 F11.5  [Sun]   E_rho2     ?=-9999 Positive uncertainty in rho2
+ 138-148 F11.5  [Sun]   e_rho2     ?=-9999 Negative uncertainty in rho2
+--------------------------------------------------------------------------------
+
+Global Notes:
+Note (G1): The APOGEE Stellar Parameters and Chemical Abundances Pipeline
+          (ASPCAP) was employed to infer six atmospheric parameters from the
+          observed spectra: effective temperature (Teff), metallicity ([M/H]),
+          surface gravity (logg), carbon ([C/M]), nitrogen ([N/M]), and
+          {alpha} ([{alpha}/M]) abundance ratios. See section 3.
+Note (G2): To convert density to cgs units, multiply by the solar density,
+          which for our purposes is 1.4085g/cm^3^.
+--------------------------------------------------------------------------------
+
+History:
+    From electronic version of the journal
+
+================================================================================
+(End)                 Greg Schwarz [AAS], Emmanuelle Perret [CDS]    06-Feb-2015

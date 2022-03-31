@@ -24,6 +24,7 @@ class Inputs:
     def __init__(self):
         '''	applies to the thick disk at 8 kpc '''
         self.age_Galaxy = 13.8 # [Gyr]
+        self.age_Sun = 4.6 # [Gyr]
         self.solar_metallicity = 0.0181 # Asplund et al. (2009, Table 4)
         self.morphology = 'spiral'
         self.r = 8 # Compute around the solar neighborhood [kpc]
@@ -47,7 +48,7 @@ class Inputs:
         self.Mu_collapsars = 120 # [Msun] !!!!!!! temporary. Import from yield tables
 
         # Time parameters
-        self.nTimeStep = 0.01 #0.002 # Picked to smooth the mapping between stellar masses and lifetimes
+        self.nTimeStep = 0.002 #0.01 #0.002 # Picked to smooth the mapping between stellar masses and lifetimes
         self.numTimeStep = 2000 # Like FM
         self.num_MassGrid = 200
 

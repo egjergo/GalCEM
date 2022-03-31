@@ -456,7 +456,24 @@ class Plots(Setup):
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'total_physical'+str(xscale)+'.pdf')
         
-    def FeH_evolution(self, c=2, logAge=False):
+    def age_observations():
+        observ = pd.read_table(self._dir + '/input/observations/age/meusinger91.txt', sep=',')
+        observ_SA = np.genfromtxt(self._dir + '/input/observations/age/silva-aguirre18.txt', names=['KIC', 'Mass', 'e_Mass', 'Rad', 'e_Rad', 'logg', 'e_logg', 'Age', 'e_Age', 'Lum', 'e_Lum', 'Dist', 'e_Dist', 'Prob'])
+        observ_P14_2 = np.genfromtxt(self._dir + '/input/observations/age/pinsonneault14/table2.dat', names=['KIC', 'Teff', 'FeH', 'log(g)', 'e_log(g)'])
+        observ_P14_5 = np.genfromtxt(self._dir + '/input/observations/age/pinsonneault14/table5.dat', names=['KIC', 'Teff2', 'e_Teff2', 'MH2', 'e_MH2', 'M2', 'E_M2', 'e_M2', 'R2', 'E_R2', 'e_R2', 'log.g2', 'E_log.g2', 'e_log.g2', 'rho2', 'E_rho2', 'e_rho2'])
+        
+        id_KIC = observ_SA['KIC']
+        id_match2 = np.intersect1d(observ_P14_2['KIC'], id_KIC, return_indices=True)
+        id_match5 = np.intersect1d(observ_P14_5['KIC'], id_KIC, return_indices=True)
+        
+        ages = observ_SA['Age']
+        FeH_value = observ_P14_2['FeH'][id_match2[1]]
+        FeH_age = observ_SA['Age'][id_match2[2]]
+        metallicity_value = observ_P14_5['MH2'][id_match5[1]]
+        metallicity_age = observ_SA['Age'][id_match5[2]]
+        return FeH_value, FeH_age, metallicity_value, metallicity_age
+        
+    def FeH_evolution(self, c=2, elemZ=26, logAge=False):
         print('Starting FeH_evolution()')
         from matplotlib import pyplot as plt
         import pandas as pd
@@ -464,19 +481,20 @@ class Plots(Setup):
         Z_list = np.unique(self.ZA_sorted[:,0])
         phys = np.loadtxt(self._dir_out + 'phys.dat')
         time = phys[c:,0]
-        observ = pd.read_table(self._dir + '/input/observations/meusinger91.txt', sep=',')
         solar_norm_H = self.c_class.solarA09_vs_H_bymass[Z_list]
         solar_norm_Fe = self.c_class.solarA09_vs_Fe_bymass[Z_list]
         Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
         #Fe = np.sum(Mass_i[np.intersect1d(np.where(ZA_sorted[:,0]==26)[0], np.where(ZA_sorted[:,1]==56)[0]), c+2:], axis=0)
-        Fe = np.sum(Mass_i[self.select_elemZ_idx(26), c+2:], axis=0)
+        Fe = np.sum(Mass_i[self.select_elemZ_idx(elemZ), c+2:], axis=0)
         H = np.sum(Mass_i[self.select_elemZ_idx(1), c+2:], axis=0)
-        FeH = np.log10(np.divide(Fe, H)) - solar_norm_H[26]
+        FeH = np.log10(np.divide(Fe, H)) - solar_norm_H[elemZ]
         fig, ax = plt.subplots(1,1, figsize=(7,5))
         ax.plot(time, FeH, color='black', label='SNIa', linewidth=3)
-        ax.errorbar(self.IN.age_Galaxy - observ['age'], observ['FeH'], yerr=observ['FeHerr'], marker='s', label='Meusinger+91', mfc='gray', ecolor='gray', ls='none')
+        ax.axvline(x=self.IN.age_Galaxy-self.IN.age_Sun, linewidth=2, color='orange')
+        ax.axhline(y=0, linewidth=1, color='orange', linestyle='--')
+        #ax.errorbar(self.IN.age_Galaxy - observ['age'], observ['FeH'], yerr=observ['FeHerr'], marker='s', label='Meusinger+91', mfc='gray', ecolor='gray', ls='none')
         ax.legend(loc='lower right', frameon=False, fontsize=17)
-        ax.set_ylabel(r'[Fe/H]', fontsize=20)
+        ax.set_ylabel(r'['+np.unique(self.ZA_symb_list[elemZ].values)[0]+'/H]', fontsize=20)
         ax.set_xlabel('Age [Gyr]', fontsize=20)
         ax.set_ylim(-2,0.5)
         xscale = '_lin'
@@ -489,6 +507,39 @@ class Plots(Setup):
         fig.tight_layout()
         plt.savefig(self._dir_out_figs + 'FeH_evolution'+str(xscale)+'.pdf')
 
+    def OH_evolution(self, c=2, elemZ=8, logAge=False):
+        print('Starting OH_evolution()')
+        from matplotlib import pyplot as plt
+        import pandas as pd
+        #plt.style.use(self._dir+'/galcem.mplstyle')
+        Z_list = np.unique(self.ZA_sorted[:,0])
+        phys = np.loadtxt(self._dir_out + 'phys.dat')
+        time = phys[c:,0]
+        #observ = pd.read_table(self._dir + '/input/observations/meusinger91.txt', sep=',')
+        solar_norm_H = self.c_class.solarA09_vs_H_bymass[Z_list]
+        Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
+        O = np.sum(Mass_i[self.select_elemZ_idx(elemZ), c+2:], axis=0)
+        H = np.sum(Mass_i[self.select_elemZ_idx(1), c+2:], axis=0)
+        OH = np.log10(np.divide(O, H)) - solar_norm_H[elemZ]
+        fig, ax = plt.subplots(1,1, figsize=(7,5))
+        ax.plot(time, OH, color='blue', label='OH', linewidth=3)
+        ax.axvline(x=self.IN.age_Galaxy-self.IN.age_Sun, linewidth=2, color='orange')
+        ax.axhline(y=0, linewidth=1, color='orange', linestyle='--')
+        #ax.errorbar(self.IN.age_Galaxy - observ['age'], observ['FeH'], yerr=observ['FeHerr'], marker='s', label='Meusinger+91', mfc='gray', ecolor='gray', ls='none')
+        ax.legend(loc='lower right', frameon=False, fontsize=17)
+        ax.set_ylabel(r'['+np.unique(self.ZA_symb_list[elemZ].values)[0]+'/H]', fontsize=20)
+        ax.set_xlabel('Age [Gyr]', fontsize=20)
+        ax.set_ylim(-2,0.5)
+        xscale = '_lin'
+        if not logAge:
+            ax.set_xlim(0,13.8)
+        else:
+            ax.set_xscale('log')
+            xscale = '_log'
+        #ax.set_xlim(1e-2, 1.9e1)
+        fig.tight_layout()
+        plt.savefig(self._dir_out_figs + 'OH_evolution'+str(xscale)+'.pdf', bbox_inches='tight')
+        
     def iso_evolution(self, figsize=(40,13)):
         print('Starting iso_evolution()')
         from matplotlib import pyplot as plt
