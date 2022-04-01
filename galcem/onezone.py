@@ -283,18 +283,19 @@ class Plots(Setup):
         self.tic.append(time.process_time())
         print('Starting to plot')
         self.FeH_evolution()
-        self.DTD_plot()
-        self.iso_abundance()
-        #self.iso_evolution()
+        self.OH_evolution()
+        #self.DTD_plot()
+        #self.iso_abundance()
+        ## self.iso_evolution()
         self.iso_evolution_comp()
         self.observational()
-        self.observational_lelemZ()
+        #self.observational_lelemZ()
         self.obs_lelemZ()
         self.phys_integral_plot()
         self.phys_integral_plot(logAge=True)
         self.lifetimeratio_test_plot()
         self.ZA_sorted_plot()
-        # self.elem_abundance() # compares and requires multiple runs (IMF & SFR variations)
+        ## self.elem_abundance() # compares and requires multiple runs (IMF & SFR variations)
         self.aux.tic_count(string="Plots saved in", tic=self.tic)
         
     def ZA_sorted_plot(self, cmap_name='magma_r', cbins=10): # angle = 2 * np.pi / np.arctan(0.4) !!!!!!!
@@ -456,7 +457,9 @@ class Plots(Setup):
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'total_physical'+str(xscale)+'.pdf')
         
-    def age_observations():
+    def age_observations(self):
+        import pandas as pd
+        import numpy as np
         observ = pd.read_table(self._dir + '/input/observations/age/meusinger91.txt', sep=',')
         observ_SA = np.genfromtxt(self._dir + '/input/observations/age/silva-aguirre18.txt', names=['KIC', 'Mass', 'e_Mass', 'Rad', 'e_Rad', 'logg', 'e_logg', 'Age', 'e_Age', 'Lum', 'e_Lum', 'Dist', 'e_Dist', 'Prob'])
         observ_P14_2 = np.genfromtxt(self._dir + '/input/observations/age/pinsonneault14/table2.dat', names=['KIC', 'Teff', 'FeH', 'log(g)', 'e_log(g)'])
@@ -484,22 +487,26 @@ class Plots(Setup):
         solar_norm_H = self.c_class.solarA09_vs_H_bymass[Z_list]
         solar_norm_Fe = self.c_class.solarA09_vs_Fe_bymass[Z_list]
         Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
+        FeH_value, FeH_age, _, _ = self.age_observations()
+        a, b = np.polyfit(FeH_age, FeH_value, 1)
         #Fe = np.sum(Mass_i[np.intersect1d(np.where(ZA_sorted[:,0]==26)[0], np.where(ZA_sorted[:,1]==56)[0]), c+2:], axis=0)
         Fe = np.sum(Mass_i[self.select_elemZ_idx(elemZ), c+2:], axis=0)
         H = np.sum(Mass_i[self.select_elemZ_idx(1), c+2:], axis=0)
         FeH = np.log10(np.divide(Fe, H)) - solar_norm_H[elemZ]
         fig, ax = plt.subplots(1,1, figsize=(7,5))
-        ax.plot(time, FeH, color='black', label='SNIa', linewidth=3)
-        ax.axvline(x=self.IN.age_Galaxy-self.IN.age_Sun, linewidth=2, color='orange')
+        ax.plot(time, FeH, color='black', label='[Fe/H]', linewidth=3) 
+        ax.axvline(x=self.IN.age_Galaxy-self.IN.age_Sun, linewidth=2, color='orange', label=r'Age$_{\odot}$')
+        ax.plot(self.IN.age_Galaxy +0.5 - FeH_age, a*FeH_age+b, color='red', alpha=1, linewidth=3, label='linear fit on [Fe/H]')
+        ax.scatter(self.IN.age_Galaxy +0.5 - FeH_age, FeH_value, color='red', marker='*', alpha=0.3, label='Silva Aguirre et al. (2018)')
         ax.axhline(y=0, linewidth=1, color='orange', linestyle='--')
         #ax.errorbar(self.IN.age_Galaxy - observ['age'], observ['FeH'], yerr=observ['FeHerr'], marker='s', label='Meusinger+91', mfc='gray', ecolor='gray', ls='none')
         ax.legend(loc='lower right', frameon=False, fontsize=17)
         ax.set_ylabel(r'['+np.unique(self.ZA_symb_list[elemZ].values)[0]+'/H]', fontsize=20)
-        ax.set_xlabel('Age [Gyr]', fontsize=20)
-        ax.set_ylim(-2,0.5)
+        ax.set_xlabel('Galaxy Age [Gyr]', fontsize=20)
+        ax.set_ylim(-2,1)
         xscale = '_lin'
         if not logAge:
-            ax.set_xlim(0,13.8)
+            ax.set_xlim(0,self.IN.age_Galaxy)
         else:
             ax.set_xscale('log')
             xscale = '_log'
@@ -515,24 +522,27 @@ class Plots(Setup):
         Z_list = np.unique(self.ZA_sorted[:,0])
         phys = np.loadtxt(self._dir_out + 'phys.dat')
         time = phys[c:,0]
-        #observ = pd.read_table(self._dir + '/input/observations/meusinger91.txt', sep=',')
+        _, _, metallicity_value, metallicity_age = self.age_observations()
+        a, b = np.polyfit(metallicity_age, metallicity_value, 1)
         solar_norm_H = self.c_class.solarA09_vs_H_bymass[Z_list]
         Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
         O = np.sum(Mass_i[self.select_elemZ_idx(elemZ), c+2:], axis=0)
         H = np.sum(Mass_i[self.select_elemZ_idx(1), c+2:], axis=0)
         OH = np.log10(np.divide(O, H)) - solar_norm_H[elemZ]
         fig, ax = plt.subplots(1,1, figsize=(7,5))
-        ax.plot(time, OH, color='blue', label='OH', linewidth=3)
-        ax.axvline(x=self.IN.age_Galaxy-self.IN.age_Sun, linewidth=2, color='orange')
+        ax.plot(time, OH, color='blue', label='[O/H]', linewidth=3)
+        ax.axvline(x=self.IN.age_Galaxy-self.IN.age_Sun, linewidth=2, color='orange', label=r'Age$_{\odot}$')
         ax.axhline(y=0, linewidth=1, color='orange', linestyle='--')
+        ax.plot(self.IN.age_Galaxy +0.5 - metallicity_age, a*metallicity_age+b, color='red', alpha=1, linewidth=3, label='linear fit on [M/H]')
+        ax.scatter(self.IN.age_Galaxy +0.5 - metallicity_age, metallicity_value, color='red', marker='*', alpha=0.3, label='Silva Aguirre et al. (2018)')
         #ax.errorbar(self.IN.age_Galaxy - observ['age'], observ['FeH'], yerr=observ['FeHerr'], marker='s', label='Meusinger+91', mfc='gray', ecolor='gray', ls='none')
         ax.legend(loc='lower right', frameon=False, fontsize=17)
         ax.set_ylabel(r'['+np.unique(self.ZA_symb_list[elemZ].values)[0]+'/H]', fontsize=20)
-        ax.set_xlabel('Age [Gyr]', fontsize=20)
-        ax.set_ylim(-2,0.5)
+        ax.set_xlabel('Galaxy Age [Gyr]', fontsize=20)
+        ax.set_ylim(-2,1)
         xscale = '_lin'
         if not logAge:
-            ax.set_xlim(0,13.8)
+            ax.set_xlim(0,self.IN.age_Galaxy)
         else:
             ax.set_xscale('log')
             xscale = '_log'

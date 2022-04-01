@@ -87,7 +87,7 @@ class Wi:
         if derlog == False:
             return self.lifetime_class.dMdtauM(np.log10(lifetime_grid), self.metallicity*np.ones(len(lifetime_grid)))#(lifetime_grid)
         if derlog == True:
-            return 0.5    
+            return 1   
  
     def _yield_array(self, channel_switch, mass_grid, birthtime_grid, vel_idx=None):
         vel_idx = self.IN.LC18_vel_idx if vel_idx is None else vel_idx
