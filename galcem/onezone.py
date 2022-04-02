@@ -332,7 +332,7 @@ class Plots(Setup):
         ax.set_ylim(np.min(y)-2.5, np.max(y)+2.5)
         plt.tight_layout()
         plt.show(block=False)
-        plt.savefig(self._dir_out_figs + 'tracked_elements.pdf')
+        plt.savefig(self._dir_out_figs + 'tracked_elements.pdf', bbox_inches='tight')
 
     def DTD_plot(self):
         print('Starting DTD_plot()')
@@ -349,7 +349,7 @@ class Plots(Setup):
         ax.set_ylim(1e-3,1e0)
         ax.set_xlim(1e-2, 1.9e1)
         fig.tight_layout()
-        plt.savefig(self._dir_out_figs + 'DTD.pdf')
+        plt.savefig(self._dir_out_figs + 'DTD.pdf', bbox_inches='tight')
         
     def lifetimeratio_test_plot(self,colormap='Paired'):
         print('Starting lifetimeratio_test_plot()')
@@ -377,7 +377,7 @@ class Plots(Setup):
         ax.set_ylim(0.6,1.95)
         ax.set_xlim(0.6, 120)
         fig.tight_layout()
-        plt.savefig(self._dir_out_figs + 'tauratio.pdf')
+        plt.savefig(self._dir_out_figs + 'tauratio.pdf', bbox_inches='tight')
      
     def phys_integral_plot(self, logAge=False):
         print('Starting phys_integral_plot()')
@@ -455,7 +455,7 @@ class Plots(Setup):
         axt.legend(fontsize=15, loc='lower center', ncol=1, frameon=True, framealpha=0.8)
         plt.tight_layout()
         plt.show(block=False)
-        plt.savefig(self._dir_out_figs + 'total_physical'+str(xscale)+'.pdf')
+        plt.savefig(self._dir_out_figs + 'total_physical'+str(xscale)+'.pdf', bbox_inches='tight')
         
     def age_observations(self):
         import pandas as pd
@@ -512,7 +512,7 @@ class Plots(Setup):
             xscale = '_log'
         #ax.set_xlim(1e-2, 1.9e1)
         fig.tight_layout()
-        plt.savefig(self._dir_out_figs + 'FeH_evolution'+str(xscale)+'.pdf')
+        plt.savefig(self._dir_out_figs + 'FeH_evolution'+str(xscale)+'.pdf', bbox_inches='tight')
 
     def OH_evolution(self, c=2, elemZ=8, logAge=False):
         print('Starting OH_evolution()')
@@ -594,12 +594,12 @@ class Plots(Setup):
         plt.tight_layout(rect = [0.05, 0, 1, .98])
         plt.subplots_adjust(wspace=0., hspace=0.)
         plt.show(block=False)
-        plt.savefig(self._dir_out_figs + 'iso_evolution.pdf')
+        plt.savefig(self._dir_out_figs + 'iso_evolution.pdf', bbox_inches='tight')
 
     def iso_evolution_comp(self, figsize=(40,13)):
         print('Starting iso_evolution_comp()')
         from matplotlib import pyplot as plt
-        #plt.style.use(self._dir+'/galcem.mplstyle')
+        plt.style.use(self._dir+'/galcem.mplstyle')
         import matplotlib.ticker as ticker
         Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
         Masses = np.log10(Mass_i[:,2:])
@@ -651,7 +651,7 @@ class Plots(Setup):
         plt.tight_layout(rect = [0.03, 0, 1, .98])
         plt.subplots_adjust(wspace=0., hspace=0.)
         plt.show(block=False)
-        plt.savefig(self._dir_out_figs + 'iso_evolution_comp.pdf')
+        plt.savefig(self._dir_out_figs + 'iso_evolution_comp.pdf', bbox_inches='tight')
 
     def iso_abundance(self, figsize=(40,13), c=3): 
         print('Starting iso_abundance()')
@@ -698,7 +698,7 @@ class Plots(Setup):
         plt.tight_layout(rect = [0.05, 0, 1, 1])
         plt.subplots_adjust(wspace=0., hspace=0.)
         plt.show(block=False)
-        plt.savefig(self._dir_out_figs + 'iso_abundance.pdf')
+        plt.savefig(self._dir_out_figs + 'iso_abundance.pdf', bbox_inches='tight')
         
     def extract_normalized_abundances(self, Z_list, Mass_i_loc, c=3):
         solar_norm_H = self.c_class.solarA09_vs_H_bymass[Z_list]
@@ -772,7 +772,7 @@ class Plots(Setup):
         fig.tight_layout(rect = [0.03, 0, 1, 1])
         fig.subplots_adjust(wspace=0., hspace=0.)
         plt.show(block=False)
-        plt.savefig(self._dir_out_figs + 'elem_abundance.pdf')
+        plt.savefig(self._dir_out_figs + 'elem_abundance.pdf', bbox_inches='tight')
     
     def select_elemZ_idx(self, elemZ):
         ''' auxiliary function that selects the isotope indexes where Z=elemZ '''
@@ -785,7 +785,7 @@ class Plots(Setup):
         import pandas as pd
         from matplotlib import pyplot as plt
         import matplotlib.ticker as ticker
-        #plt.style.use(self._dir+'/galcem.mplstyle')
+        plt.style.use(self._dir+'/galcem.mplstyle')
         Mass_i = np.loadtxt(self._dir_out+'Mass_i.dat')
         Z_list = np.unique(self.ZA_sorted[:,0])
         Z_symb_list = self.IN.periodic['elemSymb'][Z_list] # name of elements for all isotopes
