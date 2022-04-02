@@ -24,6 +24,7 @@ class Inputs:
     def __init__(self):
         '''	applies to the thick disk at 8 kpc '''
         self.age_Galaxy = 13.8 # [Gyr]
+        self.age_Sun = 4.6 # [Gyr]
         self.solar_metallicity = 0.0181 # Asplund et al. (2009, Table 4)
         self.morphology = 'spiral'
         self.r = 8 # Compute around the solar neighborhood [kpc]
@@ -70,7 +71,7 @@ class Inputs:
         self.yields_LIMs_option = 'k10'
         self.yields_SNII_option = 'lc18'
         self.LC18_vel_idx = 0 # !!!!!!! eventually you should write a function about this
-        self.yields_SNIa_option = 'k20' #'i99' 
+        self.yields_SNIa_option = 'i99' # 'k20' 
         self.yields_BBN_option = 'gp13'
 
         self.M_inf = self.default_params('M_inf', self.morphology)

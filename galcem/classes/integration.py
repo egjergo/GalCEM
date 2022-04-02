@@ -34,11 +34,13 @@ class Wi_grid:
 
             
 class Wi:
-    # Solves each integration item by integrating over birthtimes.
-    # Input upper and lower mass limits (to be mapped onto birthtimes)
-    # Gyr_age    (t)     is the Galactic age
-    # birthtime (t')     is the stellar birthtime
-    # lifetime (tau)    is the stellar lifetime
+    '''
+    Solves each integration item by integrating over birthtimes.
+    Input upper and lower mass limits (to be mapped onto birthtimes)
+    Gyr_age    (t)     is the Galactic age
+    birthtime (t')     is the stellar birthtime
+    lifetime (tau)    is the stellar lifetime
+    '''
     def __init__(self, age_idx, IN, lifetime_class, time_chosen, Z_v, SFR_v, f_SNIa_v, IMF, yields_SNIa_class, models_lc18, models_k10, ZA_sorted):
         self.IN = IN
         self.lifetime_class = lifetime_class
@@ -85,7 +87,7 @@ class Wi:
         if derlog == False:
             return self.lifetime_class.dMdtauM(np.log10(lifetime_grid), self.metallicity*np.ones(len(lifetime_grid)))#(lifetime_grid)
         if derlog == True:
-            return 0.5    
+            return 1   
  
     def _yield_array(self, channel_switch, mass_grid, birthtime_grid, vel_idx=None):
         vel_idx = self.IN.LC18_vel_idx if vel_idx is None else vel_idx
@@ -116,6 +118,9 @@ class Wi:
                     y.append(np.zeros(len_X))
         return 0.005 * np.ones(len(self.ZA_sorted)) #y # len consistent with ZA_sorted
 
+    def yield_component(self, channel_switch, mass_grid, birthtime_grid, vel_idx=None):
+        return interpolation(mass_grid, metallicity(birthtime_grid))
+    
     def mass_component(self, channel_switch, mass_grid, lifetime_grid): #
         # Portinari+98, page 22, last eq. first column
         birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
@@ -154,6 +159,15 @@ class Wi:
         F_SNIa = integr.simps(int_SNIa, x=nu_test)   
         self.f_SNIa_v[self.age_idx] = F_SNIa 
         SFR_comp = self.SFR_component(birthtime_grid)
+        integrand = np.multiply(SFR_comp, F_SNIa)
+        return integr.simps(integrand, x=birthtime_grid)
+ 
+    def _compute_rateSNIa(self, channel_switch='SNIa'):
+        from .morphology import DTD
+        DTD_class = DTD()
+        birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
+        SFR_comp = self.SFR_component(birthtime_grid)
+        F_SNIa = [DTD_class.MaozMannucci12(t) for t in birthtime_grid]
         integrand = np.multiply(SFR_comp, F_SNIa)
         return integr.simps(integrand, x=birthtime_grid)
  

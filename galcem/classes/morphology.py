@@ -202,7 +202,28 @@ class Infall:
         return lambda t: self.aInf() * self.infall_func()(t)
     
         
-
+class DTD:
+    '''
+    For all delayed time distibutions
+    '''
+    def __init__(self):
+        self.A_Ia = .35
+        self.t0_Ia = 0.150 # [Gyr]
+        self.tau_Ia = 1.1
+        
+    def MaozMannucci12(self, t):
+        if t > self.t0_Ia:
+            return t**(- self.tau_Ia)
+        else:
+            return 0.
+        
+    def DTD_select(self):
+        if not self.custom:
+            if self.option == 'mm12':
+                    return self.MaozMannucci12()
+        if self.custom:
+            return self.custom
+        
 class Initial_Mass_Function:
     '''
     CLASS
