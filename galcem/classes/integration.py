@@ -29,7 +29,7 @@ class Wi_grid:
         mass_grid = np.geomspace(Ml_lim, Mu_lim, num = self.IN.num_MassGrid)
         lifetime_grid = self.lifetime_class.interp_stellar_lifetimes(self.metallicity)(mass_grid) #np.power(10, self.lifetime_class.interp_stellar_lifetimes(mass_grid, self.metallicity))#np.column_stack([mass_grid, self.metallicity * np.ones(len(mass_grid))])))
         birthtime_grid = self.time_chosen[self.age_idx] - lifetime_grid 
-        positive_idx = np.where(birthtime_grid > 0.)
+        positive_idx = np.where(birthtime_grid > 0.) # You can't integrate stars which haven't died
         return birthtime_grid[positive_idx], lifetime_grid[positive_idx], mass_grid[positive_idx]
 
             

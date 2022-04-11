@@ -59,7 +59,7 @@ class GalCemInterpolant(object):
         return train_metrics
     
     def __repr__(self):
-        s = 'GalChemInterpolan(%s)\n'%','.join(self.xnames)
+        s = GalCemInterpolant.__name__+'(%s)\n'%','.join(self.xnames)
         s += '\ttrain data description\n\t\t%s'%str(self.descrip).replace('\n','\n\t\t')
         s += '\n\ttrain data metrics\n'
         for metric,val in self.train_metrics.items(): s += '\t\t%25s: %.2e\n'%(metric,val)

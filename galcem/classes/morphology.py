@@ -126,10 +126,14 @@ class Stellar_Lifetimes:
     def stellar_masses(self):
         return [self.interp_M(idx) for idx in range(4)]
     
-    def interp_stellar_lifetimes(self, metallicity):
+    def _interp_stellar_lifetimes(self, metallicity):
         '''Picks the tau(M) interpolation at the appropriate metallicity'''
         Z_idx = np.digitize(metallicity, self.Z_bins)
         return self.stellar_lifetimes()[Z_idx]
+
+    def interp_stellar_lifetimes(self, metallicity):
+        '''Picks the tau(M) interpolation at the appropriate metallicity'''
+        return None
 
     def interp_stellar_masses(self, metallicity):
         '''Picks the M(tau) interpolation at the appropriate metallicity'''

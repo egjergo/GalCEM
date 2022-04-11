@@ -39,10 +39,10 @@ class Inputs:
         self.Ml_SNIa = 3./2 # Lower limit for total binary mass for SNIae [Msun]
         self.Mu_SNIa = 12 # Upper limit for total binary mass for SNIae [Msun]
         self.Ml_LIMs = 0.07 # [Msun] !!!!!!! temporary. Import from yield tables
-        self.Mu_LIMs = 9 # [Msun] !!!!!!! temporary. Import from yield tables
+        self.Mu_LIMs = 6 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Ml_NSM = 9 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Mu_NSM = 50 # [Msun] !!!!!!! temporary. Import from yield tables
-        self.Ml_SNII = 10 # [Msun] !!!!!!! temporary. Import from yield tables
+        self.Ml_SNII = 13 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Mu_SNII = 120 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Ml_collapsars = 9 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Mu_collapsars = 120 # [Msun] !!!!!!! temporary. Import from yield tables
