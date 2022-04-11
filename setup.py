@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name='galcem',
-    version="0.0.1a",
+    version="0.0.2a",
     author="Eda Gjergo, Aleksei Sorokin",
     author_email="eda.gjergo@gmail.com",
     license='GNU General Public License',
