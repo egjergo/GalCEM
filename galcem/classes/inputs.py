@@ -63,7 +63,7 @@ class Inputs:
         self.custom_SNIaDTD = None
 
         self.inf_option = None # or 'two-infall'
-        self.IMF_option = 'Salpeter55' #'Kroupa03' #'Kroupa01'  
+        self.IMF_option = 'Salpeter55' #'Kroupa13' #'Kroupa01'
         self.SFR_option = 'SFRgal' # or 'CSFR'
         self.CSFR_option = None # e.g., 'md14'. 
         self.SNIaDTD_option = 'GreggioRenzini83' # 'RuizMannucci01'

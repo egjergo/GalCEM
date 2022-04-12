@@ -126,12 +126,12 @@ class Stellar_Lifetimes:
     def stellar_masses(self):
         return [self.interp_M(idx) for idx in range(4)]
     
-    def _interp_stellar_lifetimes(self, metallicity):
+    def interp_stellar_lifetimes(self, metallicity):
         '''Picks the tau(M) interpolation at the appropriate metallicity'''
         Z_idx = np.digitize(metallicity, self.Z_bins)
         return self.stellar_lifetimes()[Z_idx]
 
-    def interp_stellar_lifetimes(self, metallicity):
+    def _interp_stellar_lifetimes(self, metallicity):
         '''Picks the tau(M) interpolation at the appropriate metallicity'''
         return None
 
@@ -245,7 +245,7 @@ class Initial_Mass_Function:
         normalized IMF by calling .IMF() onto the instantiated class
     
     Accepts a custom function 'func'
-    Defaults options are 'Salpeter55', 'Kroupa03', [...]
+    Defaults options are 'Salpeter55', 'Kroupa13', [...]
     '''
     def __init__(self, Ml, Mu, IN, option=None, custom_IMF=None):
         self.Ml = Ml
@@ -257,19 +257,25 @@ class Initial_Mass_Function:
     def Salpeter55(self, plaw=None):
         plaw = self.IN.Salpeter_IMF_Plaw if plaw is None else plaw
         return lambda Mstar: Mstar ** (-(1 + plaw))
-        
+
     def canonical_IMF(self, Mstar):
-        if Mstar <= 0.5:
-            plaw = -0.3
-        elif self.mass <= 1.0:
-            plaw = 1.2
+        print(Mstar)
+        if Mstar < 0.08:
+            return 0.
+        elif Mstar > 150.:
+            return 0.
         else:
-            plaw = 1.7
-        return Mstar **(-(1 + plaw))
+            if Mstar <= 0.5:
+                plaw = -0.3
+            elif Mstar <= 1.0:
+                plaw = 1.2
+            elif Mstar <= 150.:
+                plaw = 1.7
+            return Mstar **(-(1 + plaw))
         
-    def Kroupa93(self):#, C = 0.31): #if m <= 0.5: lambda m: 0.58 * (m ** -0.30)/m
+    def Kroupa13(self):
         '''
-        Kroupa, Tout & Gilmore (1993)
+        Kroupa et al. (2013)
         '''
         return lambda Mstar: self.canonical_IMF(Mstar)
         
@@ -277,8 +283,8 @@ class Initial_Mass_Function:
         if not self.custom:
             if self.option == 'Salpeter55':
                     return self.Salpeter55()
-            if self.option == 'Kroupa03':
-                    return self.Kroupa03()
+            if self.option == 'Kroupa13':
+                    return self.Kroupa13()
         if self.custom:
             return self.custom
     
@@ -289,7 +295,7 @@ class Initial_Mass_Function:
         return np.reciprocal(scipy.integrate.quad(self.integrand, self.Ml, self.Mu)[0])
 
     def IMF(self): #!!!!!!!! might not be efficient with the IGIMF
-        return lambda Mstar: self.integrand(Mstar) * self.normalization()
+        return lambda Mstar: self.IMF_select()(Mstar) * self.normalization()
         
     def IMF_test(self):
         '''
@@ -297,7 +303,7 @@ class Initial_Mass_Function:
         '''
         return self.normalization() * scipy.integrate.quad(self.integrand, self.Ml, self.Mu)[0]
         
-        
+ 
 class Star_Formation_Rate:
     '''
     CLASS
