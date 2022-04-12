@@ -45,7 +45,6 @@ test package from testpypi
 conda create --name tmp python=3.8
 conda activate tmp
 pip install numpy scipy pandas
-pip install pandas
 pip install -i https://test.pypi.org/simple/ galcem==...
 python
 ```
