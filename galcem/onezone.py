@@ -284,6 +284,7 @@ class Plots(Setup):
         print('Starting to plot')
         self.FeH_evolution()
         self.OH_evolution()
+        self.IMF_plot()
         #self.DTD_plot()
         #self.iso_abundance()
         ## self.iso_evolution()
@@ -456,6 +457,24 @@ class Plots(Setup):
         plt.tight_layout()
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'total_physical'+str(xscale)+'.pdf', bbox_inches='tight')
+        
+    def IMF_plot(self):
+        
+        print('Starting IMF_plot()')
+        from matplotlib import pyplot as plt
+        import pandas as pd
+        plt.style.use(self._dir+'/galcem.mplstyle')
+        masses = np.geomspace(self.IN.Ml_LIMs, self.IN.Mu_SNII, num=self.IN.num_MassGrid)
+        fig, ax = plt.subplots(1,1, figsize=(7,5))
+        ax.loglog(masses, self.IMF(masses), color='blue', label=self.IN.IMF_option, linewidth=3)
+        ax.legend(loc='best', frameon=False, fontsize=17)
+        ax.set_ylabel(r'IMF distribution', fontsize=20)
+        ax.set_xlabel(r'stellar mass [$M_{\odot}$]', fontsize=20)
+        #ax.set_ylim(-2,1)
+        #ax.set_xlim(1e-2, 1.9e1)
+        fig.tight_layout()
+        plt.savefig(self._dir_out_figs + 'IMF.pdf', bbox_inches='tight')
+        
         
     def age_observations(self):
         import pandas as pd

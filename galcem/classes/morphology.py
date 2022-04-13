@@ -211,9 +211,11 @@ class DTD:
     For all delayed time distibutions
     '''
     def __init__(self):
-        self.A_Ia = .35
+        self.A_Ia = .06
         self.t0_Ia = 0.150 # [Gyr]
         self.tau_Ia = 1.1
+        self.option = 'mm12'
+        self.custom = None
         
     def MaozMannucci12(self, t):
         if t > self.t0_Ia:
@@ -227,6 +229,7 @@ class DTD:
                     return self.MaozMannucci12()
         if self.custom:
             return self.custom
+
         
 class Initial_Mass_Function:
     '''
@@ -254,9 +257,9 @@ class Initial_Mass_Function:
         self.option = self.IN.IMF_option if option is None else option
         self.custom = self.IN.custom_IMF if custom_IMF is None else custom_IMF
     
-    def Salpeter55(self, plaw=None):
+    def Salpeter55(self, Mstar, plaw=None):
         plaw = self.IN.Salpeter_IMF_Plaw if plaw is None else plaw
-        return lambda Mstar: Mstar ** (-(1 + plaw))
+        return Mstar ** (-(1 + plaw))
 
     def canonical_IMF(self, Mstar):
         print(Mstar)
@@ -273,29 +276,31 @@ class Initial_Mass_Function:
                 plaw = 1.7
             return Mstar **(-(1 + plaw))
         
-    def Kroupa13(self):
+    def Kroupa13(self, Mstar):
         '''
         Kroupa et al. (2013)
         '''
-        return lambda Mstar: self.canonical_IMF(Mstar)
+        print('In Kroupa13')
+        print(Mstar)
+        return self.canonical_IMF(Mstar) #[self.canonical_IMF(M) for M in Mstar]
         
-    def IMF_select(self):
+    def IMF_select(self, Mstar):
         if not self.custom:
             if self.option == 'Salpeter55':
-                    return self.Salpeter55()
+                    return self.Salpeter55(Mstar)
             if self.option == 'Kroupa13':
-                    return self.Kroupa13()
+                    return self.Kroupa13(Mstar)
         if self.custom:
-            return self.custom
+            return self.custom(Mstar)
     
     def integrand(self, Mstar):
-        return Mstar * self.IMF_select()(Mstar)
+        return Mstar * self.IMF_select(Mstar)
         
     def normalization(self): 
         return np.reciprocal(scipy.integrate.quad(self.integrand, self.Ml, self.Mu)[0])
 
     def IMF(self): #!!!!!!!! might not be efficient with the IGIMF
-        return lambda Mstar: self.IMF_select()(Mstar) * self.normalization()
+        return lambda Mstar: self.IMF_select(Mstar) * self.normalization()
         
     def IMF_test(self):
         '''

@@ -168,6 +168,7 @@ class Wi:
         birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
         SFR_comp = self.SFR_component(birthtime_grid)
         F_SNIa = [DTD_class.MaozMannucci12(t) for t in birthtime_grid]
+        self.f_SNIa_v[self.age_idx] = F_SNIa 
         integrand = np.multiply(SFR_comp, F_SNIa)
         return integr.simps(integrand, x=birthtime_grid)
  
