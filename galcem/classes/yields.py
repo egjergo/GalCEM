@@ -143,7 +143,8 @@ class Concentrations:
         return np.column_stack((yields.elemZ, yields.elemA))
         
     def extract_ZA_pairs_LIMs(self, yields):
-        return np.column_stack((yields.elemZ_sorting[0][:,0], yields.elemA_sorting[0][:,0]))
+        return yields.ZA_list
+        #return np.column_stack((yields.elemZ_sorting[0][:,0], yields.elemA_sorting[0][:,0]))
     
     def ZA_sorted(self, ZA_all):
         Z_sorted = ZA_all[ZA_all[:,0].argsort()]
@@ -335,7 +336,27 @@ class Yields_LIMs(Yields):
                 
             self.yields = self.is_unique('Yield', split_length)
             self.elemA_sorting, self.elemA = self.is_unique('elemA', split_length)
-            self.elemZ_sorting, self.elemZ = self.is_unique('elemZ', split_length)
+            print('self.elemA_sorting')
+            print(self.elemA_sorting)
+            print('self.elemA')
+            print(self.elemA)
+            self.elemZ_sorting, self.elemZ = self.is_unique('elemZ', split_length) # *_sorting associates elemZ to the index. elemZ is unique
             self.metallicityIni, self.metallicity_bins = self.is_unique('Zini', split_length)
             self.stellarMassIni, self.stellarMass_bins = self.is_unique('Mini', split_length)
-            self.Returned_stellar_mass = self.is_unique('Mfin', split_length)    
+            self.Returned_stellar_mass = self.is_unique('Mfin', split_length)  
+        
+        if self.option == 'c15':
+            import re
+            import glob
+            c15 = pd.read_csv('yield_interpolation/c15/data.csv')
+            c15_yield_dir = 'yield_interpolation/c15/models/'
+            self.metallicity_bins = np.unique(c15['metallicity'].values)
+            self.elemA = np.unique(c15['a'].values)
+            self.elemZ = np.unique(c15['z'].values)
+            self.yields_list = glob.glob(c15_yield_dir+'*.pkl')
+            patternz = "/z(.*?).a"
+            z_list = [re.search(patternz, yl).group(1) for yl in self.yields_list]
+            searcha = [".a",".irv0"]
+            a_list = [yl[yl.find(searcha[0])+len(searcha[0]):yl.find(searcha[1])] for yl in self.yields_list]
+            ZA_list = np.column_stack([z_list, a_list])
+            self.ZA_list = ZA_list.astype('int')

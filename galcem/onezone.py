@@ -102,9 +102,10 @@ class Setup:
         
         # Load Interpolation Models
         self._dir = os.path.dirname(__file__)
-        self.X_lc18, self.Y_lc18, self.models_lc18, self.averaged_lc18 = self.load_processed_yields(func_name=self.IN.yields_SNII_option, loc=self._dir + '/input/yields/snii/'+ self.IN.yields_SNII_option + '/tab_R', df_list=['X', 'Y', 'models', 'avgmassfrac'])
-        self.X_k10, self.Y_k10, self.models_k10, self.averaged_k10 = self.load_processed_yields(func_name=self.IN.yields_LIMs_option, loc=self._dir + '/input/yields/lims/' + self.IN.yields_LIMs_option, df_list=['X', 'Y', 'models', 'avgmassfrac'])
-        self.Y_snia = self.load_processed_yields_snia(func_name=self.IN.yields_SNIa_option, loc=self._dir + '/input/yields/snia/' + self.IN.yields_SNIa_option, df_list='Y')
+        #self.X_lc18, self.Y_lc18, self.models_lc18, self.averaged_lc18 = self.load_processed_yields(func_name=self.IN.yields_SNII_option, loc=self._dir + '/input/yields/snii/'+ self.IN.yields_SNII_option + '/tab_R', df_list=['X', 'Y', 'models', 'avgmassfrac'])
+        #self.X_k10, self.Y_k10, self.models_k10, self.averaged_k10 = self.load_processed_yields(func_name=self.IN.yields_LIMs_option, loc=self._dir + '/input/yields/lims/' + self.IN.yields_LIMs_option, df_list=['X', 'Y', 'models', 'avgmassfrac'])
+        #self.models_c15 = 
+        #self.Y_snia = self.load_processed_yields_snia(func_name=self.IN.yields_SNIa_option, loc=self._dir + '/input/yields/snia/' + self.IN.yields_SNIa_option, df_list='Y')
         
     def load_processed_yields(self,func_name, loc, df_list):
         df_dict = {}

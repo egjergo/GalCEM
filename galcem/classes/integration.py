@@ -119,7 +119,7 @@ class Wi:
         return 0.005 * np.ones(len(self.ZA_sorted)) #y # len consistent with ZA_sorted
 
     def yield_component(self, channel_switch, mass_grid, birthtime_grid, vel_idx=None):
-        return interpolation(mass_grid, metallicity(birthtime_grid))
+        return interpolation(mass_grid, self.Z_component(birthtime_grid))
     
     def mass_component(self, channel_switch, mass_grid, lifetime_grid): #
         # Portinari+98, page 22, last eq. first column
