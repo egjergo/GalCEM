@@ -109,7 +109,7 @@ class Setup:
         self.models_SNII = self.yields_SNII_class.yields
         self.yields_LIMs_class.construct_yields(self.ZA_sorted)
         self.models_LIMs = self.yields_LIMs_class.yields
-        #self.Y_snia = self.load_processed_yields_snia(func_name=self.IN.yields_SNIa_option, loc=self._dir + '/input/yields/snia/' + self.IN.yields_SNIa_option, df_list='Y')
+        self.Y_snia = self.load_processed_yields_snia(func_name=self.IN.yields_SNIa_option, loc=self._dir + '/input/yields/snia/' + self.IN.yields_SNIa_option, df_list='Y')
         
     def load_processed_yields(self,func_name, loc, df_list):
         df_dict = {}
@@ -185,6 +185,7 @@ class OneZone(Setup):
         '''
         Wi_comps = kwargs['Wi_comp'] # [list of 2-array lists] #Wi_comps[0][0].shape=(155,)
         Wi_SNIa = kwargs['Wi_SNIa']
+        Z_comps = kwargs['Z_comp']
         i = kwargs['i']
         yields = kwargs['yields']
         channel_switch = ['SNII', 'LIMs']
@@ -196,7 +197,9 @@ class OneZone(Setup):
             Wi_vals = []
             for j,val in enumerate(Wi_comps):
                 if len(val[1]) > 0.:
-                    Wi_vals.append(integr.simps(np.multiply(val[0], yields[j]), x=val[1]))
+                    print(type(yields[j]))
+                    integrand = np.multiply(val[0], yields[j](val[0], np.log10(Z_comps[j](val[2]))))
+                    Wi_vals.append(integr.simps(integrand, x=val[1]))
                     #Wi_vals.append(integr.simps(val[0] * yield_interp[j](mass_grid, metallicity_func[birthtime_grid]), x=val[1]))   
                 else:
                     Wi_vals.append(0.)
@@ -244,25 +247,27 @@ class OneZone(Setup):
             self.file1.write(' sum X_i at n %d= %.3f\n'%(n, np.sum(self.Xi_v[:,n])))
             if n > 0.: 
                 Wi_class = Wi(n, self.IN, self.lifetime_class, self.time_chosen, self.Z_v, self.SFR_v, self.f_SNIa_v,
-                              self.IMF, self.yields_SNIa_class, self.models_lc18, self.models_k10, self.ZA_sorted)
+                              self.IMF, self.yields_SNIa_class, self.models_SNII, self.models_LIMs, self.ZA_sorted)
                 self.Rate_SNII[n], self.Rate_LIMs[n], self.Rate_SNIa[n] = Wi_class.compute_rates()
                 Wi_comp = [Wi_class.compute("SNII"), Wi_class.compute("LIMs")]
+                birthtime_grids = [Wi_comp[0][2], Wi_comp[1][2]]
+                Z_comp = [Wi_class.metallicity_component(birthtime_grids[0]), Wi_class.metallicity_component(birthtime_grids[1])]
                 #yield_SNII = Wi_class.yield_array('SNII', Wi_class.SNII_mass_grid, Wi_class.SNII_birthtime_grid)
                 #yield_LIMs = Wi_class.yield_array('LIMs', Wi_class.LIMs_mass_grid, Wi_class.LIMs_birthtime_grid)
                 for i, _ in enumerate(self.ZA_sorted): 
                     Wi_SNIa = self.Rate_SNIa[n] * self.Y_snia[i]
-                    if self.X_lc18[i].empty:
-                        yields_lc18 = 0.
-                    else:
-                        idx_SNII = np.digitize(self.Z_v[n-1] - self.IN.solar_metallicity, self.averaged_lc18[i][1])
-                        yields_lc18 = self.averaged_lc18[i][0][idx_SNII]
-                    if self.X_k10[i].empty:
-                        yields_k10 = 0.
-                    else:
-                        idx_LIMs = np.digitize(self.Z_v[n-1] - self.IN.solar_metallicity, self.averaged_k10[i][1])
-                        yields_k10 = self.averaged_k10[i][0][idx_LIMs]
-                    yields = [yields_lc18, yields_k10]
-                    self.Mass_i_v[i, n+1] = self.aux.RK4(self.solve_integral, self.time_chosen[n], self.Mass_i_v[i,n], n, self.IN.nTimeStep, i=i, Wi_comp=Wi_comp, Wi_SNIa=Wi_SNIa, yields=yields)
+                    #if self.models_SNII[i].empty:
+                    #    yields_SNII = 0.
+                    #else:
+                    #    #idx_SNII = np.digitize(self.Z_v[n-1] - self.IN.solar_metallicity, self.averaged_lc18[i][1])
+                    yields_SNII = self.models_SNII[i] #self.averaged_lc18[i][0][idx_SNII]
+                    #if self.models_LIMs[i].empty:
+                    #    yields_LIMs = 0.
+                    #else:
+                    #    #idx_LIMs = np.digitize(self.Z_v[n-1] - self.IN.solar_metallicity, self.averaged_k10[i][1])
+                    yields_LIMs = self.models_LIMs[i] #self.averaged_k10[i][0][idx_LIMs]
+                    yields = [yields_SNII, yields_LIMs]
+                    self.Mass_i_v[i, n+1] = self.aux.RK4(self.solve_integral, self.time_chosen[n], self.Mass_i_v[i,n], n, self.IN.nTimeStep, i=i, Wi_comp=Wi_comp, Wi_SNIa=Wi_SNIa, Z_comp=Z_comp, yields=yields)
             #self.Z_v[n] = np.divide(np.sum(self.Mass_i_v[self.elemZ_for_metallicity:,n]), self.Mgas_v[n])
             self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
             self.Z_v[n] = np.divide(np.sum(self.Mass_i_v[:,n]), self.Mgas_v[n])

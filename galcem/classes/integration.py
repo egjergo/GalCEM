@@ -41,7 +41,7 @@ class Wi:
     birthtime (t')     is the stellar birthtime
     lifetime (tau)    is the stellar lifetime
     '''
-    def __init__(self, age_idx, IN, lifetime_class, time_chosen, Z_v, SFR_v, f_SNIa_v, IMF, yields_SNIa_class, models_lc18, models_k10, ZA_sorted):
+    def __init__(self, age_idx, IN, lifetime_class, time_chosen, Z_v, SFR_v, f_SNIa_v, IMF, yields_SNIa_class, models_SNII, models_LIMs, ZA_sorted):
         self.IN = IN
         self.lifetime_class = lifetime_class
         self.time_chosen = time_chosen
@@ -50,8 +50,8 @@ class Wi:
         self.f_SNIa_v = f_SNIa_v
         self.IMF = IMF
         self.yields_SNIa_class = yields_SNIa_class
-        self.models_lc18 = models_lc18
-        self.models_k10 = models_k10
+        self.models_SNII = models_SNII
+        self.models_LIMs = models_LIMs
         self.ZA_sorted = ZA_sorted
         self.metallicity = self.Z_v[age_idx]
         self.age_idx = age_idx
@@ -67,7 +67,7 @@ class Wi:
         # grid_type:            can be 'birthtime', 'lifetime', 'mass' 
         return self.__dict__[channel_switch+'_'+grid_type+'_grid']
     
-    def Z_component(self, birthtime_grid):
+    def metallicity_component(self, birthtime_grid):
         # Returns the interpolated SFR vector computed at the birthtime grids
         _Z_interp = interp.interp1d(self.time_chosen[:self.age_idx+1], self.Z_v[:self.age_idx+1], fill_value='extrapolate')
         return _Z_interp(birthtime_grid)
@@ -99,11 +99,11 @@ class Wi:
         else:  
             if channel_switch == 'SNII':
                 X_sample = np.column_stack([Z_comp, vel_idx * np.ones(len_X), mass_grid])
-                models = self.models_lc18
+                models = self.models_SNII
             elif channel_switch == 'LIMs':
                 Z_comp /= self.IN.solar_metallicity
                 X_sample = np.column_stack([Z_comp, mass_grid])
-                models = self.models_k10
+                models = self.models_LIMs
             else:
                 print('%s currently not included.'%channel_switch)
                 pass
@@ -118,7 +118,7 @@ class Wi:
                     y.append(np.zeros(len_X))
         return 0.005 * np.ones(len(self.ZA_sorted)) #y # len consistent with ZA_sorted
 
-    def yield_component(self, channel_switch, mass_grid, birthtime_grid, vel_idx=None):
+    def _yield_component(self, channel_switch, mass_grid, birthtime_grid, vel_idx=None):
         return interpolation(mass_grid, self.Z_component(birthtime_grid))
     
     def mass_component(self, channel_switch, mass_grid, lifetime_grid): #
@@ -212,4 +212,4 @@ class Wi:
         #integrand = np.prod(np.vstack[SFR_comp, mass_comp, self.yield_load[i]])
         integrand = np.prod(np.vstack([SFR_comp, mass_comp]), axis=0)
         #return integr.simps(integrand, x=birthtime_grid)
-        return [integrand, mass_grid]
+        return [integrand, mass_grid, birthtime_grid]
