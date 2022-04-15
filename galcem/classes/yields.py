@@ -140,7 +140,7 @@ class Concentrations:
         return np.column_stack((yields.elemZ, yields.elemA))
     
     def extract_ZA_pairs_SNII(self, yields):
-        return np.column_stack((yields.elemZ, yields.elemA))
+        return yields.ZA_list #np.column_stack((yields.elemZ, yields.elemA))
         
     def extract_ZA_pairs_LIMs(self, yields):
         return yields.ZA_list
@@ -259,7 +259,7 @@ class Yields_SNII(Yields):
         super().__init__()
  
     def import_yields(self):
-        if self.option == 'lc18':
+        if self.option == 'lc18old':
             self.metallicity_bins = np.power(10, [0., -1., -2., -3.])
             self.rotationalVelocity_bins = [0., 150., 300.]
             yd = self._dir + '/input/yields/snii/lc18/tab_R/'
@@ -289,6 +289,35 @@ class Yields_SNII(Yields):
             self.elemA = self.tables[0,0,:,2].astype('int')
             self.stellarMassIni = self.tables[:,:,:,3].astype('float')
             self.yields = self.tables[:,:,:,4:].astype('float') 
+    
+        if self.option == 'lc18':
+            import re
+            import glob
+            lc18 = pd.read_csv('yield_interpolation/lc18/data.csv')
+            lc18_yield_dir = 'yield_interpolation/lc18/models/'
+            self.metallicity_bins = np.unique(lc18['metallicity'].values)
+            self.elemA = np.unique(lc18['a'].values)
+            self.elemZ = np.unique(lc18['z'].values)
+            self.yields_list = glob.glob(lc18_yield_dir+'*.pkl')
+            patternz = "/z(.*?).a"
+            z_list = [re.search(patternz, yl).group(1) for yl in self.yields_list]
+            searcha = [".a",".irv0"]
+            a_list = [yl[yl.find(searcha[0])+len(searcha[0]):yl.find(searcha[1])] for yl in self.yields_list]
+            ZA_list = np.column_stack([z_list, a_list])
+            self.ZA_list = ZA_list.astype('int')
+            
+    def construct_yields(self, ZA_sorted):
+        import pickle
+        yields = []
+        yields_l = pd.Series(self.yields_list, dtype='str')
+        for i,val in enumerate(ZA_sorted):
+            pattern = '/z'+ str(val[0]) + '.a' + str(val[1])+'.irv0'
+            select_id = np.where(yields_l.str.contains(pattern))[0]
+            if len(select_id) > 0.:
+                yields.append(pickle.load(open(yields_l.iloc[select_id[0]],'rb')))
+            else:
+                yields.append(None)
+        self.yields = yields
     
     
 class Yields_LIMs(Yields):
@@ -360,3 +389,16 @@ class Yields_LIMs(Yields):
             a_list = [yl[yl.find(searcha[0])+len(searcha[0]):yl.find(searcha[1])] for yl in self.yields_list]
             ZA_list = np.column_stack([z_list, a_list])
             self.ZA_list = ZA_list.astype('int')
+            
+    def construct_yields(self, ZA_sorted):
+        import pickle
+        yields = []
+        yields_l = pd.Series(self.yields_list, dtype='str')
+        for i,val in enumerate(ZA_sorted):
+            pattern = '/z'+ str(val[0]) + '.a' + str(val[1])+'.irv0'
+            select_id = np.where(yields_l.str.contains(pattern))[0]
+            if len(select_id) > 0.:
+                yields.append(pickle.load(open(yields_l.iloc[select_id[0]],'rb')))
+            else:
+                yields.append(None)
+        self.yields = yields

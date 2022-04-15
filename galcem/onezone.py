@@ -58,24 +58,24 @@ class Setup:
         isotope_class = Isotopes(self.IN)
         self.yields_LIMs_class = Yields_LIMs(self.IN)
         self.yields_LIMs_class.import_yields()
-        yields_SNII_class = Yields_SNII(self.IN)
-        yields_SNII_class.import_yields()
+        self.yields_SNII_class = Yields_SNII(self.IN)
+        self.yields_SNII_class.import_yields()
         self.yields_SNIa_class = Yields_SNIa(self.IN)
         self.yields_SNIa_class.import_yields()
-        yields_BBN_class = Yields_BBN(self.IN)
-        yields_BBN_class.import_yields()
+        self.yields_BBN_class = Yields_BBN(self.IN)
+        self.yields_BBN_class.import_yields()
         
         # Initialize ZA_all
         self.c_class = Concentrations(self.IN)
         ZA_LIMs = self.c_class.extract_ZA_pairs_LIMs(self.yields_LIMs_class)
         ZA_SNIa = self.c_class.extract_ZA_pairs_SNIa(self.yields_SNIa_class)
-        ZA_SNII = self.c_class.extract_ZA_pairs_SNII(yields_SNII_class)
+        ZA_SNII = self.c_class.extract_ZA_pairs_SNII(self.yields_SNII_class)
         ZA_all = np.vstack((ZA_LIMs, ZA_SNIa, ZA_SNII))
         
         # Initialize Global tracked quantities
         self.Infall_rate = self.infall(self.time_chosen)
-        self.ZA_sorted = self.c_class.ZA_sorted(ZA_all) # [Z, A] VERY IMPORTANT! 321 isotopes with yields_SNIa_option = 'km20', 192 isotopes for 'i99' 
-        self.ZA_sorted = self.ZA_sorted[1:,:]
+        ZA_sort = self.c_class.ZA_sorted(ZA_all) # [Z, A] VERY IMPORTANT! 321 isotopes with yields_SNIa_option = 'km20', 192 isotopes for 'i99' 
+        self.ZA_sorted = ZA_sort[1:,:]
         self.ZA_symb_list = self.IN.periodic['elemSymb'][self.ZA_sorted[:,0]] # name of elements for all isotopes
         self.asplund3_percent = self.c_class.abund_percentage(self.ZA_sorted)
         #ZA_symb_iso_list = np.asarray([ str(A) for A in self.IN.periodic['elemA'][self.ZA_sorted]])  # name of elements for all isotopes
@@ -89,7 +89,7 @@ class Setup:
         self.f_SNIa_v = self.IN.epsilon * np.ones(len(self.time_chosen))
         self.Mass_i_v = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)))    # Gass mass (i,j) where the i rows are the isotopes and j are the timesteps, [:,j] follows the timesteps
         self.W_i_comp = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen), 3), dtype=object)    # Gass mass (i,j) where the i rows are the isotopes and j are the timesteps, [:,j] follows the timesteps
-        self.Xi_inf = isotope_class.construct_yield_vector(yields_BBN_class, self.ZA_sorted)
+        self.Xi_inf = isotope_class.construct_yield_vector(self.yields_BBN_class, self.ZA_sorted)
         Mass_i_inf = np.column_stack(([self.Xi_inf] * len(self.Mtot)))
         self.Xi_v = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)))    # Xi 
         self.Z_v = self.IN.epsilon * np.ones(len(self.time_chosen)) # Metallicity 
@@ -104,7 +104,11 @@ class Setup:
         self._dir = os.path.dirname(__file__)
         #self.X_lc18, self.Y_lc18, self.models_lc18, self.averaged_lc18 = self.load_processed_yields(func_name=self.IN.yields_SNII_option, loc=self._dir + '/input/yields/snii/'+ self.IN.yields_SNII_option + '/tab_R', df_list=['X', 'Y', 'models', 'avgmassfrac'])
         #self.X_k10, self.Y_k10, self.models_k10, self.averaged_k10 = self.load_processed_yields(func_name=self.IN.yields_LIMs_option, loc=self._dir + '/input/yields/lims/' + self.IN.yields_LIMs_option, df_list=['X', 'Y', 'models', 'avgmassfrac'])
-        #self.models_c15 = 
+        
+        self.yields_SNII_class.construct_yields(self.ZA_sorted)
+        self.models_SNII = self.yields_SNII_class.yields
+        self.yields_LIMs_class.construct_yields(self.ZA_sorted)
+        self.models_LIMs = self.yields_LIMs_class.yields
         #self.Y_snia = self.load_processed_yields_snia(func_name=self.IN.yields_SNIa_option, loc=self._dir + '/input/yields/snia/' + self.IN.yields_SNIa_option, df_list='Y')
         
     def load_processed_yields(self,func_name, loc, df_list):
@@ -475,7 +479,6 @@ class Plots(Setup):
         #ax.set_xlim(1e-2, 1.9e1)
         fig.tight_layout()
         plt.savefig(self._dir_out_figs + 'IMF.pdf', bbox_inches='tight')
-        
         
     def age_observations(self):
         import pandas as pd
@@ -1132,4 +1135,3 @@ class Plots(Setup):
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'elem_obs_lZ.pdf', bbox_inches='tight')
         return None
-    

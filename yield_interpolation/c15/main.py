@@ -18,7 +18,8 @@ def parse_c15_raw():
         irv = int(prts[2])
         if metallicity in [2e-5,5e-5,1e-4,3e-4]: metallicity = metallicity*2.4
         df_txt['MASS'] = mass
-        df_txt['METALLICITY'] = metallicity
+        #df_txt['METALLICITY'] = metallicity 
+        df_txt['METALLICITY'] = metallicity * 0.0181 # Absolute metallicity
         df_txt['IRV'] = irv
         df = df.append(df_txt)
         print(txt_og)
