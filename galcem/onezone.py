@@ -90,7 +90,7 @@ class Setup:
         self.Mass_i_v = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)))    # Gass mass (i,j) where the i rows are the isotopes and j are the timesteps, [:,j] follows the timesteps
         self.W_i_comp = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen), 3), dtype=object)    # Gass mass (i,j) where the i rows are the isotopes and j are the timesteps, [:,j] follows the timesteps
         self.Xi_inf = isotope_class.construct_yield_vector(yields_BBN_class, self.ZA_sorted)
-        Mass_i_inf = np.column_stack(([self.Xi_inf] * len(self.Mtot)))
+        self.Mass_i_inf = np.column_stack(([self.Xi_inf] * len(self.Infall_rate)))
         self.Xi_v = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)))    # Xi 
         self.Z_v = self.IN.epsilon * np.ones(len(self.time_chosen)) # Metallicity 
         G_v = self.IN.epsilon * np.ones(len(self.time_chosen)) # G 
@@ -184,7 +184,8 @@ class OneZone(Setup):
         yields = kwargs['yields']
         channel_switch = ['SNII', 'LIMs']
         infall_comp = self.Infall_rate[n] * self.Xi_inf[i]
-        sfr_comp = self.SFR_v[n] * self.Xi_v[i,n] 
+        self.Xi_v[i,n] = self.Mass_i_v[i,n] / self.Mtot[n]
+        sfr_comp = self.SFR_v[n] *  self.Xi_v[i,n] 
         if n <= 0:
             val = infall_comp - sfr_comp
         else:
@@ -235,7 +236,7 @@ class OneZone(Setup):
             print('time [Gyr] = %.2f'%self.time_chosen[n])
             self.file1.write('n = %d\n'%n)
             self.phys_integral(n)        
-            self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
+            #self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
             self.file1.write(' sum X_i at n %d= %.3f\n'%(n, np.sum(self.Xi_v[:,n])))
             if n > 0.: 
                 Wi_class = Wi(n, self.IN, self.lifetime_class, self.time_chosen, self.Z_v, self.SFR_v, self.f_SNIa_v,
@@ -259,7 +260,7 @@ class OneZone(Setup):
                     yields = [yields_lc18, yields_k10]
                     self.Mass_i_v[i, n+1] = self.aux.RK4(self.solve_integral, self.time_chosen[n], self.Mass_i_v[i,n], n, self.IN.nTimeStep, i=i, Wi_comp=Wi_comp, Wi_SNIa=Wi_SNIa, yields=yields)
             #self.Z_v[n] = np.divide(np.sum(self.Mass_i_v[self.elemZ_for_metallicity:,n]), self.Mgas_v[n])
-            self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
+            #self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
             self.Z_v[n] = np.divide(np.sum(self.Mass_i_v[:,n]), self.Mgas_v[n])
         self.Z_v[-1] = np.divide(np.sum(self.Mass_i_v[:,-1]), self.Mgas_v[-1])
         self.Xi_v[:,-1] = np.divide(self.Mass_i_v[:,-1], self.Mgas_v[-1]) 
