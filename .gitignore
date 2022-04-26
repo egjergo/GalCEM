@@ -149,3 +149,5 @@ yield_interpolation/**/*.pkl
 !/galcem/input/observations/*/*
 !/galcem/input/observations/*
 
+# dev specific
+**ags**

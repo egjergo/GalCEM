@@ -1,6 +1,8 @@
 from yield_interpolation.galcem_interpolant import GalCemInterpolant
 import pandas as pd
-import pickle
+import numpy as np
+import dill
+import os
 
 def parse_lifetime_mass_metallicity_raw():
     # parse input tdata
@@ -16,52 +18,52 @@ def fit_lifetime_mass_metallicity_interpolants(df,root):
     # lifetime by mass, metallicity
     #   fit model
     lifetime_by_mass_metallicity = GalCemInterpolant(
-        s_y = df['lifetime_Gyr'],
-        dfx = df[['mass','metallicity']],
-        xlog10cols = ['mass'],
-        ylog10col = True)
+        df = df,
+        ycol = 'lifetime_Gyr',
+        tf_funs = {
+            'mass':lambda x:np.log10(x), 'mass_prime':lambda x:1/(x*np.log(10)),
+            'metallicity':lambda x:np.sqrt(x), 'metallicity_prime':lambda x:1/(2*np.sqrt(x)),
+            'lifetime_Gyr':lambda y:np.log10(y), 'lifetime_Gyr_prime':lambda y:1/(y*np.log(10)), 'lifetime_Gyr_inv':lambda y:10**y},
+        name = 'Lifetime Interpolant',
+        plot = True,
+        fig_root = root+'/figs/',
+        fig_view_angle = 45)
     #   print model
     print(lifetime_by_mass_metallicity)
-    #   plot model
-    lifetime_by_mass_metallicity.plot(
-        xcols = ['mass','metallicity'],
-        xfixed = {},
-        figroot = root+'figs/life_by_mass_metallicity',
-        title = 'Lifetime by Mass, Metallicity',
-        view_angle = -45)
     #   save model
-    pickle.dump(lifetime_by_mass_metallicity,open(root+'models/lifetime_by_mass_metallicity.pkl','wb'))
+    dill.dump(lifetime_by_mass_metallicity,open(root+'/models/lifetime_by_mass_metallicity.pkl','wb'))
     #   load model
-    lifetime_by_mass_metallicity_loaded = pickle.load(open(root+'models/lifetime_by_mass_metallicity.pkl','rb'))
+    lifetime_by_mass_metallicity_loaded = dill.load(open(root+'/models/lifetime_by_mass_metallicity.pkl','rb'))
     #   example model use
-    xquery = pd.DataFrame({'mass':[15],'metallicity':[0.01648]})
-    yquery = lifetime_by_mass_metallicity_loaded(xquery)
+    yquery = lifetime_by_mass_metallicity_loaded(df)
+    dyquery_dmass = lifetime_by_mass_metallicity_loaded(df,dwrt='mass')
+    dyquery_metallicity = lifetime_by_mass_metallicity_loaded(df,dwrt='metallicity')
     # mass by lifetime, metallicity
     mass_by_lifetime_metallicity = GalCemInterpolant(
-        s_y = df['mass'],
-        dfx = df[['lifetime_Gyr','metallicity']],
-        xlog10cols = ['lifetime_Gyr'],
-        ylog10col = True)
+        df = df,
+        ycol = 'mass',
+        tf_funs = {
+            'lifetime_Gyr':lambda x:np.log10(x), 'lifetime_Gyr_prime':lambda y:1/(y*np.log(10)),
+            'metallicity':lambda x:np.sqrt(x), 'metallicity_prime':lambda x:1/(2*np.sqrt(x)),
+            'mass':lambda y:np.log10(y), 'mass_prime':lambda y:1/(y*np.log(10)), 'mass_inv':lambda y:10**y},
+        name = 'Mass Interpolant',
+        plot = True,
+        fig_root = root+'/figs/',
+        fig_view_angle = 45)
     #       print model
     print(mass_by_lifetime_metallicity)
-    #       plot model
-    mass_by_lifetime_metallicity.plot(
-        xcols = ['lifetime_Gyr','metallicity'],
-        xfixed = {},
-        figroot = root+'figs/mass_by_lifetime_metallicity',
-        title = 'Mass by Lifetime, Metallicity',
-        view_angle = -45)
     #       save model
-    pickle.dump(mass_by_lifetime_metallicity,open(root+'models/mass_by_lifetime_metallicity.pkl','wb'))
+    dill.dump(mass_by_lifetime_metallicity,open(root+'/models/mass_by_lifetime_metallicity.pkl','wb'))
     #       load model
-    mass_by_lifetime_metallicity_loaded = pickle.load(open(root+'models/mass_by_lifetime_metallicity.pkl','rb'))
+    mass_by_lifetime_metallicity_loaded = dill.load(open(root+'/models/mass_by_lifetime_metallicity.pkl','rb'))
     #       example model use
-    xquery = pd.DataFrame({'lifetime_Gyr':[5,4],'metallicity':[0.01648,0.005]})
-    yquery = mass_by_lifetime_metallicity_loaded(xquery)
+    yquery = mass_by_lifetime_metallicity_loaded(df)
+    dyquery_dlifetime = mass_by_lifetime_metallicity_loaded(df,dwrt='lifetime_Gyr')
+    dyquery_metallicity = mass_by_lifetime_metallicity_loaded(df,dwrt='metallicity')
 
 if __name__ == '__main__':
-    root = 'yield_interpolation/lifetime_mass_metallicity/'
+    root = os.path.abspath(os.path.dirname(__file__))
     df = parse_lifetime_mass_metallicity_raw()
-    df.to_csv(root+'data.csv',index=False)
+    df.to_csv(root+'/data.csv',index=False)
     fit_lifetime_mass_metallicity_interpolants(df,root)
     
