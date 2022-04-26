@@ -37,7 +37,7 @@ def fit_lifetime_mass_metallicity_interpolants(df,root):
     #   example model use
     yquery = lifetime_by_mass_metallicity_loaded(df)
     dyquery_dmass = lifetime_by_mass_metallicity_loaded(df,dwrt='mass')
-    dyquery_metallicity = lifetime_by_mass_metallicity_loaded(df,dwrt='metallicity')
+    dyquery_dmetallicity = lifetime_by_mass_metallicity_loaded(df,dwrt='metallicity')
     # mass by lifetime, metallicity
     mass_by_lifetime_metallicity = GalCemInterpolant(
         df = df,
@@ -59,7 +59,7 @@ def fit_lifetime_mass_metallicity_interpolants(df,root):
     #       example model use
     yquery = mass_by_lifetime_metallicity_loaded(df)
     dyquery_dlifetime = mass_by_lifetime_metallicity_loaded(df,dwrt='lifetime_Gyr')
-    dyquery_metallicity = mass_by_lifetime_metallicity_loaded(df,dwrt='metallicity')
+    dyquery_dmetallicity = mass_by_lifetime_metallicity_loaded(df,dwrt='metallicity')
 
 if __name__ == '__main__':
     root = os.path.abspath(os.path.dirname(__file__))

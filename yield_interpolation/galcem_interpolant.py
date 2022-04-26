@@ -1,7 +1,7 @@
 import scipy.interpolate as interp
 import numpy as np
 import pandas as pd
-import pickle
+import dill
 
 class GalCemInterpolant(object):
     def __init__(self,df,ycol,tf_funs={},name='',plot=False,fig_root='./',fig_view_angle=135):
@@ -110,29 +110,29 @@ def fit_isotope_interpolants_irv0(df,root):
     print('\n'+'~'*75+'\n')
     dfs = dict(tuple(df.groupby(['isotope','a','z'])))
     for ids,_df in dfs.items():
-        tag = 'a%d.z%d.irv0.%s'%(*ids[1:],ids[0])
-        print('fitting interpolant %s\n'%tag)
+        name = 'a%d.z%d.irv0.%s'%(*ids[1:],ids[0])
+        ##print('fitting interpolant %s\n'%name)
         _df = _df[_df['irv']==0]
         # fit model
         interpolant = GalCemInterpolant(
-            s_y = _df['yield'],
-            dfx = _df[['mass','metallicity']],
-            xlog10cols = ['metallicity'],
-            ylog10col = True)
+            df = _df[['mass','metallicity','yield']],
+            ycol = 'yield',
+            tf_funs = {
+                'mass':lambda x:np.log10(x), 'mass_prime':lambda x:1/(x*np.log(10)),
+                'metallicity':lambda x:np.log10(x), 'metallicity_prime':lambda x:1/(x*np.log(10)),
+                'yield':lambda y:np.log10(y), 'yield_prime':lambda y:1/(y*np.log(10)), 'yield_inv':lambda y:10**y},
+            name = name,
+            plot = True,
+            fig_root = root+'/figs/',
+            fig_view_angle = -45)
         #   print model
         print(interpolant)
-        #   plot model
-        interpolant.plot(
-            xcols = ['mass','metallicity'],
-            xfixed = {},
-            figroot = root+'figs/%s'%tag,
-            title = 'Yield by Mass, Metallicity',
-            view_angle = -45)
         #   save model
-        pickle.dump(interpolant,open(root+'models/%s.pkl'%tag,'wb'))
+        dill.dump(interpolant,open(root+'/models/%s.pkl'%name,'wb'))
         #   load model
-        interpolant_loaded = pickle.load(open(root+'models/%s.pkl'%tag,'rb'))
+        interpolant_loaded = dill.load(open(root+'/models/%s.pkl'%name,'rb'))
         #   example model use
-        xquery = pd.DataFrame({'mass':[15],'metallicity':[0.01648]})
-        yquery = interpolant_loaded(xquery)
+        yquery = interpolant_loaded(_df)
+        dyquery_dmass = interpolant_loaded(_df,dwrt='mass')
+        dquery_dmetallicity = interpolant_loaded(_df,dwrt='metallicity')
         print('~'*75+'\n')

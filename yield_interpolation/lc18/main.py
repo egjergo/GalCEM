@@ -1,6 +1,7 @@
 from yield_interpolation.galcem_interpolant import GalCemInterpolant,fit_isotope_interpolants_irv0
 import numpy as np
 import pandas as pd
+import os
 
 def parse_lc18_raw():
     yield_eps = 1e-13
@@ -33,7 +34,7 @@ def parse_lc18_raw():
     return df
 
 if __name__ == '__main__':
-    root = 'yield_interpolation/lc18/'
+    root = os.path.abspath(os.path.dirname(__file__))
     df = parse_lc18_raw()
-    df.to_csv(root+'data.csv',index=False)
+    df.to_csv(root+'/data.csv',index=False)
     fit_isotope_interpolants_irv0(df,root)
