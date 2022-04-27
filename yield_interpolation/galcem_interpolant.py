@@ -38,40 +38,67 @@ class GalCemInterpolant(object):
         # optional plotting in transformed space
         if not plot: return
         from matplotlib import pyplot,cm
-        fig = pyplot.figure(figsize=(15,5*3))
+        fig = pyplot.figure(figsize=(30,5*3))
         nticks = 64
         sepfrac = 0.1
-        x = dftf[self.xcols].to_numpy()
-        x0min,x0max = x[:,0].min(),x[:,0].max()
-        x0_sep = x0max-x0min
-        x0_ticks = np.linspace(x0min-sepfrac*x0_sep,x0max+sepfrac*x0_sep,nticks)
-        x1min,x1max = x[:,1].min(),x[:,1].max()
-        x1_sep = x1max-x1min
-        x1_ticks = np.linspace(x1min-sepfrac*x1_sep,x1max+sepfrac*x1_sep,nticks)
-        x0mesh,x1mesh = np.meshgrid(x0_ticks,x1_ticks)
-        x0mesh_flat,x1mesh_flat = x0mesh.flatten(),x1mesh.flatten()
         for i,dx in enumerate([[0,0],[1,0],[0,1]]):
-            y = self.interpolator(x=x0mesh_flat,y=x1mesh_flat,dx=dx[0],dy=dx[1],grid=False)
-            ymesh = y.reshape(x0mesh.shape)
-            # 3d plot on row i
-            ax = fig.add_subplot(3,2,(2*i+1),projection='3d')
-            ax.plot_surface(x0mesh,x1mesh,ymesh,cmap=cm.Greys,alpha=.9,vmin=ymesh.min(),vmax=ymesh.max())
-            if dx==[0,0]: ax.scatter(x[:,0],x[:,1],dftf[self.ycol].to_numpy(),color='r')
+            # transformed domain
+            xtf = dftf[self.xcols].to_numpy()
+            x0tfmin,x0tfmax = xtf[:,0].min(),xtf[:,0].max()
+            x0tf_sep = x0tfmax-x0tfmin
+            x0_ticks = np.linspace(x0tfmin-sepfrac*x0tf_sep,x0tfmax+sepfrac*x0tf_sep,nticks)
+            x1tfmin,x1tfmax = xtf[:,1].min(),xtf[:,1].max()
+            x1tf_sep = x1tfmax-x1tfmin
+            x1tf_ticks = np.linspace(x1tfmin-sepfrac*x1tf_sep,x1tfmax+sepfrac*x1tf_sep,nticks)
+            x0tfmesh,x1tfmesh = np.meshgrid(x0_ticks,x1tf_ticks)
+            x0tfmesh_flat,x1tfmesh_flat = x0tfmesh.flatten(),x1tfmesh.flatten()
+            ytf = self.interpolator(x=x0tfmesh_flat,y=x1tfmesh_flat,dx=dx[0],dy=dx[1],grid=False)
+            ytfmesh = ytf.reshape(x0tfmesh.shape)
+            ax = fig.add_subplot(3,4,4*i+1,projection='3d')
+            ax.plot_surface(x0tfmesh,x1tfmesh,ytfmesh,cmap=cm.Greys,alpha=.9,vmin=ytfmesh.min(),vmax=ytfmesh.max())
+            if dx==[0,0]: ax.scatter(xtf[:,0],xtf[:,1],dftf[self.ycol].to_numpy(),color='r')
             ax.set_xlabel(self.xcols[0])
             ax.set_ylabel(self.xcols[1])
             ax.set_zlabel(self.ycol)
             if dx!=[0,0]: ax.set_title('d(%s) / d(%s)'%(self.ycol,self.xcols[dx.index(1)]))
             ax.view_init(azim=fig_view_angle)
-            # 2d contour plot 
-            ax = fig.add_subplot(3,2,2*(i+1))
+            ax = fig.add_subplot(3,4,4*i+2)
+            contour = ax.contourf(x0tfmesh,x1tfmesh,ytfmesh,cmap=cm.Greys,alpha=.95,vmin=ytfmesh.min(),vmax=ytfmesh.max(),levels=64)
+            fig.colorbar(contour,ax=None,shrink=0.5,aspect=5)
+            ax.scatter(xtf[:,0],xtf[:,1],color='r')
+            ax.set_xlabel(self.xcols[0])
+            ax.set_ylabel(self.xcols[1])
+            if dx!=[0,0]: ax.set_title('d(%s) / d(%s)'%(self.ycol,self.xcols[dx.index(1)]))
+            # original domain
+            x = df[self.xcols].to_numpy()
+            x0min,x0max = x[:,0].min(),x[:,0].max()
+            x0_ticks = np.linspace(x0min,x0max,nticks)
+            x1min,x1max = x[:,1].min(),x[:,1].max()
+            x1_ticks = np.linspace(x1min,x1max,nticks)
+            x0mesh,x1mesh = np.meshgrid(x0_ticks,x1_ticks)
+            x0mesh_flat,x1mesh_flat = x0mesh.flatten(),x1mesh.flatten()
+            dfx = pd.DataFrame({self.xcols[0]:x0mesh_flat,self.xcols[1]:x1mesh_flat})
+            dfw = None if dx==[0,0] else self.xcols[dx.index(1)]
+            y = self.__call__(dfx=dfx,dwrt=dfw)
+            ymesh = y.reshape(x0mesh.shape)
+            ax = fig.add_subplot(3,4,4*i+3,projection='3d')
+            ax.plot_surface(x0mesh,x1mesh,ymesh,cmap=cm.Greys,alpha=.9,vmin=ymesh.min(),vmax=ymesh.max())
+            if dx==[0,0]: ax.scatter(x[:,0],x[:,1],df[self.ycol].to_numpy(),color='r')
+            ax.set_xlabel(self.xcols[0])
+            ax.set_ylabel(self.xcols[1])
+            ax.set_zlabel(self.ycol)
+            if dx!=[0,0]: ax.set_title('d(%s) / d(%s)'%(self.ycol,self.xcols[dx.index(1)]))
+            ax.view_init(azim=fig_view_angle)
+            ax = fig.add_subplot(3,4,4*i+4)
             contour = ax.contourf(x0mesh,x1mesh,ymesh,cmap=cm.Greys,alpha=.95,vmin=ymesh.min(),vmax=ymesh.max(),levels=64)
             fig.colorbar(contour,ax=None,shrink=0.5,aspect=5)
             ax.scatter(x[:,0],x[:,1],color='r')
             ax.set_xlabel(self.xcols[0])
             ax.set_ylabel(self.xcols[1])
             if dx!=[0,0]: ax.set_title('d(%s) / d(%s)'%(self.ycol,self.xcols[dx.index(1)]))
-        fig.suptitle('%s\n%s by %s\nTransformed Domain'%(self.name,self.ycol,str(self.xcols)))
+        fig.suptitle('%s\n%s by %s\nTransformed Domain (left) | Original Domain (right)'%(self.name,self.ycol,str(self.xcols)))
         fig.savefig('%s%s.pdf'%(fig_root,name),format='pdf',bbox_inches='tight')
+        pyplot.close(fig)
     
     def __call__(self,dfx,dwrt=None):
         dftf = pd.DataFrame({col:self.tf_funs[col](dfx[col].to_numpy()) for col in self.xcols})
@@ -85,17 +112,25 @@ class GalCemInterpolant(object):
         dx = [0,0]
         dx[didx] = 1
         yhattf_prime = self.interpolator(x=xtf[:,0],y=xtf[:,1],dx=dx[0],dy=dx[1],grid=False)
-        dyhat_dxi = yhattf_prime*self.tf_funs[self.xcols[didx]+'_prime'](x[:,didx])/self.tf_funs[self.ycol+'_prime'](yhat)
+        # chain rule 
+        #   y(x0,x1) = T^{-1}( I(g0(x0),g1(x1)) )
+        #   dy/dxi = I'(g0(x0),g1(x1)) gi'(xi) / T'( T^{-1}( I(g0(x0),g1(x1)) ) )
+        #          = I(x0tf,x1tf), gi'(xi) / T'(yhat)
+        dyhat_dxi = yhattf_prime*self.tf_funs[dwrt+'_prime'](x[:,didx])/self.tf_funs[self.ycol+'_prime'](yhat)
         return dyhat_dxi
         
     def get_metrics(self,df):
+        y = df[self.ycol].to_numpy()
         yhat = self.__call__(df)
-        eps_abs = np.abs(yhat-df[self.ycol].to_numpy())
+        eps_abs = np.abs(yhat-y)
+        eps_rel = np.abs(eps_abs/y)
         metrics = {
-            'Number of Samples': len(yhat),
-            'Root Mean Square Error': np.sqrt(np.mean(eps_abs**2)),
-            'Mean Absoute Error': np.mean(eps_abs),
-            'Max Abs Error': eps_abs.max()}
+            'RMSE Abs': np.sqrt(np.mean(eps_abs**2)),
+            'MAE Abs': np.mean(eps_abs),
+            'Max Abs': eps_abs.max(),
+            'RMSE Rel': np.sqrt(np.mean(eps_rel**2)),
+            'MAE Rel:': np.mean(eps_rel),
+            'Max Rel': eps_rel.max()}
         return metrics
     
     def __repr__(self):
@@ -111,7 +146,6 @@ def fit_isotope_interpolants_irv0(df,root):
     dfs = dict(tuple(df.groupby(['isotope','a','z'])))
     for ids,_df in dfs.items():
         name = 'a%d.z%d.irv0.%s'%(*ids[1:],ids[0])
-        ##print('fitting interpolant %s\n'%name)
         _df = _df[_df['irv']==0]
         # fit model
         interpolant = GalCemInterpolant(
