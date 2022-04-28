@@ -2,6 +2,7 @@ import scipy.interpolate as interp
 import numpy as np
 import pandas as pd
 import pickle
+from galcem.classes.inputs import Inputs
 
 class GalCemInterpolant(object):
     def __init__(self,s_y,dfx,xlog10cols,ylog10col):

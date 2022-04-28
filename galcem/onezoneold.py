@@ -1,7 +1,6 @@
 # I only achieve simplicity with enormous effort (Clarice Lispector)
 import time
 import numpy as np
-import pandas as pd
 import scipy.integrate as integr
 from scipy.interpolate import *
 import os
@@ -186,7 +185,7 @@ class OneZone(Setup):
         '''
         Wi_comps = kwargs['Wi_comp'] # [list of 2-array lists] #Wi_comps[0][0].shape=(155,)
         Wi_SNIa = kwargs['Wi_SNIa']
-        yield_df_l = kwargs['Z_comp']
+        Z_comps = kwargs['Z_comp']
         i = kwargs['i']
         print('i = %d\n'%i)
         self.file1.write('i = %d\n'%i)
@@ -201,10 +200,8 @@ class OneZone(Setup):
             for j,val in enumerate(Wi_comps):
                 if len(val[1]) > 0.:
                     print(type(yields[j]))
-                    print(yield_df_l[j])
-                    yield_df = pd.DataFrame(yield_df_l[j])#, columns=['metallicity'])
-                    yield_df['mass'] = val[1]
-                    integrand = np.multiply(val[0], yields[j](yield_df).to_numpy())
+                    Z_comps['mass'] = val[1]
+                    integrand = np.multiply(val[0], yields[j](Z_comps).to_numpy())
                     Wi_vals.append(integr.simps(integrand, x=val[1]))
                     #Wi_vals.append(integr.simps(val[0] * yield_interp[j](mass_grid, metallicity_func[birthtime_grid]), x=val[1]))   
                 else:
@@ -259,8 +256,6 @@ class OneZone(Setup):
                 birthtime_grids = [Wi_comp[0][2], Wi_comp[1][2]]
                 if n > 1.:
                     Z_comp = [Wi_class.metallicity_component(birthtime_grids[0]), Wi_class.metallicity_component(birthtime_grids[1])]
-                    #yield_SNII = Wi_class.yield_array('SNII', Wi_class.SNII_mass_grid, Wi_class.SNII_birthtime_grid)
-                    #yield_LIMs = Wi_class.yield_array('LIMs', Wi_class.LIMs_mass_grid, Wi_class.LIMs_birthtime_grid)
                     for i, _ in enumerate(self.ZA_sorted): 
                         Wi_SNIa = self.Rate_SNIa[n] * self.Y_snia[i]
                         #if self.models_SNII[i].empty:

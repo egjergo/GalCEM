@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import scipy.interpolate as interp
 import scipy.integrate as integr
 
@@ -69,8 +70,9 @@ class Wi:
     
     def metallicity_component(self, birthtime_grid):
         # Returns the interpolated SFR vector computed at the birthtime grids
-        _Z_interp = interp.interp1d(self.time_chosen[:self.age_idx+1], self.Z_v[:self.age_idx+1], fill_value='extrapolate')
-        return _Z_interp(birthtime_grid)
+        Z_interp = interp.interp1d(self.time_chosen[:self.age_idx+1], self.Z_v[:self.age_idx+1], fill_value='extrapolate')
+        Z_dict = {'metallicity': Z_interp}#(birthtime_grid)}
+        return pd.DataFrame(Z_dict)
     
     def SFR_component(self, birthtime_grid):
         # Returns the interpolated SFR vector computed at the birthtime grids
