@@ -339,3 +339,34 @@ class Yields_LIMs(Yields):
             self.metallicityIni, self.metallicity_bins = self.is_unique('Zini', split_length)
             self.stellarMassIni, self.stellarMass_bins = self.is_unique('Mini', split_length)
             self.Returned_stellar_mass = self.is_unique('Mfin', split_length)    
+            
+            
+class Yields_MRSN(Yields):
+    '''
+    Yields by LIMs, from Karakas et al. (2010) by default.
+    '''
+    def __init__(self, IN, option=None):
+        self.IN = IN
+        self.option = self.IN.yields_MRSN_option if option is None else option
+        super().__init__()
+        self.yd = self._dir + '/input/yields/mrsn/' + self.option
+        self.ejectamass = self.ejecta_mass()
+        
+    def ejecta_mass(self):
+        return pd.read_csv(self.yd + '/ejectamass.dat', sep=',', comment='#')
+
+    def import_yields(self):
+        #''''''
+        if self.option == 'n17':
+            import glob
+            all_files = glob.glob(self.yd + "/L*")
+            all_files = sorted(all_files)
+            li = []
+            lilabel = []
+            for filename in all_files:
+                df = pd.read_fwf(filename, skiprows=7, infer_nrows=150)
+                li.append(df)
+                lilabel.append(filename.replace(self.yd+'/','').replace('.dat',''))
+            self.elemA = li[0]['A']
+            self.elemZ = li[0]['Z']
+            self.yields = [i['X'].values for i in li]
