@@ -1,4 +1,4 @@
-# Processed by the NuPyCEE team: https://raw.githubusercontent.com/NuGrid/NuPyCEE/master/yield_tables/r_process_rosswog_2014.txt
+# Processed by the NuPyCEE team: https://raw.githubusercontent.com/NuGrid/NuPyCEE/master/yield_tables/r_process_rosswog_2014.txt 2022.05.01
 # H Yields (in mass fraction) Z=0.02
 # H Taken from Rosswog et al. 2014 (http://adsabs.harvard.edu/abs/2014MNRAS.439..744R)
 elemSymb,elemZ,elemA,massFrac

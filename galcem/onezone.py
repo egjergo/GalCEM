@@ -7,7 +7,7 @@ import os
 import pickle
 
 from .classes.morphology import Auxiliary,Stellar_Lifetimes,Infall,Star_Formation_Rate,Initial_Mass_Function, DTD
-from .classes.yields import Isotopes,Concentrations,Yields_BBN,Yields_SNIa,Yields_SNII,Yields_LIMs,Yields_MRSN
+from .classes.yields import Isotopes,Concentrations,Yields_BBN,Yields_SNIa,Yields_SNII,Yields_LIMs,Yields_MRSN,Yields_NSM
 from .classes.integration import Wi
 
 """"""""""""""""""""""""""""""""""""""""""""""""
@@ -58,6 +58,8 @@ class Setup:
         isotope_class = Isotopes(self.IN)
         self.yields_MRSN_class = Yields_MRSN(self.IN)
         self.yields_MRSN_class.import_yields()
+        self.yields_NSM_class = Yields_NSM(self.IN)
+        self.yields_NSM_class.import_yields()
         self.yields_LIMs_class = Yields_LIMs(self.IN)
         self.yields_LIMs_class.import_yields()
         yields_SNII_class = Yields_SNII(self.IN)
