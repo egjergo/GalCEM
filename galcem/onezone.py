@@ -7,7 +7,7 @@ import os
 import pickle
 
 from .classes.morphology import Auxiliary,Stellar_Lifetimes,Infall,Star_Formation_Rate,Initial_Mass_Function, DTD
-from .classes.yields import Isotopes,Yields_LIMs,Yields_SNII,Yields_SNIa,Yields_BBN,Concentrations
+from .classes.yields import Isotopes,Concentrations,Yields_BBN,Yields_SNIa,Yields_SNII,Yields_LIMs,Yields_MRSN,Yields_NSM
 from .classes.integration import Wi
 
 """"""""""""""""""""""""""""""""""""""""""""""""
@@ -56,6 +56,10 @@ class Setup:
         
         # Initialize Yields
         isotope_class = Isotopes(self.IN)
+        self.yields_MRSN_class = Yields_MRSN(self.IN)
+        self.yields_MRSN_class.import_yields()
+        self.yields_NSM_class = Yields_NSM(self.IN)
+        self.yields_NSM_class.import_yields()
         self.yields_LIMs_class = Yields_LIMs(self.IN)
         self.yields_LIMs_class.import_yields()
         yields_SNII_class = Yields_SNII(self.IN)
@@ -287,7 +291,7 @@ class Plots(Setup):
         #self.DTD_plot()
         #self.iso_abundance()
         ## self.iso_evolution()
-        self.iso_evolution_comp()
+        self.iso_evolution_comp(logAge=True)
         self.observational()
         #self.observational_lelemZ()
         self.obs_lelemZ()
@@ -596,7 +600,7 @@ class Plots(Setup):
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'iso_evolution.pdf', bbox_inches='tight')
 
-    def iso_evolution_comp(self, figsize=(40,13)):
+    def iso_evolution_comp(self, figsize=(40,13), logAge=False):
         print('Starting iso_evolution_comp()')
         from matplotlib import pyplot as plt
         plt.style.use(self._dir+'/galcem.mplstyle')
@@ -628,12 +632,15 @@ class Plots(Setup):
                 ax.annotate('%s(%d,%d)'%(self.ZA_symb_list.values[i],Z[i],A[i]), xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
                 ax.set_ylim(-4.9, 9.9)
                 ax.set_xlim(0.01,13.8)
-                ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
-                ax.tick_params(width = 1, length = 2, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
+                if not logAge:
+                    ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
+                    ax.tick_params(width = 1, length = 2, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
+                    ax.xaxis.set_major_locator(ticker.MultipleLocator(base=5))
+                    ax.tick_params(width = 1, length = 5, axis = 'x', which = 'major', bottom = True, top = True, direction = 'in')
+                else:
+                    ax.set_xscale('log')
                 ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=1))
                 ax.tick_params(width = 1, length = 2, axis = 'y', which = 'minor', left = True, right = True, direction = 'in')
-                ax.xaxis.set_major_locator(ticker.MultipleLocator(base=5))
-                ax.tick_params(width = 1, length = 5, axis = 'x', which = 'major', bottom = True, top = True, direction = 'in')
                 ax.yaxis.set_major_locator(ticker.MultipleLocator(base=5))
                 ax.tick_params(width = 1, length = 5, axis = 'y', which = 'major', left = True, right = True, direction = 'in')
             else:
@@ -648,10 +655,14 @@ class Plots(Setup):
         axs[nrow//2,0].set_ylabel(r'Masses [ $\log_{10}$($M_{\odot}$/yr)]', fontsize = 15)
         axs[nrow-1, ncol//2].set_xlabel('Age [Gyr]', fontsize = 15)
         axs[0, ncol//2].legend(ncol=3, loc='upper center', bbox_to_anchor=(0.5, 1.5), frameon=False, fontsize=15)
+        if not logAge:
+            xscale = '_lin'
+        else:
+            xscale = '_log'
         plt.tight_layout(rect = [0.03, 0, 1, .98])
         plt.subplots_adjust(wspace=0., hspace=0.)
         plt.show(block=False)
-        plt.savefig(self._dir_out_figs + 'iso_evolution_comp.pdf', bbox_inches='tight')
+        plt.savefig(self._dir_out_figs + 'iso_evolution_comp'+str(xscale)+'.pdf', bbox_inches='tight')
 
     def iso_abundance(self, figsize=(40,13), c=3): 
         print('Starting iso_abundance()')

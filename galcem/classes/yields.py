@@ -339,3 +339,66 @@ class Yields_LIMs(Yields):
             self.metallicityIni, self.metallicity_bins = self.is_unique('Zini', split_length)
             self.stellarMassIni, self.stellarMass_bins = self.is_unique('Mini', split_length)
             self.Returned_stellar_mass = self.is_unique('Mfin', split_length)    
+            
+            
+class Yields_MRSN(Yields):
+    '''
+    Yields by MRSN, from Nishimura et al. (2017) by default.
+    '''
+    def __init__(self, IN, option=None):
+        self.IN = IN
+        self.option = self.IN.yields_MRSN_option if option is None else option
+        super().__init__()
+        self.yd = self._dir + '/input/yields/mrsn/' + self.option
+        self.ejectamass = self.ejecta_mass()
+        
+    def ejecta_mass(self):
+        return pd.read_csv(self.yd + '/ejectamass.dat', sep=',', comment='#')
+
+    def import_yields(self):
+        #''''''
+        if self.option == 'n17':
+            import glob
+            all_files = glob.glob(self.yd + "/L*")
+            all_files = sorted(all_files)
+            li = []
+            ej_select = []
+            for filename in all_files:
+                df = pd.read_fwf(filename, skiprows=7, infer_nrows=150)
+                li.append(df)
+                idlabel = filename.replace(self.yd+'/','').replace('.dat','')
+                ej_select.append(self.ejectamass.loc[self.ejectamass['filename']==idlabel]['ejectamass'])
+            self.elemA = li[0]['A']
+            self.elemZ = li[0]['Z']
+            self.massFrac = [i['X'].values for i in li]
+            self.yields = np.multiply(ej_select, self.massFrac)
+            
+
+class Yields_NSM(Yields):
+    '''
+    Yields by NSM, from Rosswog et al. (2014) by default.
+    '''
+    def __init__(self, IN, option=None):
+        self.IN = IN
+        self.option = self.IN.yields_NSM_option if option is None else option
+        super().__init__()
+        self.yd = self._dir + '/input/yields/nsm/' + self.option
+        self.ejectamass = 0.04 # Rastinejad+22
+        
+    def import_yields(self):
+        #''''''
+        if self.option == 'r14':
+            self.tables = pd.read_csv('galcem/input/yields/nsm/r14/Zsolar.dat', sep=',', comment='#')
+            self.elemA = self.tables['elemA']
+            self.elemZ = self.tables['elemZ']
+            self.massFrac = self.tables['massFrac']
+            self.yields = np.multiply(self.ejectamass, self.massFrac)  
+            
+    #def __repr__(self):
+    #    self.import_yields()
+    #    NSMobject = pd.DataFrame(self.elemZ)
+    #    #NSMobject['elemA'] = self.elemA
+    #    #NSMobject['massFrac'] = self.massFrac
+    #    #NSMobject['yields'] = self.yields
+    #    return NSMobject # err: not a string
+    
