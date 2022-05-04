@@ -394,11 +394,11 @@ class Yields_NSM(Yields):
             self.massFrac = self.tables['massFrac']
             self.yields = np.multiply(self.ejectamass, self.massFrac)  
             
-    def __repr__(self):
-        self.import_yields()
-        NSMobject = pd.DataFrame(self.elemZ)
-        #NSMobject['elemA'] = self.elemA
-        #NSMobject['massFrac'] = self.massFrac
-        #NSMobject['yields'] = self.yields
-        return NSMobject
+    #def __repr__(self):
+    #    self.import_yields()
+    #    NSMobject = pd.DataFrame(self.elemZ)
+    #    #NSMobject['elemA'] = self.elemA
+    #    #NSMobject['massFrac'] = self.massFrac
+    #    #NSMobject['yields'] = self.yields
+    #    return NSMobject # err: not a string
     
