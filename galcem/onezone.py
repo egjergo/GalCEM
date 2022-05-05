@@ -62,18 +62,18 @@ class Setup:
         self.yields_NSM_class.import_yields()
         self.yields_LIMs_class = Yields_LIMs(self.IN)
         self.yields_LIMs_class.import_yields()
-        yields_SNII_class = Yields_SNII(self.IN)
-        yields_SNII_class.import_yields()
+        self.yields_SNII_class = Yields_SNII(self.IN)
+        self.yields_SNII_class.import_yields()
         self.yields_SNIa_class = Yields_SNIa(self.IN)
         self.yields_SNIa_class.import_yields()
-        yields_BBN_class = Yields_BBN(self.IN)
-        yields_BBN_class.import_yields()
+        self.yields_BBN_class = Yields_BBN(self.IN)
+        self.yields_BBN_class.import_yields()
         
         # Initialize ZA_all
         self.c_class = Concentrations(self.IN)
         ZA_LIMs = self.c_class.extract_ZA_pairs_LIMs(self.yields_LIMs_class)
         ZA_SNIa = self.c_class.extract_ZA_pairs_SNIa(self.yields_SNIa_class)
-        ZA_SNII = self.c_class.extract_ZA_pairs_SNII(yields_SNII_class)
+        ZA_SNII = self.c_class.extract_ZA_pairs_SNII(self.yields_SNII_class)
         ZA_all = np.vstack((ZA_LIMs, ZA_SNIa, ZA_SNII))
         
         # Initialize Global tracked quantities
@@ -93,7 +93,7 @@ class Setup:
         self.f_SNIa_v = self.IN.epsilon * np.ones(len(self.time_chosen))
         self.Mass_i_v = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)))    # Gass mass (i,j) where the i rows are the isotopes and j are the timesteps, [:,j] follows the timesteps
         self.W_i_comp = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen), 3), dtype=object)    # Gass mass (i,j) where the i rows are the isotopes and j are the timesteps, [:,j] follows the timesteps
-        self.Xi_inf = isotope_class.construct_yield_vector(yields_BBN_class, self.ZA_sorted)
+        self.Xi_inf = isotope_class.construct_yield_vector(self.yields_BBN_class, self.ZA_sorted)
         Mass_i_inf = np.column_stack(([self.Xi_inf] * len(self.Mtot)))
         self.Xi_v = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)))    # Xi 
         self.Z_v = self.IN.epsilon * np.ones(len(self.time_chosen)) # Metallicity 
@@ -789,7 +789,7 @@ class Plots(Setup):
         ''' auxiliary function that selects the isotope indexes where Z=elemZ '''
         return np.where(self.ZA_sorted[:,0]==elemZ)[0]
    
-    def observational(self, figsiz = (32,10), c=3):
+    def observational(self, figsiz = (15,10), c=3):
         print('Starting observational()')
         import glob
         import itertools
@@ -899,7 +899,7 @@ class Plots(Setup):
         plt.savefig(self._dir_out_figs + 'elem_obs.pdf', bbox_inches='tight')
         return None
 
-    def observational_lelemZ(self, figsiz = (32,10), c=3):
+    def observational_lelemZ(self, figsiz = (15,10), c=3):
         print('Starting observational_lelemZ()')
         import glob
         import itertools

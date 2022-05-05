@@ -30,6 +30,11 @@ class Inputs:
         self.r = 8 # Compute around the solar neighborhood [kpc]
         self.k_SFR = 1
         
+        # Time parameters
+        self.nTimeStep = 0.01 #0.002 #0.01 # Picked to smooth the mapping between stellar masses and lifetimes
+        self.numTimeStep = 2000 # Like FM
+        self.num_MassGrid = 200
+
         # Fraction of compact objects
         self.A_SNIa = 0.06 #0.35 # Fraction of white dwarfs that underwent a SNIa
         self.A_NSM = 0.03 #0.06 # Fraction of white dwarfs that underwent a SNIa
@@ -46,11 +51,6 @@ class Inputs:
         self.Mu_SNII = 120 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Ml_collapsars = 9 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Mu_collapsars = 120 # [Msun] !!!!!!! temporary. Import from yield tables
-
-        # Time parameters
-        self.nTimeStep = 0.01 #0.002 #0.01 # Picked to smooth the mapping between stellar masses and lifetimes
-        self.numTimeStep = 2000 # Like FM
-        self.num_MassGrid = 200
 
         self.sd = 530.96618 # surf density coefficient for the disk (normalized to the MW mass?) 
         self.MW_SFR = 1.9 #+-0.4 [Msun/yr] from Chomiuk & Povich (2011) Galactic SFR (z=0)
