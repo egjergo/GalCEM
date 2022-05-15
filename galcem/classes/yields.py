@@ -137,14 +137,15 @@ class Concentrations:
         return np.array(percentages_pd, dtype=np.float16)
 
     def extract_ZA_pairs(self, yields):
-        return np.column_stack((yields.elemZ, yields.elemA))
+        ZA_pairs = np.column_stack((yields.elemZ, yields.elemA))
+        return self.ZA_sorted(ZA_pairs)
         
     def extract_ZA_pairs_LIMs(self, yields):
         ZA_LIMs = np.column_stack((yields.elemZ_sorting[0][:,0], yields.elemA_sorting[0][:,0]))
         return self.ZA_sorted(ZA_LIMs)
     
     def ZA_sorted(self, ZA_all):
-        Z_sorted = ZA_all[ZA_all[:,0].argsort()]
+        Z_sorted = np.array(ZA_all[ZA_all[:,0].argsort()]).astype(int)
         sorting_A = [] # isolating A indices with same Z
         A_sorted = [] # sorted indices for sorting_A
         for i in range(Z_sorted[:,0].max()+1):
@@ -293,8 +294,8 @@ class Yields_SNII(Yields):
             lc18 = pd.read_csv('yield_interpolation/lc18/data.csv')
             lc18_yield_dir = 'yield_interpolation/lc18/models/'
             self.metallicity_bins = np.unique(lc18['metallicity'].values)
-            self.elemA = np.unique(lc18['a'].values)
-            self.elemZ = np.unique(lc18['z'].values)
+            self.elemA = lc18['a'].values #np.unique(lc18['a'].values)
+            self.elemZ = lc18['z'].values #np.unique(lc18['z'].values)
             self.yields_list = glob.glob(lc18_yield_dir+'*.pkl')
             patternz = "/z(.*?).a"
             z_list = [re.search(patternz, yl).group(1) for yl in self.yields_list]
@@ -373,8 +374,8 @@ class Yields_LIMs(Yields):
             c15 = pd.read_csv('yield_interpolation/c15/data.csv')
             c15_yield_dir = 'yield_interpolation/c15/models/'
             self.metallicity_bins = np.unique(c15['metallicity'].values)
-            self.elemA = np.unique(c15['a'].values)
-            self.elemZ = np.unique(c15['z'].values)
+            self.elemA = c15['a'].values #np.unique(c15['a'].values)
+            self.elemZ = c15['z'].values #np.unique(c15['z'].values)
             self.yields_list = glob.glob(c15_yield_dir+'*.pkl')
             patternz = "/z(.*?).a"
             z_list = [re.search(patternz, yl).group(1) for yl in self.yields_list]

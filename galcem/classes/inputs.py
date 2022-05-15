@@ -70,7 +70,7 @@ class Inputs:
 
         self.yields_NSM_option = 'r14'
         self.yields_MRSN_option = 'n17'
-        self.yields_LIMs_option = 'k10'
+        self.yields_LIMs_option = 'c15'
         self.yields_SNII_option = 'lc18'
         self.LC18_vel_idx = 0 # !!!!!!! eventually you should write a function about this
         self.yields_SNIa_option = 'i99' # 'k20' 

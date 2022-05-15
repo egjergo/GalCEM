@@ -71,11 +71,14 @@ class Setup:
         
         # Initialize ZA_all
         self.c_class = Concentrations(self.IN)
-        ZA_LIMs = self.c_class.extract_ZA_pairs_LIMs(self.yields_LIMs_class)
+        ZA_LIMs = self.c_class.extract_ZA_pairs(self.yields_LIMs_class) #self.c_class.extract_ZA_pairs_LIMs(self.yields_LIMs_class)
         self.yields_LIMs_class.elemZ, self.yields_LIMs_class.elemA = ZA_LIMs[:,0], ZA_LIMs[:,1] # !!!!!!! remove eventually
         ZA_SNIa = self.c_class.extract_ZA_pairs(self.yields_SNIa_class)
+        self.yields_SNIa_class.elemZ, self.yields_SNIa_class.elemA = ZA_SNIa[:,0], ZA_SNIa[:,1] # !!!!!!! remove eventually
         ZA_SNII = self.c_class.extract_ZA_pairs(self.yields_SNII_class)
+        self.yields_SNII_class.elemZ, self.yields_SNII_class.elemA = ZA_SNII[:,0], ZA_SNII[:,1] # !!!!!!! remove eventually
         ZA_NSM = self.c_class.extract_ZA_pairs(self.yields_NSM_class)
+        self.yields_NSM_class.elemZ, self.yields_NSM_class.elemA = ZA_NSM[:,0], ZA_NSM[:,1] # !!!!!!! remove eventually
         ZA_all = np.vstack((ZA_LIMs, ZA_SNIa, ZA_SNII, ZA_NSM))
         
         # Initialize Global tracked quantities
@@ -115,7 +118,6 @@ class Setup:
         self.yields_LIMs_class.construct_yields(self.ZA_sorted)
         self.models_LIMs = self.yields_LIMs_class.yields
         self.Y_snia = self.load_processed_yields_snia(func_name=self.IN.yields_SNIa_option, loc=self._dir + '/input/yields/snia/' + self.IN.yields_SNIa_option, df_list='Y')
-        
         
     def load_processed_yields(self,func_name, loc, df_list):
         df_dict = {}
