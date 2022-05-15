@@ -72,9 +72,11 @@ class Setup:
         # Initialize ZA_all
         self.c_class = Concentrations(self.IN)
         ZA_LIMs = self.c_class.extract_ZA_pairs_LIMs(self.yields_LIMs_class)
-        ZA_SNIa = self.c_class.extract_ZA_pairs_SNIa(self.yields_SNIa_class)
-        ZA_SNII = self.c_class.extract_ZA_pairs_SNII(self.yields_SNII_class)
-        ZA_all = np.vstack((ZA_LIMs, ZA_SNIa, ZA_SNII))
+        self.yields_LIMs_class.elemZ, self.yields_LIMs_class.elemA = ZA_LIMs[:,0], ZA_LIMs[:,1] # !!!!!!! remove eventually
+        ZA_SNIa = self.c_class.extract_ZA_pairs(self.yields_SNIa_class)
+        ZA_SNII = self.c_class.extract_ZA_pairs(self.yields_SNII_class)
+        ZA_NSM = self.c_class.extract_ZA_pairs(self.yields_NSM_class)
+        ZA_all = np.vstack((ZA_LIMs, ZA_SNIa, ZA_SNII, ZA_NSM))
         
         # Initialize Global tracked quantities
         self.Infall_rate = self.infall(self.time_chosen)

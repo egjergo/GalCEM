@@ -136,14 +136,12 @@ class Concentrations:
                 percentages_pd[i] = np.array([1e-5])
         return np.array(percentages_pd, dtype=np.float16)
 
-    def extract_ZA_pairs_SNIa(self, yields):
-        return np.column_stack((yields.elemZ, yields.elemA))
-    
-    def extract_ZA_pairs_SNII(self, yields):
+    def extract_ZA_pairs(self, yields):
         return np.column_stack((yields.elemZ, yields.elemA))
         
     def extract_ZA_pairs_LIMs(self, yields):
-        return np.column_stack((yields.elemZ_sorting[0][:,0], yields.elemA_sorting[0][:,0]))
+        ZA_LIMs = np.column_stack((yields.elemZ_sorting[0][:,0], yields.elemA_sorting[0][:,0]))
+        return self.ZA_sorted(ZA_LIMs)
     
     def ZA_sorted(self, ZA_all):
         Z_sorted = ZA_all[ZA_all[:,0].argsort()]
@@ -307,7 +305,7 @@ class Yields_LIMs(Yields):
         it_is[0] = it_is[0][:-1]
         it_is_T = [np.array(ii).T for ii in it_is]
         if (val == 'elemA' or val == 'elemZ'):
-            return it_is_T, unique[0]
+            return it_is_T, unique[0].astype(int)
         elif (val == 'Yield' or val == 'Mfin'):
             return it_is_T
         else:
@@ -336,6 +334,8 @@ class Yields_LIMs(Yields):
             self.yields = self.is_unique('Yield', split_length)
             self.elemA_sorting, self.elemA = self.is_unique('elemA', split_length)
             self.elemZ_sorting, self.elemZ = self.is_unique('elemZ', split_length)
+            print(f"{self.elemA=}")
+            print(f"{self.elemZ=}")
             self.metallicityIni, self.metallicity_bins = self.is_unique('Zini', split_length)
             self.stellarMassIni, self.stellarMass_bins = self.is_unique('Mini', split_length)
             self.Returned_stellar_mass = self.is_unique('Mfin', split_length)    
