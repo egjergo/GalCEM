@@ -228,7 +228,7 @@ class Yields_SNIa(Yields):
         if self.option == 'k20':
             yd = self._dir + '/input/yields/snia/k20/'
             self.tables = pd.read_fwf(yd + 'yield_nucl.d', comment='#')
-            self.yields = self.tables['yields']
+            self.yields_list = self.tables['yields']
             self.elemA = self.tables['elemA']
             self.elemZ = self.tables['elemZ']
             
@@ -241,10 +241,21 @@ class Yields_SNIa(Yields):
                          ('TypeII','<f8'), ('W7','<f8'), ('W70','<f8'), 
                          ('WDD1','<f8'), ('WDD2','<f8'), ('WDD3','<f8'), 
                          ('CDD1','<f8'), ('CDD2','<f8')])
-            self.yields = self.tables['W7'] 
+            self.yields_list = self.tables['W7'] 
             self.elemA = self.tables['elemA']
             self.elemZ = self.tables['elemZ']
-
+            
+    def construct_yields(self, ZA_sorted):
+        yields = []
+        for i,val in enumerate(ZA_sorted):
+            select_idz = np.where(self.elemZ == val[0])[0]
+            select_ida = np.where(self.elemA == val[1])[0]
+            select_id = np.intersect1d(select_idz,select_ida)
+            if len(select_id) > 0.:
+                yields.append(self.yields_list[select_id[0]])
+            else:
+                yields.append(None)
+        self.yields = yields
                 
 class Yields_SNII(Yields):
     '''

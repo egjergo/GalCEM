@@ -111,13 +111,15 @@ class Setup:
         
         # Load Interpolation Models
         self._dir = os.path.dirname(__file__)
-        #self.X_lc18, self.Y_lc18, self.models_lc18, self.averaged_lc18 = self.load_processed_yields(func_name=self.IN.yields_SNII_option, loc=self._dir + '/input/yields/snii/'+ self.IN.yields_SNII_option + '/tab_R', df_list=['X', 'Y', 'models', 'avgmassfrac'])
-        #self.X_k10, self.Y_k10, self.models_k10, self.averaged_k10 = self.load_processed_yields(func_name=self.IN.yields_LIMs_option, loc=self._dir + '/input/yields/lims/' + self.IN.yields_LIMs_option, df_list=['X', 'Y', 'models', 'avgmassfrac'])
         self.yields_SNII_class.construct_yields(self.ZA_sorted)
         self.models_SNII = self.yields_SNII_class.yields
         self.yields_LIMs_class.construct_yields(self.ZA_sorted)
         self.models_LIMs = self.yields_LIMs_class.yields
-        self.Y_snia = self.load_processed_yields_snia(func_name=self.IN.yields_SNIa_option, loc=self._dir + '/input/yields/snia/' + self.IN.yields_SNIa_option, df_list='Y')
+        self.yields_SNIa_class.construct_yields(self.ZA_sorted)
+        self.models_SNIa = self.yields_LIMs_class.yields
+        #self.X_lc18, self.Y_lc18, self.models_lc18, self.averaged_lc18 = self.load_processed_yields(func_name=self.IN.yields_SNII_option, loc=self._dir + '/input/yields/snii/'+ self.IN.yields_SNII_option + '/tab_R', df_list=['X', 'Y', 'models', 'avgmassfrac'])
+        #self.X_k10, self.Y_k10, self.models_k10, self.averaged_k10 = self.load_processed_yields(func_name=self.IN.yields_LIMs_option, loc=self._dir + '/input/yields/lims/' + self.IN.yields_LIMs_option, df_list=['X', 'Y', 'models', 'avgmassfrac'])
+        #self.Y_snia = self.load_processed_yields_snia(func_name=self.IN.yields_SNIa_option, loc=self._dir + '/input/yields/snia/' + self.IN.yields_SNIa_option, df_list='Y')
         
     def load_processed_yields(self,func_name, loc, df_list):
         df_dict = {}
@@ -258,7 +260,7 @@ class OneZone(Setup):
                 #yield_SNII = Wi_class.yield_array('SNII', Wi_class.SNII_mass_grid, Wi_class.SNII_birthtime_grid)
                 #yield_LIMs = Wi_class.yield_array('LIMs', Wi_class.LIMs_mass_grid, Wi_class.LIMs_birthtime_grid)
                 for i, _ in enumerate(self.ZA_sorted): 
-                    Wi_SNIa = self.Rate_SNIa[n] * self.Y_snia[i]
+                    Wi_SNIa = self.Rate_SNIa[n] * self.models_SNIa[i]
                     if self.X_lc18[i].empty:
                         yields_lc18 = 0.
                     else:
