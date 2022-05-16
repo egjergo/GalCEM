@@ -839,7 +839,7 @@ class Plots(Setup):
                                     "$7$", "$8$", "$9$", "$f$", "$\u266B$",
                                     r"$\frac{1}{2}$",  'o', '+', 'x', 'v', '^', '<', '>',
                                     'P', '*', 'd', 'X',  "_", '|']
-        markerlist =itertools.cycle((listmarkers))
+        markerlist =itertools.cycle(listmarkers)
         listcolors = ['#252525', '#525252', '#737373', '#969696', '#bdbdbd', '#d9d9d9',           
         '#7f0000', '#cc0000', '#ff4444', '#ff7f7f', '#ffb2b2', '#995100', 
         '#cc6c00', '#ff8800', '#ffbb33', '#ffe564', '#2c4c00', '#436500',
@@ -852,13 +852,13 @@ class Plots(Setup):
                      # '#36454f', '#e4d00a', '#ff3800', '#ffbcd9', '#008b8b', '#8b008b',
                      # '#03c03c', '#00009c', '#ccff00', '#673147', '#0f0f0f', '#324ab2',
                      # '#ffcc33', '#ffcccc', '#ff66ff', '#ff0033', '#ccff33', '#ccccff']
-        colorlist_websafe = itertools.cycle((listcolors))
+        colorlist = itertools.cycle(listcolors)
         lenlist = len(li)
     
         for i, ax in enumerate(axs.flat):
             for j, ll in enumerate(li):
                 idx_obs = np.where(ll.iloc[:,0] == i+1)[0]
-                ax.scatter(ll.iloc[idx_obs,1], ll.iloc[idx_obs,2], label=linames[j], alpha=0.3, marker=listmarkers[j], c=listcolors[j], s=20)
+                ax.scatter(ll.iloc[idx_obs,1], ll.iloc[idx_obs,2], label=linames[j], alpha=0.3, marker=next(markerlist), c=next(colorlist), s=20)
             if i == len(Z_list)-1:
                     ax.legend(ncol=4, loc='upper left', bbox_to_anchor=(1, 1), frameon=False, fontsize=7)
             if i < len(Z_list):
@@ -949,7 +949,7 @@ class Plots(Setup):
                                     "$7$", "$8$", "$9$", "$f$", "$\u266B$",
                                     r"$\frac{1}{2}$",  'o', '+', 'x', 'v', '^', '<', '>',
                                     'P', '*', 'd', 'X',  "_", '|']
-        markerlist =itertools.cycle((listmarkers))
+        markerlist =itertools.cycle(listmarkers)
         listcolors = ['#252525', '#525252', '#737373', '#969696', '#bdbdbd', '#d9d9d9',           
         '#7f0000', '#cc0000', '#ff4444', '#ff7f7f', '#ffb2b2', '#995100', 
         '#cc6c00', '#ff8800', '#ffbb33', '#ffe564', '#2c4c00', '#436500',
@@ -962,13 +962,12 @@ class Plots(Setup):
                      # '#36454f', '#e4d00a', '#ff3800', '#ffbcd9', '#008b8b', '#8b008b',
                      # '#03c03c', '#00009c', '#ccff00', '#673147', '#0f0f0f', '#324ab2',
                      # '#ffcc33', '#ffcccc', '#ff66ff', '#ff0033', '#ccff33', '#ccccff']
-        colorlist_websafe = itertools.cycle((listcolors))
-
+        colorlist = itertools.cycle(listcolors)
 
         for i, ax in enumerate(axs.flat):
             for j, ll in enumerate(li):
                 idx_obs = np.where(ll.iloc[:,0] == i+1)[0]
-                ax.scatter(ll.iloc[idx_obs,1], ll.iloc[idx_obs,2], label=linames[j], alpha=0.3, marker=listmarkers[j], c=listcolors[j], s=20)
+                ax.scatter(ll.iloc[idx_obs,1], ll.iloc[idx_obs,2], label=linames[j], alpha=0.3, marker=next(markerlist), c=next(colorlist), s=20)
             if i == 0:
                     ax.legend(ncol=7, loc='lower left', bbox_to_anchor=(-.2, 1.), frameon=False, fontsize=9)
             if i < nrow*ncol:
@@ -1063,7 +1062,7 @@ class Plots(Setup):
                                     "$7$", "$8$", "$9$", "$f$", "$\u266B$",
                                     r"$\frac{1}{2}$",  'o', '+', 'x', 'v', '^', '<', '>',
                                     'P', '*', 'd', 'X',  "_", '|']
-        markerlist =itertools.cycle((listmarkers))
+        markerlist =itertools.cycle(listmarkers)
         listcolors = ['#252525', '#525252', '#737373', '#969696', '#bdbdbd', '#d9d9d9',           
         '#7f0000', '#cc0000', '#ff4444', '#ff7f7f', '#ffb2b2', '#995100', 
         '#cc6c00', '#ff8800', '#ffbb33', '#ffe564', '#2c4c00', '#436500',
@@ -1076,13 +1075,13 @@ class Plots(Setup):
                      # '#36454f', '#e4d00a', '#ff3800', '#ffbcd9', '#008b8b', '#8b008b',
                      # '#03c03c', '#00009c', '#ccff00', '#673147', '#0f0f0f', '#324ab2',
                      # '#ffcc33', '#ffcccc', '#ff66ff', '#ff0033', '#ccff33', '#ccccff']
-        colorlist_websafe = itertools.cycle((listcolors))
+        colorlist = itertools.cycle(listcolors)
         lenlist = len(li)
 
         for i, ax in enumerate(axs.flat):
             for j, ll in enumerate(li):
                 idx_obs = np.where(ll.iloc[:,0] == i+1)[0]
-                ax.scatter(ll.iloc[idx_obs,1], ll.iloc[idx_obs,2], label=linames[j], alpha=0.3, marker=listmarkers[j], c=listcolors[j], s=20)
+                ax.scatter(ll.iloc[idx_obs,1], ll.iloc[idx_obs,2], label=linames[j], alpha=0.3, marker=next(markerlist), c=next(colorlist), s=20)
             if i == 0:
                     ax.legend(ncol=7, loc='lower left', bbox_to_anchor=(-0.2, 1.05), frameon=False, fontsize=9)
             if i < nrow*ncol:
