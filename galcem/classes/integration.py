@@ -211,4 +211,4 @@ class Wi:
         #integrand = np.prod(np.vstack[SFR_comp, mass_comp, self.yield_load[i]])
         integrand = np.prod(np.vstack([SFR_comp, mass_comp]), axis=0)
         #return integr.simps(integrand, x=birthtime_grid)
-        return [integrand, mass_grid]
+        return [integrand, birthtime_grid, mass_grid]

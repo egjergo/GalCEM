@@ -180,9 +180,11 @@ class OneZone(Setup):
         SFR: [Msun/Gyr]
         '''
         i = kwargs['i']
-        Wi_comps = kwargs['Wi_comp'] # [list of 2-array lists] #Wi_comps[0][0].shape=(155,)
+        channel_switch = kwargs['channel_switch']
+        Wi_comps = kwargs['Wi_comp'] 
+        Z_comps = kwargs['Z_comps'] 
+        yield_comps = kwargs['yield_comp'] 
         Wi_SNIa = self.Rate_SNIa[n] * self.models_SNIa[i]
-        channel_switch = ['SNII', 'LIMs']
         infall_comp = self.Infall_rate[n] * self.models_BBN[i]
         sfr_comp = self.SFR_v[n] * self.Xi_v[i,n] 
         if n <= 0:
@@ -191,8 +193,11 @@ class OneZone(Setup):
             Wi_vals = []
             for j,val in enumerate(Wi_comps):
                 if len(val[1]) > 0.:
-                    Wi_vals.append(integr.simps(np.multiply(val[0], yields[j]), x=val[1]))
-                    #Wi_vals.append(integr.simps(val[0] * yield_interp[j](mass_grid, metallicity_func[birthtime_grid]), x=val[1]))   
+                    #Wi_vals.append(integr.simps(np.multiply(val[0], yields[j]), x=val[1]))
+                    if not yield_comps[j][i].empty:
+                        Wi_vals.append(integr.simps(val[0] * yield_comps[j][i](val[2], Z_comps[j]), x=val[1]))   
+                    else:
+                        Wi_vals.append(0.)
                 else:
                     Wi_vals.append(0.)
             returned = [Wi_vals[0], Wi_vals[1], Wi_SNIa]
@@ -237,26 +242,16 @@ class OneZone(Setup):
             self.phys_integral(n)        
             self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
             self.file1.write(' sum X_i at n %d= %.3f\n'%(n, np.sum(self.Xi_v[:,n])))
+            channel_switch = ['SNII', 'LIMs']
+            yield_comp = [self.models_SNII, self.models_LIMs]
             if n > 0.: 
                 Wi_class = Wi(n, self.IN, self.lifetime_class, self.time_chosen, self.Z_v, self.SFR_v, self.f_SNIa_v,
-                              self.IMF, self.yields_SNIa_class, self.models_lc18, self.models_k10, self.ZA_sorted)
+                              self.IMF, self.yields_SNIa_class, self.models_SNII, self.models_LIMs, self.ZA_sorted)
                 self.Rate_SNII[n], self.Rate_LIMs[n], self.Rate_SNIa[n] = Wi_class.compute_rates()
-                Wi_comp = [Wi_class.compute("SNII"), Wi_class.compute("LIMs")]
-                #yield_SNII = Wi_class.yield_array('SNII', Wi_class.SNII_mass_grid, Wi_class.SNII_birthtime_grid)
-                #yield_LIMs = Wi_class.yield_array('LIMs', Wi_class.LIMs_mass_grid, Wi_class.LIMs_birthtime_grid)
+                Wi_comp = [Wi_class.compute(cs) for cs in channel_switch]
+                Z_comp = [Wi_class.Z_component(wic[1]) for wic in Wi_comp]
                 for i, _ in enumerate(self.ZA_sorted): 
-                    #if self.models_SNII[i].empty:
-                    #    yields_SNII = 0.
-                    #else:
-                    #    idx_SNII = np.digitize(self.Z_v[n-1] - self.IN.solar_metallicity, self.averaged_lc18[i][1])
-                    #    yields_lc18 = self.averaged_lc18[i][0][idx_SNII]
-                    #if self.models_LIMs[i].empty:
-                    #    yields_k10 = 0.
-                    #else:
-                    #    idx_LIMs = np.digitize(self.Z_v[n-1] - self.IN.solar_metallicity, self.averaged_k10[i][1])
-                    #    yields_k10 = self.averaged_k10[i][0][idx_LIMs]
-                    #yields = [yields_lc18, yields_k10]
-                    self.Mass_i_v[i, n+1] = self.aux.RK4(self.solve_integral, self.time_chosen[n], self.Mass_i_v[i,n], n, self.IN.nTimeStep, i=i, Wi_comp=Wi_comp)
+                    self.Mass_i_v[i, n+1] = self.aux.RK4(self.solve_integral, self.time_chosen[n], self.Mass_i_v[i,n], n, self.IN.nTimeStep, i=i, Wi_comp=Wi_comp, Z_comp=Z_comp, yield_comp=yield_comp, channel_switch=channel_switch)
             self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
             self.Z_v[n] = np.divide(np.sum(self.Mass_i_v[self.i_Z:,n]), self.Mgas_v[n])
         self.Z_v[-1] = np.divide(np.sum(self.Mass_i_v[self.i_Z:,-1]), self.Mgas_v[-1])
