@@ -2,10 +2,10 @@ import scipy.interpolate as interp
 import numpy as np
 import pandas as pd
 import pickle
+from galcem.classes.inputs import Inputs
 
 class GalCemInterpolant(object):
     def __init__(self,s_y,dfx,xlog10cols,ylog10col):
-        self.empty = False
         self.s_y = s_y.copy()
         self.dfx = dfx.copy()
         self.xlog10cols = xlog10cols
@@ -60,7 +60,7 @@ class GalCemInterpolant(object):
         return train_metrics
     
     def __repr__(self):
-        s = 'GalChemInterpolan(%s)\n'%','.join(self.xnames)
+        s = GalCemInterpolant.__name__+'(%s)\n'%','.join(self.xnames)
         s += '\ttrain data description\n\t\t%s'%str(self.descrip).replace('\n','\n\t\t')
         s += '\n\ttrain data metrics\n'
         for metric,val in self.train_metrics.items(): s += '\t\t%25s: %.2e\n'%(metric,val)
@@ -107,7 +107,7 @@ def fit_isotope_interpolants_irv0(df,root):
     print('\n'+'~'*75+'\n')
     dfs = dict(tuple(df.groupby(['isotope','a','z'])))
     for ids,_df in dfs.items():
-        tag = 'a%d.z%d.irv0.%s'%(*ids[1:],ids[0])
+        tag = 'z%d.a%d.irv0.%s'%(ids[2],ids[1],ids[0])
         print('fitting interpolant %s\n'%tag)
         _df = _df[_df['irv']==0]
         # fit model
