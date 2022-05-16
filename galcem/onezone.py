@@ -182,7 +182,7 @@ class OneZone(Setup):
         i = kwargs['i']
         channel_switch = kwargs['channel_switch']
         Wi_comps = kwargs['Wi_comp'] 
-        Z_comps = kwargs['Z_comps'] 
+        Z_comps = kwargs['Z_comp'] 
         yield_comps = kwargs['yield_comp'] 
         Wi_SNIa = self.Rate_SNIa[n] * self.models_SNIa[i]
         infall_comp = self.Infall_rate[n] * self.models_BBN[i]

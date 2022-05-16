@@ -22,19 +22,25 @@ class Inputs:
     ags_Galaxy (float): age of the Galaxy (Gyr)
     """
     def __init__(self):
-        '''	applies to the thick disk at 8 kpc '''
-        self.age_Galaxy = 13.8 # [Gyr]
-        self.age_Sun = 4.6 # [Gyr]
-        self.solar_metallicity = 0.0181 # Asplund et al. (2009, Table 4)
-        self.morphology = 'spiral'
-        self.r = 8 # Compute around the solar neighborhood [kpc]
-        self.k_SFR = 1
-        
+        '''	applies to the thick disk at 8 kpc '''        
         # Time parameters
         self.nTimeStep = 0.01 #0.002 #0.01 # Picked to smooth the mapping between stellar masses and lifetimes
         self.numTimeStep = 2000 # Like FM
         self.num_MassGrid = 200
+        
+        self.age_Galaxy = 13.8 # [Gyr]
+        self.age_Sun = 4.6 # [Gyr]
+        self.solar_metallicity = 0.0181 # Asplund et al. (2009, Table 4)
+        self.r = 8 # [kpc] Compute around the solar neighborhood
+        self.k_SFR = 1
+        self.wind_efficiency = 0 # override: no overflow #self.default_params('wind_efficiency', self.morphology)
 
+        self.morphology = 'spiral'
+        self.M_inf = self.default_params('M_inf', self.morphology)
+        self.Reff = self.default_params('Reff', self.morphology)
+        self.tau_inf = self.default_params('tau_inf', self.morphology)
+        self.nu = self.default_params('nu', self.morphology)
+        
         # Fraction of compact objects
         self.A_SNIa = 0.06 #0.35 # Fraction of white dwarfs that underwent a SNIa
         self.A_NSM = 0.03 #0.06 # Fraction of white dwarfs that underwent a SNIa
@@ -76,12 +82,6 @@ class Inputs:
         self.yields_SNIa_option = 'i99' # 'k20' 
         self.yields_BBN_option = 'gp13'
 
-        self.M_inf = self.default_params('M_inf', self.morphology)
-        self.Reff = self.default_params('Reff', self.morphology)
-        self.tau_inf = self.default_params('tau_inf', self.morphology)
-        self.nu = self.default_params('nu', self.morphology)
-        self.wind_efficiency = 0 # override: no overflow #self.default_params('wind_efficiency', self.morphology)
-        
         self.delta_max = 8e-2 # Convergence limit for eq. 28, Portinari+98
         self.epsilon = 1e-32 # Avoid numerical errors - consistent with BBN
         self.SFR_rescaling = 1 #np.reciprocal(self.M_inf) # !!!!!!! Constrained by observations at z=0 of the galaxy of interest
