@@ -56,14 +56,6 @@ class Isotopes:
         idx_Z = np.where(ZA_sorted[:,0] == self.elemZ[id_periodic].values)[0]
         print(ZA_sorted[idx_Z])
         return idx_Z
-    
-    def construct_yield_vector(self, yield_channel, ZA_sorted):
-        extract_yield_vector = np.zeros(len(ZA_sorted))
-        for i in range(len(yield_channel.yields)): # !!!!!!! optimize later
-            idx = np.intersect1d(np.where(ZA_sorted[:,0] == yield_channel.elemZ[i]), 
-                                 np.where(ZA_sorted[:,1] == yield_channel.elemA[i]))
-            extract_yield_vector[idx] = yield_channel.yields[i] 
-        return extract_yield_vector
 
 
 class Concentrations:
@@ -86,8 +78,8 @@ class Concentrations:
         self.solarA09_vs_Fe_bynumb = (self.solarA09 - self.solarA09[26])
         self.solarA09_vs_H_bymass = (self.solarA09_vs_H_bynumb + self.log10_avg_elem_vs_X(elemZ=1))
         self.solarA09_vs_Fe_bymass = (self.solarA09_vs_Fe_bynumb + self.log10_avg_elem_vs_X(elemZ=26))
-        self.asplund3_pd = self.IN.asplund3 #pd.DataFrame(self.IN.asplund3, columns=['elemN','elemZ','elemA','percentage'])
-        
+        self.asplund3_pd = self.IN.asplund3 
+                
     def log10_avg_elem_vs_X(self, elemZ=1):
         ''' log10(<M all> / <M elemZ>) absolute abundance by mass'''
         return np.log10(np.divide(self.select_periodic['elemA'],
@@ -109,10 +101,6 @@ class Concentrations:
     def extract_ZA_pairs(self, yields):
         ZA_pairs = np.column_stack((yields.elemZ, yields.elemA))
         return self.ZA_sorted(ZA_pairs)
-        
-    def extract_ZA_pairs_LIMs(self, yields):
-        ZA_LIMs = np.column_stack((yields.elemZ_sorting[0][:,0], yields.elemA_sorting[0][:,0]))
-        return self.ZA_sorted(ZA_LIMs)
     
     def ZA_sorted(self, ZA_all):
         Z_sorted = np.array(ZA_all[ZA_all[:,0].argsort()]).astype(int)
@@ -125,26 +113,6 @@ class Concentrations:
         ZA_sorted = Z_sorted[list(flatten(A_sorted))]
         return np.unique(ZA_sorted, axis=0)
     
-    def ZA_Symb(self, ZA_sorted):
-        '''
-        Returns a complete list of the element symbol associated 
-        with each entry in ZA_sorted
-        '''
-        return [np.where(self.IN.periodic['elemZ'] == ZA_sorted[i,0])[0][0] for i in range(len(ZA_sorted))]
-        
-    def R_M_i_idx(self, yields_class, ZA_sorted, Mstar=None, metallicity=None, vel=None):
-        '''
-        This function is able to associate the entry in isotope-wide tracked quantities
-        with the respective yield. e.g.:
-        
-            for i in range(len(BBN_idx)):
-                self.Mass_i_t[BBN_idx[i]] += yields_BBN_class.yields[i] * Minfall_dt
-        '''
-        yieldchoice_ZA_list = np.array(list(zip(yields_class.elemZ, yields_class.elemA)))
-        yieldchoice_idx = [np.where((ZA_sorted[:,0] == yieldchoice_ZA_list[i,0]) 
-                    & (ZA_sorted[:,1] == yieldchoice_ZA_list[i,1]))[0][0] 
-                    for i in range(len(yieldchoice_ZA_list))]
-        return yieldchoice_idx
         
 class Yields:
     ''' Parent class for all Yields_* classes '''

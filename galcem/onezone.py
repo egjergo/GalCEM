@@ -80,7 +80,9 @@ class Setup:
         self.yields_SNII_class.elemZ, self.yields_SNII_class.elemA = self.ZA_SNII[:,0], self.ZA_SNII[:,1] # !!!!!!! remove eventually
         self.ZA_NSM = self.c_class.extract_ZA_pairs(self.yields_NSM_class)
         self.yields_NSM_class.elemZ, self.yields_NSM_class.elemA = self.ZA_NSM[:,0], self.ZA_NSM[:,1] # !!!!!!! remove eventually
-        ZA_all = np.vstack((self.ZA_LIMs, self.ZA_SNIa, self.ZA_SNII, self.ZA_NSM))
+        self.ZA_MRSN = self.c_class.extract_ZA_pairs(self.yields_MRSN_class)
+        self.yields_MRSN_class.elemZ, self.yields_MRSN_class.elemA = self.ZA_MRSN[:,0], self.ZA_MRSN[:,1] # !!!!!!! remove eventually
+        ZA_all = np.vstack((self.ZA_LIMs, self.ZA_SNIa, self.ZA_SNII, self.ZA_NSM, self.ZA_MRSN))
         
         self.Infall_rate = self.infall(self.time_chosen)
         self.ZA_sorted = self.c_class.ZA_sorted(ZA_all) # [Z, A] VERY IMPORTANT! 321 isotopes with yields_SNIa_option = 'km20', 192 isotopes for 'i99' 
@@ -97,6 +99,10 @@ class Setup:
         self.models_LIMs = self.yields_LIMs_class.yields
         self.yields_SNIa_class.construct_yields(self.ZA_sorted)
         self.models_SNIa = self.yields_SNIa_class.yields
+        #self.yields_NSM_class.construct_yields(self.ZA_sorted)
+        #self.models_NSM = self.yields_NSM_class.yields
+        #self.yields_MRSN_class.construct_yields(self.ZA_sorted)
+        #self.models_MRSN = self.yields_MRSN_class.yields
         
         # Initialize Global tracked quantities
         self.asplund3_percent = self.c_class.abund_percentage(self.ZA_sorted)
@@ -609,14 +615,16 @@ class Plots(Setup):
         timex = phys[:,0]
         Z = self.ZA_sorted[:,0]
         A = self.ZA_sorted[:,1]
-        ncol = self.aux.find_nearest(np.power(np.arange(20),2), len(Z))
+        ncol = self.aux.find_nearest(np.power(np.arange(23),2), len(Z))
         if len(self.ZA_sorted) > ncol:
             nrow = ncol
         else:
             nrow = ncol + 1
         fig, axs = plt.subplots(nrow, ncol, figsize=figsize)#, sharex=True)
         for i, ax in enumerate(axs.flat):
-            if i < len(Z):
+            print('i %d'%(i))
+            print('%s(%d,%d)'%(self.ZA_symb_list.values[i],Z[i],A[i]))
+            if i < len(Z)-1:
                 ax.plot(timex, Mass_SNII[i], color='#0034ff', linestyle='-.', linewidth=3, alpha=0.8, label='SNII')
                 ax.plot(timex, Mass_AGB[i], color='#ff00b3', linestyle='--', linewidth=3, alpha=0.8, label='LIMs')
                 ax.plot(timex, Mass_SNIa[i], color='#00b3ff', linestyle=':', linewidth=3, alpha=0.8, label='SNIa')
