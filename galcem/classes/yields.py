@@ -29,41 +29,33 @@ class Isotopes:
         self.elemSymb = self.IN.periodic['elemSymb']
         self.elemName = self.IN.periodic['elemName']
         self.elemA_characteristic = self.IN.periodic['elemA']
-        
-    def pick_by_Symb(self, ndarray_elemZ=0, elemSymb='Symb'):
-        '''
-        Finds the indices 
-        
-        Input:
-            ndarray_elemZ:    the elemZ instance variable in yield classes
-            elemSymb:        the periodic symbol of the given element
-            
-        Returns:
-            the indices of the yield classes corresponding to the given element 
-        '''
-        print('Symbol: \t %s'%type(self.elemSymb))
-        idx = np.where(self.elemSymb == elemSymb)
-        return np.where(ndarray_elemZ == self.elemZ[idx])
-        
-    def pick_by_ZA_sort(self, ZA_sorted, ndarray_elemZ, elemSymb):
-        '''
-        Finds the indices for class_instance.yields
-        
-        Input:
-            ndarray_elemZ:    the elemZ instance variable in yield classes
-            elemSymb:        the periodic symbol of the given element
-            
-        Returns:
-            the indices of the yield classes corresponding to the given element 
-        '''
-        print('Symbol: \t %s'%type(self.elemSymb))
-        idx = np.where(self.elemSymb == elemSymb)
-        return np.where(ndarray_elemZ == self.elemZ[idx])
     
-    def yield_vector_intersect(self, yield_channel, ZA_sorted, i):
-        idx = np.intersect1d(np.where(ZA_sorted[:,0] == yield_channel.elemZ[i]), 
-                             np.where(ZA_sorted[:,1] == yield_channel.elemA[i]))
-        return yield_channel.yields[i] 
+    def pick_i_by_iso(self, ZA_sorted, elemZ, elemA):
+        '''Finds the isotope entry in the isotope list'''
+        idx_Z = np.where(ZA_sorted[:,0] == elemZ)[0]
+        idx_A = np.where(ZA_sorted[:,1] == elemA)[0]
+        idx =  np.intersect1d(idx_Z, idx_A)[0]
+        print("[Z, A] = ", ZA_sorted[idx])
+        return idx
+        
+    def pick_i_by_atomicnumber(self, ZA_sorted, elemZ):
+        '''Finds the isotope entry/entries in the isotope list having a certain atomic number'''
+        idx_Z = np.where(ZA_sorted[:,0] == elemZ)[0]
+        print(ZA_sorted[idx_Z])
+        return idx_Z
+            
+    def pick_i_by_atomicmass(self, ZA_sorted, elemA):
+        '''Finds the isotope entry/entries in the isotope list having a certain atomic mass'''
+        idx_A = np.where(ZA_sorted[:,1] == elemA)[0]
+        print(ZA_sorted[idx_A])
+        return idx_A
+                
+    def pick_i_by_Symbol(self, ZA_sorted, elemSymb):
+        '''Finds the isotope entry/entries in the isotope list having a certain atomic mass'''
+        id_periodic = np.where(self.elemSymb == elemSymb)[0]
+        idx_Z = np.where(ZA_sorted[:,0] == self.elemZ[id_periodic].values)[0]
+        print(ZA_sorted[idx_Z])
+        return idx_Z
     
     def construct_yield_vector(self, yield_channel, ZA_sorted):
         extract_yield_vector = np.zeros(len(ZA_sorted))
@@ -72,28 +64,6 @@ class Isotopes:
                                  np.where(ZA_sorted[:,1] == yield_channel.elemA[i]))
             extract_yield_vector[idx] = yield_channel.yields[i] 
         return extract_yield_vector
-
-    def construct_yield_SNII(self, yield_channel, ZA_sorted, iso):
-        dummy = np.zeros((4,3,9))
-        if np.intersect1d(np.where(yield_channel.elemZ == ZA_sorted[iso,0]), 
-                                 np.where(yield_channel.elemA == ZA_sorted[iso,1])):
-            idx = np.intersect1d(np.where(yield_channel.elemZ == ZA_sorted[iso,0]), 
-                                 np.where(yield_channel.elemA == ZA_sorted[iso,1]))[0]
-            X = None # !!!!!! take linear RBF interpolation but make test
-            Y = yield_channel.yields[:,:,idx,:] 
-            return X,Y
-        else:
-            return dummy
-
-    def construct_yield_LIMs(self, yield_channel, ZA_sorted, iso):
-        dummy = [0.]
-        if np.intersect1d(np.where(yield_channel.elemZ == ZA_sorted[iso,0]), 
-                                 np.where(yield_channel.elemA == ZA_sorted[iso,1])):
-            idx = np.intersect1d(np.where(yield_channel.elemZ == ZA_sorted[iso,0]), 
-                                 np.where(yield_channel.elemA == ZA_sorted[iso,1]))[0]
-            return [met.yields[idx,:] for met in yield_channel]
-        else:
-            return dummy
 
 
 class Concentrations:
@@ -212,9 +182,21 @@ class Yields_BBN(Yields):
             self.elemA = self.tables['elemA']
             self.elemZ = self.tables['elemZ']
             self.massCol = np.multiply(self.tables['numbFrac'], self.tables['mass'])
+            self.yields_list = np.divide(self.massCol, np.sum(self.massCol)) # fraction by mass 
             self.yields = np.divide(self.massCol, np.sum(self.massCol)) # fraction by mass 
-
-
+      
+    def construct_yields(self, ZA_sorted):
+        yields = []
+        for i,val in enumerate(ZA_sorted):
+            select_idz = np.where(self.elemZ == val[0])[0]
+            select_ida = np.where(self.elemA == val[1])[0]
+            select_id = np.intersect1d(select_idz,select_ida)
+            if len(select_id) > 0.:
+                yields.append(self.yields_list[select_id[0]])
+            else:
+                yields.append(0.)
+        self.yields = np.array(yields)
+        
 class Yields_SNIa(Yields):
     '''
     Yields by Type Ia Supernova, from Iwamoto+99 by default.
@@ -254,7 +236,7 @@ class Yields_SNIa(Yields):
             if len(select_id) > 0.:
                 yields.append(self.yields_list[select_id[0]])
             else:
-                yields.append(None)
+                yields.append(0.)
         self.yields = yields
                 
 class Yields_SNII(Yields):

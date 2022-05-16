@@ -71,24 +71,36 @@ class Setup:
         
         # Initialize ZA_all
         self.c_class = Concentrations(self.IN)
-        ZA_LIMs = self.c_class.extract_ZA_pairs(self.yields_LIMs_class) #self.c_class.extract_ZA_pairs_LIMs(self.yields_LIMs_class)
-        self.yields_LIMs_class.elemZ, self.yields_LIMs_class.elemA = ZA_LIMs[:,0], ZA_LIMs[:,1] # !!!!!!! remove eventually
-        ZA_SNIa = self.c_class.extract_ZA_pairs(self.yields_SNIa_class)
-        self.yields_SNIa_class.elemZ, self.yields_SNIa_class.elemA = ZA_SNIa[:,0], ZA_SNIa[:,1] # !!!!!!! remove eventually
-        ZA_SNII = self.c_class.extract_ZA_pairs(self.yields_SNII_class)
-        self.yields_SNII_class.elemZ, self.yields_SNII_class.elemA = ZA_SNII[:,0], ZA_SNII[:,1] # !!!!!!! remove eventually
-        ZA_NSM = self.c_class.extract_ZA_pairs(self.yields_NSM_class)
-        self.yields_NSM_class.elemZ, self.yields_NSM_class.elemA = ZA_NSM[:,0], ZA_NSM[:,1] # !!!!!!! remove eventually
-        ZA_all = np.vstack((ZA_LIMs, ZA_SNIa, ZA_SNII, ZA_NSM))
+        self.ZA_LIMs = self.c_class.extract_ZA_pairs(self.yields_LIMs_class) #self.c_class.extract_ZA_pairs_LIMs(self.yields_LIMs_class)
+        self.yields_LIMs_class.elemZ, self.yields_LIMs_class.elemA = self.ZA_LIMs[:,0], self.ZA_LIMs[:,1] # !!!!!!! remove eventually
+        self.ZA_SNIa = self.c_class.extract_ZA_pairs(self.yields_SNIa_class)
+        self.yields_SNIa_class.elemZ, self.yields_SNIa_class.elemA = self.ZA_SNIa[:,0], self.ZA_SNIa[:,1] # !!!!!!! remove eventually
+        self.ZA_SNII = self.c_class.extract_ZA_pairs(self.yields_SNII_class)
+        self.yields_SNII_class.elemZ, self.yields_SNII_class.elemA = self.ZA_SNII[:,0], self.ZA_SNII[:,1] # !!!!!!! remove eventually
+        self.ZA_NSM = self.c_class.extract_ZA_pairs(self.yields_NSM_class)
+        self.yields_NSM_class.elemZ, self.yields_NSM_class.elemA = self.ZA_NSM[:,0], self.ZA_NSM[:,1] # !!!!!!! remove eventually
+        ZA_all = np.vstack((self.ZA_LIMs, self.ZA_SNIa, self.ZA_SNII, self.ZA_NSM))
         
-        # Initialize Global tracked quantities
         self.Infall_rate = self.infall(self.time_chosen)
         self.ZA_sorted = self.c_class.ZA_sorted(ZA_all) # [Z, A] VERY IMPORTANT! 321 isotopes with yields_SNIa_option = 'km20', 192 isotopes for 'i99' 
         self.ZA_sorted = self.ZA_sorted[1:,:]
         self.ZA_symb_list = self.IN.periodic['elemSymb'][self.ZA_sorted[:,0]] # name of elements for all isotopes
+        
+        # Load Interpolation Models
+        self._dir = os.path.dirname(__file__)
+        self.yields_BBN_class.construct_yields(self.ZA_sorted)
+        self.models_BBN = self.yields_BBN_class.yields
+        self.yields_SNII_class.construct_yields(self.ZA_sorted)
+        self.models_SNII = self.yields_SNII_class.yields
+        self.yields_LIMs_class.construct_yields(self.ZA_sorted)
+        self.models_LIMs = self.yields_LIMs_class.yields
+        self.yields_SNIa_class.construct_yields(self.ZA_sorted)
+        self.models_SNIa = self.yields_SNIa_class.yields
+        
+        # Initialize Global tracked quantities
         self.asplund3_percent = self.c_class.abund_percentage(self.ZA_sorted)
         #ZA_symb_iso_list = np.asarray([ str(A) for A in self.IN.periodic['elemA'][self.ZA_sorted]])  # name of elements for all isotopes
-        self.elemZ_for_metallicity = np.where(self.ZA_sorted[:,0]>2)[0][0] #  starting idx (int) that excludes H and He for the metallicity selection
+        self.i_Z = np.where(self.ZA_sorted[:,0]>2)[0][0] #  starting idx (int) that excludes H and He for the metallicity selection
         self.Mtot = np.insert(np.cumsum((self.Infall_rate[1:] + self.Infall_rate[:-1]) * self.IN.nTimeStep / 2), 0, self.IN.epsilon) # The total baryonic mass (i.e. the infall mass) is computed right away
         #Mtot_quad = [quad(infall, self.time_chosen[0], i)[0] for i in range(1,len(self.time_chosen)-1)] # slow loop, deprecate!!!!!!!
         self.Mstar_v = self.IN.epsilon * np.ones(len(self.time_chosen)) 
@@ -98,42 +110,16 @@ class Setup:
         self.f_SNIa_v = self.IN.epsilon * np.ones(len(self.time_chosen))
         self.Mass_i_v = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)))    # Gass mass (i,j) where the i rows are the isotopes and j are the timesteps, [:,j] follows the timesteps
         self.W_i_comp = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen), 3), dtype=object)    # Gass mass (i,j) where the i rows are the isotopes and j are the timesteps, [:,j] follows the timesteps
-        self.Xi_inf = isotope_class.construct_yield_vector(self.yields_BBN_class, self.ZA_sorted)
-        Mass_i_inf = np.column_stack(([self.Xi_inf] * len(self.Mtot)))
+        #self.Xi_inf = self.models_BBN
+        #self.Mass_i_inf = np.column_stack(([self.Xi_inf] * len(self.Mtot)))
         self.Xi_v = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)))    # Xi 
         self.Z_v = self.IN.epsilon * np.ones(len(self.time_chosen)) # Metallicity 
-        G_v = self.IN.epsilon * np.ones(len(self.time_chosen)) # G 
-        S_v = self.IN.epsilon * np.ones(len(self.time_chosen)) # S = 1 - G 
+        #self.G_v = self.IN.epsilon * np.ones(len(self.time_chosen)) # G 
+        #self.S_v = self.IN.epsilon * np.ones(len(self.time_chosen)) # S = 1 - G 
         self.Rate_SNII = self.IN.epsilon * np.ones(len(self.time_chosen)) 
         self.Rate_LIMs = self.IN.epsilon * np.ones(len(self.time_chosen)) 
         self.Rate_SNIa = self.IN.epsilon * np.ones(len(self.time_chosen)) 
         self.Rate_NSM = self.IN.epsilon * np.ones(len(self.time_chosen)) 
-        
-        # Load Interpolation Models
-        self._dir = os.path.dirname(__file__)
-        self.yields_SNII_class.construct_yields(self.ZA_sorted)
-        self.models_SNII = self.yields_SNII_class.yields
-        self.yields_LIMs_class.construct_yields(self.ZA_sorted)
-        self.models_LIMs = self.yields_LIMs_class.yields
-        self.yields_SNIa_class.construct_yields(self.ZA_sorted)
-        self.models_SNIa = self.yields_LIMs_class.yields
-        #self.X_lc18, self.Y_lc18, self.models_lc18, self.averaged_lc18 = self.load_processed_yields(func_name=self.IN.yields_SNII_option, loc=self._dir + '/input/yields/snii/'+ self.IN.yields_SNII_option + '/tab_R', df_list=['X', 'Y', 'models', 'avgmassfrac'])
-        #self.X_k10, self.Y_k10, self.models_k10, self.averaged_k10 = self.load_processed_yields(func_name=self.IN.yields_LIMs_option, loc=self._dir + '/input/yields/lims/' + self.IN.yields_LIMs_option, df_list=['X', 'Y', 'models', 'avgmassfrac'])
-        #self.Y_snia = self.load_processed_yields_snia(func_name=self.IN.yields_SNIa_option, loc=self._dir + '/input/yields/snia/' + self.IN.yields_SNIa_option, df_list='Y')
-        
-    def load_processed_yields(self,func_name, loc, df_list):
-        df_dict = {}
-        for df_l in df_list:
-            with open('%s/processed/%s.pkl'%(loc,df_l), 'rb') as pickle_file:
-                df_dict[df_l] = pickle.load(pickle_file)
-        return [df_dict[d] for d in df_list]#df_dict[df_list[0]], df_dict[df_list[1]]#, df_dict[df_list[2]]
-
-    def load_processed_yields_snia(self, func_name, loc, df_list):#, 'models']):
-        df_dict = {}
-        for df_l in df_list:
-            with open('%s/processed/%s.pkl'%(loc,df_l), 'rb') as pickle_file:
-                df_dict[df_l] = pickle.load(pickle_file)
-        return df_dict[df_list[0]]
    
         
 class OneZone(Setup):
@@ -193,12 +179,11 @@ class OneZone(Setup):
         Infall rate: [Msun/Gyr]
         SFR: [Msun/Gyr]
         '''
-        Wi_comps = kwargs['Wi_comp'] # [list of 2-array lists] #Wi_comps[0][0].shape=(155,)
-        Wi_SNIa = kwargs['Wi_SNIa']
         i = kwargs['i']
-        yields = kwargs['yields']
+        Wi_comps = kwargs['Wi_comp'] # [list of 2-array lists] #Wi_comps[0][0].shape=(155,)
+        Wi_SNIa = self.Rate_SNIa[n] * self.models_SNIa[i]
         channel_switch = ['SNII', 'LIMs']
-        infall_comp = self.Infall_rate[n] * self.Xi_inf[i]
+        infall_comp = self.Infall_rate[n] * self.models_BBN[i]
         sfr_comp = self.SFR_v[n] * self.Xi_v[i,n] 
         if n <= 0:
             val = infall_comp - sfr_comp
@@ -245,7 +230,7 @@ class OneZone(Setup):
 
     def evolve(self):
         '''Evolution routine'''
-        self.Mass_i_v[:,1] = np.multiply(self.Mtot[1], self.Xi_inf)
+        self.Mass_i_v[:,1] = np.multiply(self.Mtot[1], self.models_BBN)
         for n in range(len(self.time_chosen[:self.idx_age_Galaxy])):
             print('time [Gyr] = %.2f'%self.time_chosen[n])
             self.file1.write('n = %d\n'%n)
@@ -260,23 +245,21 @@ class OneZone(Setup):
                 #yield_SNII = Wi_class.yield_array('SNII', Wi_class.SNII_mass_grid, Wi_class.SNII_birthtime_grid)
                 #yield_LIMs = Wi_class.yield_array('LIMs', Wi_class.LIMs_mass_grid, Wi_class.LIMs_birthtime_grid)
                 for i, _ in enumerate(self.ZA_sorted): 
-                    Wi_SNIa = self.Rate_SNIa[n] * self.models_SNIa[i]
-                    if self.X_lc18[i].empty:
-                        yields_lc18 = 0.
-                    else:
-                        idx_SNII = np.digitize(self.Z_v[n-1] - self.IN.solar_metallicity, self.averaged_lc18[i][1])
-                        yields_lc18 = self.averaged_lc18[i][0][idx_SNII]
-                    if self.X_k10[i].empty:
-                        yields_k10 = 0.
-                    else:
-                        idx_LIMs = np.digitize(self.Z_v[n-1] - self.IN.solar_metallicity, self.averaged_k10[i][1])
-                        yields_k10 = self.averaged_k10[i][0][idx_LIMs]
-                    yields = [yields_lc18, yields_k10]
-                    self.Mass_i_v[i, n+1] = self.aux.RK4(self.solve_integral, self.time_chosen[n], self.Mass_i_v[i,n], n, self.IN.nTimeStep, i=i, Wi_comp=Wi_comp, Wi_SNIa=Wi_SNIa, yields=yields)
-            #self.Z_v[n] = np.divide(np.sum(self.Mass_i_v[self.elemZ_for_metallicity:,n]), self.Mgas_v[n])
+                    #if self.models_SNII[i].empty:
+                    #    yields_SNII = 0.
+                    #else:
+                    #    idx_SNII = np.digitize(self.Z_v[n-1] - self.IN.solar_metallicity, self.averaged_lc18[i][1])
+                    #    yields_lc18 = self.averaged_lc18[i][0][idx_SNII]
+                    #if self.models_LIMs[i].empty:
+                    #    yields_k10 = 0.
+                    #else:
+                    #    idx_LIMs = np.digitize(self.Z_v[n-1] - self.IN.solar_metallicity, self.averaged_k10[i][1])
+                    #    yields_k10 = self.averaged_k10[i][0][idx_LIMs]
+                    #yields = [yields_lc18, yields_k10]
+                    self.Mass_i_v[i, n+1] = self.aux.RK4(self.solve_integral, self.time_chosen[n], self.Mass_i_v[i,n], n, self.IN.nTimeStep, i=i, Wi_comp=Wi_comp)
             self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
-            self.Z_v[n] = np.divide(np.sum(self.Mass_i_v[:,n]), self.Mgas_v[n])
-        self.Z_v[-1] = np.divide(np.sum(self.Mass_i_v[:,-1]), self.Mgas_v[-1])
+            self.Z_v[n] = np.divide(np.sum(self.Mass_i_v[self.i_Z:,n]), self.Mgas_v[n])
+        self.Z_v[-1] = np.divide(np.sum(self.Mass_i_v[self.i_Z:,-1]), self.Mgas_v[-1])
         self.Xi_v[:,-1] = np.divide(self.Mass_i_v[:,-1], self.Mgas_v[-1]) 
 
 
