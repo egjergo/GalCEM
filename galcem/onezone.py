@@ -1,6 +1,7 @@
 # I only achieve simplicity with enormous effort (Clarice Lispector)
 import time
 import numpy as np
+import pandas as pd
 import scipy.integrate as integr
 from scipy.interpolate import *
 import os
@@ -182,7 +183,7 @@ class OneZone(Setup):
         i = kwargs['i']
         channel_switch = kwargs['channel_switch']
         Wi_comps = kwargs['Wi_comp'] 
-        Z_comps = kwargs['Z_comps'] 
+        Z_comps = kwargs['Z_comp'] 
         yield_comps = kwargs['yield_comp'] 
         Wi_SNIa = self.Rate_SNIa[n] * self.models_SNIa[i]
         infall_comp = self.Infall_rate[n] * self.models_BBN[i]
@@ -193,9 +194,10 @@ class OneZone(Setup):
             Wi_vals = []
             for j,val in enumerate(Wi_comps):
                 if len(val[1]) > 0.:
-                    #Wi_vals.append(integr.simps(np.multiply(val[0], yields[j]), x=val[1]))
                     if not yield_comps[j][i].empty:
-                        Wi_vals.append(integr.simps(val[0] * yield_comps[j][i](val[2], Z_comps[j]), x=val[1]))   
+                        yield_grid = Z_comps[j]
+                        yield_grid['mass'] = val[2]
+                        Wi_vals.append(integr.simps(val[0] * yield_comps[j][i](yield_grid), x=val[1]))   
                     else:
                         Wi_vals.append(0.)
                 else:
@@ -249,7 +251,7 @@ class OneZone(Setup):
                               self.IMF, self.yields_SNIa_class, self.models_SNII, self.models_LIMs, self.ZA_sorted)
                 self.Rate_SNII[n], self.Rate_LIMs[n], self.Rate_SNIa[n] = Wi_class.compute_rates()
                 Wi_comp = [Wi_class.compute(cs) for cs in channel_switch]
-                Z_comp = [Wi_class.Z_component(wic[1]) for wic in Wi_comp]
+                Z_comp = [pd.DataFrame(Wi_class.Z_component(wic[1]), columns=['metallicity']) for wic in Wi_comp]
                 for i, _ in enumerate(self.ZA_sorted): 
                     self.Mass_i_v[i, n+1] = self.aux.RK4(self.solve_integral, self.time_chosen[n], self.Mass_i_v[i,n], n, self.IN.nTimeStep, i=i, Wi_comp=Wi_comp, Z_comp=Z_comp, yield_comp=yield_comp, channel_switch=channel_switch)
             self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
@@ -277,6 +279,8 @@ class Plots(Setup):
         print('Starting to plot')
         self.FeH_evolution()
         self.OH_evolution()
+        self.phys_integral_plot()
+        self.phys_integral_plot(logAge=True)
         #self.DTD_plot()
         #self.iso_abundance()
         ## self.iso_evolution()
@@ -284,8 +288,6 @@ class Plots(Setup):
         self.observational()
         #self.observational_lelemZ()
         self.obs_lelemZ()
-        self.phys_integral_plot()
-        self.phys_integral_plot(logAge=True)
         self.lifetimeratio_test_plot()
         self.ZA_sorted_plot()
         ## self.elem_abundance() # compares and requires multiple runs (IMF & SFR variations)

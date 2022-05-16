@@ -387,7 +387,7 @@ class Yields_LIMs(Yields):
             if len(select_id) > 0.:
                 yields.append(pickle.load(open(yields_l.iloc[select_id[0]],'rb')))
             else:
-                yields.append(None)
+                yields.append(pd.DataFrame(columns=['mass', 'metallicity']))
         self.yields = yields
         
         

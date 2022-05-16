@@ -70,7 +70,7 @@ class Wi:
     def Z_component(self, birthtime_grid):
         # Returns the interpolated SFR vector computed at the birthtime grids
         _Z_interp = interp.interp1d(self.time_chosen[:self.age_idx+1], self.Z_v[:self.age_idx+1], fill_value='extrapolate')
-        return _Z_interp(birthtime_grid)
+        return _Z_interp(birthtime_grid) # Linear metallicity
     
     def SFR_component(self, birthtime_grid):
         # Returns the interpolated SFR vector computed at the birthtime grids
