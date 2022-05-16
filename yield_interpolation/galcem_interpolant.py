@@ -6,6 +6,7 @@ from galcem.classes.inputs import Inputs
 
 class GalCemInterpolant(object):
     def __init__(self,s_y,dfx,xlog10cols,ylog10col):
+        self.empty = False
         self.s_y = s_y.copy()
         self.dfx = dfx.copy()
         self.xlog10cols = xlog10cols
