@@ -203,7 +203,7 @@ class OneZone(Setup):
                     if not yield_comps[j][i].empty:
                         yield_grid = Z_comps[j]
                         yield_grid['mass'] = val[2]
-                        Wi_vals.append(integr.simps(val[0] * yield_comps[j][i](yield_grid), x=val[1]))   
+                        Wi_vals.append(integr.simps(np.multiply(val[0], yield_comps[j][i](yield_grid)), x=val[1]))   
                     else:
                         Wi_vals.append(0.)
                 else:
@@ -260,8 +260,8 @@ class OneZone(Setup):
                 Z_comp = [pd.DataFrame(Wi_class.Z_component(wic[1]), columns=['metallicity']) for wic in Wi_comp]
                 for i, _ in enumerate(self.ZA_sorted): 
                     self.Mass_i_v[i, n+1] = self.aux.RK4(self.solve_integral, self.time_chosen[n], self.Mass_i_v[i,n], n, self.IN.nTimeStep, i=i, Wi_comp=Wi_comp, Z_comp=Z_comp, yield_comp=yield_comp, channel_switch=channel_switch)
+                self.Z_v[n] = np.divide(np.sum(self.Mass_i_v[self.i_Z:,n]), self.Mgas_v[n])
             self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
-            self.Z_v[n] = np.divide(np.sum(self.Mass_i_v[self.i_Z:,n]), self.Mgas_v[n])
         self.Z_v[-1] = np.divide(np.sum(self.Mass_i_v[self.i_Z:,-1]), self.Mgas_v[-1])
         self.Xi_v[:,-1] = np.divide(self.Mass_i_v[:,-1], self.Mgas_v[-1]) 
 
