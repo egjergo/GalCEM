@@ -101,8 +101,8 @@ class Setup:
         self.models_SNIa = self.yields_SNIa_class.yields
         #self.yields_NSM_class.construct_yields(self.ZA_sorted)
         #self.models_NSM = self.yields_NSM_class.yields
-        #self.yields_MRSN_class.construct_yields(self.ZA_sorted)
-        #self.models_MRSN = self.yields_MRSN_class.yields
+        self.yields_MRSN_class.construct_yields(self.ZA_sorted)
+        self.models_MRSN = self.yields_MRSN_class.yields
         
         # Initialize Global tracked quantities
         self.asplund3_percent = self.c_class.abund_percentage(self.ZA_sorted)
@@ -208,10 +208,11 @@ class OneZone(Setup):
                         Wi_vals.append(0.)
                 else:
                     Wi_vals.append(0.)
-            returned = [Wi_vals[0], Wi_vals[1], Wi_SNIa]
+            returned = [Wi_vals[0], Wi_vals[1], Wi_vals[2], Wi_SNIa] # MRSN, SNII, LIMs, SNIa
             self.W_i_comp[i,n,0] = returned[0] 
             self.W_i_comp[i,n,1] = returned[1] 
-            self.W_i_comp[i,n,2] = returned[2]
+            self.W_i_comp[i,n,2] = returned[2] 
+            self.W_i_comp[i,n,3] = returned[3]
             val = infall_comp - sfr_comp + np.sum(returned)
         return val
 
@@ -250,7 +251,7 @@ class OneZone(Setup):
             self.phys_integral(n)        
             self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
             self.file1.write(' sum X_i at n %d= %.3f\n'%(n, np.sum(self.Xi_v[:,n])))
-            channel_switch = ['SNII', 'LIMs']
+            channel_switch = ['MRSN', 'SNII', 'LIMs']
             yield_comp = [self.models_SNII, self.models_LIMs]
             if n > 0.: 
                 Wi_class = Wi(n, self.IN, self.lifetime_class, self.time_chosen, self.Z_v, self.SFR_v, self.f_SNIa_v,
@@ -653,9 +654,10 @@ class Plots(Setup):
         #W_i_comp +=  100.
         W_i_comp = np.asarray(W_i_comp, dtype=float)
         W_i_comp = np.log10(W_i_comp)
-        Mass_SNII = W_i_comp[:,:,0]
-        Mass_AGB = W_i_comp[:,:,1]
-        Mass_SNIa = W_i_comp[:,:,2]
+        Mass_MRSN = W_i_comp[:,:,0]
+        Mass_SNII = W_i_comp[:,:,1]
+        Mass_AGB = W_i_comp[:,:,2]
+        Mass_SNIa = W_i_comp[:,:,3]
         timex = phys[:,0]
         Z = self.ZA_sorted[:,0]
         A = self.ZA_sorted[:,1]
@@ -672,10 +674,12 @@ class Plots(Setup):
                 ax.annotate('%s(%d,%d)'%(self.ZA_symb_list.values[i],Z[i],A[i]), xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=7, alpha=0.7)
                 ax.set_ylim(-4.9, 9.9)
                 if not logAge:
+                    ax.plot(timex[:-1], Mass_MRSN[i][:-1], color='#000c3b', linestyle='-', linewidth=3, alpha=0.8, label='MRSN')
                     ax.plot(timex[:-1], Mass_SNII[i][:-1], color='#0034ff', linestyle='-.', linewidth=3, alpha=0.8, label='SNII')
                     ax.plot(timex[:-1], Mass_AGB[i][:-1], color='#ff00b3', linestyle='--', linewidth=3, alpha=0.8, label='LIMs')
                     ax.plot(timex[:-1], Mass_SNIa[i][:-1], color='#00b3ff', linestyle=':', linewidth=3, alpha=0.8, label='SNIa')
                 else:
+                    ax.plot(np.log10(timex)[:-1], Mass_MRSN[i][:-1], color='#000c3b', linestyle='-', linewidth=3, alpha=0.8, label='MRSN')
                     ax.plot(np.log10(timex)[:-1], Mass_SNII[i][:-1], color='#0034ff', linestyle='-.', linewidth=3, alpha=0.8, label='SNII')
                     ax.plot(np.log10(timex)[:-1], Mass_AGB[i][:-1], color='#ff00b3', linestyle='--', linewidth=3, alpha=0.8, label='LIMs')
                     ax.plot(np.log10(timex)[:-1], Mass_SNIa[i][:-1], color='#00b3ff', linestyle=':', linewidth=3, alpha=0.8, label='SNIa')

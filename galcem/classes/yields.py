@@ -389,8 +389,19 @@ class Yields_MRSN(Yields):
             self.elemA = li[0]['A']
             self.elemZ = li[0]['Z']
             self.massFrac = [i['X'].values for i in li]
-            self.yields = np.multiply(ej_select, self.massFrac)
-            
+            self.yields_list = np.multiply(ej_select, self.massFrac)
+                
+    def construct_yields(self, ZA_sorted):
+        yields = []
+        for i,val in enumerate(ZA_sorted):
+            select_idz = np.where(self.elemZ == val[0])[0]
+            select_ida = np.where(self.elemA == val[1])[0]
+            select_id = np.intersect1d(select_idz,select_ida)
+            if len(select_id) > 0.:
+                yields.append(self.yields_list[select_id[0]])
+            else:
+                yields.append(0.)
+        self.yields = yields
 
 class Yields_NSM(Yields):
     '''
