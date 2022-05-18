@@ -551,6 +551,50 @@ class Plots(Setup):
         fig.tight_layout()
         plt.savefig(self._dir_out_figs + 'OH_evolution'+str(xscale)+'.pdf', bbox_inches='tight')
         
+    def ind_evolution(self, c=5, elemZ=8, logAge=False):
+        elemZ1 = 7
+        elemZ2 = 12 
+        print('Starting ind_evolution()')
+        from matplotlib import pyplot as plt
+        import pandas as pd
+        #plt.style.use(self._dir+'/galcem.mplstyle')
+        Z_list = np.unique(self.ZA_sorted[:,0])
+        phys = np.loadtxt(self._dir_out + 'phys.dat')
+        time = phys[c:,0]
+       # _, _, metallicity_value, metallicity_age = self.age_observations()
+        #a, b = np.polyfit(metallicity_age, metallicity_value, 1)
+        solar_norm_Fe = self.c_class.solarA09_vs_Fe_bymass[Z_list]
+        Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
+        N = np.sum(Mass_i[self.select_elemZ_idx(elemZ1), c+2:], axis=0)
+        Mg = np.sum(Mass_i[self.select_elemZ_idx(elemZ2), c+2:], axis=0)
+        Fe = np.sum(Mass_i[self.select_elemZ_idx(26), c+2:], axis=0)
+        NFe = np.log10(np.divide(N, Fe)) - solar_norm_Fe[elemZ1]
+        MgFe = np.log10(np.divide(Mg, Fe)) - solar_norm_Fe[elemZ2]
+        fig, ax = plt.subplots(1,1, figsize=(7,5))
+        ax.plot(time, NFe, color='magenta', label='[N/Fe]', linewidth=3)
+        ax.plot(time, MgFe, color='teal', label='[Mg/Fe]', linewidth=3)
+        ax.axvline(x=self.IN.age_Galaxy-self.IN.age_Sun, linewidth=2, color='orange', label=r'Age$_{\odot}$')
+        #ax.axhline(y=0, linewidth=1, color='orange', linestyle='--')
+        #ax.plot(self.IN.age_Galaxy +0.5 - metallicity_age, a*metallicity_age+b, color='red', alpha=1, linewidth=3, label='linear fit on [M/H]')
+        #ax.scatter(self.IN.age_Galaxy +0.5 - metallicity_age, metallicity_value, color='red', marker='*', alpha=0.3, label='Silva Aguirre et al. (2018)')
+        #ax.errorbar(self.IN.age_Galaxy - observ['age'], observ['FeH'], yerr=observ['FeHerr'], marker='s', label='Meusinger+91', mfc='gray', ecolor='gray', ls='none')
+        ax.legend(loc='best', frameon=False, fontsize=17)
+        ax.set_ylabel(r'[X/Fe]', fontsize=20)
+        ax.set_xlabel('Galaxy Age [Gyr]', fontsize=20)
+        ax.set_ylim(-2,1)
+        xscale = '_lin'
+        if not logAge:
+            ax.set_xlim(0,self.IN.age_Galaxy)
+        else:
+            ax.set_xscale('log')
+            xscale = '_log'
+            ax.set_xlim(2e-2,self.IN.age_Galaxy)
+        #ax.set_xlim(1e-2, 1.9e1)
+        fig.tight_layout()
+        plt.savefig(self._dir_out_figs + 'ind_evolution'+str(xscale)+'.pdf', bbox_inches='tight')
+        
+        
+        
     def iso_evolution(self, figsize=(40,13)):
         print('Starting iso_evolution()')
         from matplotlib import pyplot as plt
@@ -597,7 +641,7 @@ class Plots(Setup):
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'iso_evolution.pdf', bbox_inches='tight')
 
-    def iso_evolution_comp(self, figsize=(40,13), logAge=False):
+    def iso_evolution_comp(self, figsize=(15,12), logAge=False):
         print('Starting iso_evolution_comp()')
         from matplotlib import pyplot as plt
         plt.style.use(self._dir+'/galcem.mplstyle')
@@ -615,7 +659,7 @@ class Plots(Setup):
         timex = phys[:,0]
         Z = self.ZA_sorted[:,0]
         A = self.ZA_sorted[:,1]
-        ncol = self.aux.find_nearest(np.power(np.arange(23),2), len(Z))
+        ncol = self.aux.find_nearest(np.power(np.arange(22),2), len(Z))
         if len(self.ZA_sorted) > ncol:
             nrow = ncol
         else:
@@ -625,23 +669,21 @@ class Plots(Setup):
             print('i %d'%(i))
             print('%s(%d,%d)'%(self.ZA_symb_list.values[i],Z[i],A[i]))
             if i < len(Z)-1:
-                ax.plot(timex, Mass_SNII[i], color='#0034ff', linestyle='-.', linewidth=3, alpha=0.8, label='SNII')
-                ax.plot(timex, Mass_AGB[i], color='#ff00b3', linestyle='--', linewidth=3, alpha=0.8, label='LIMs')
-                ax.plot(timex, Mass_SNIa[i], color='#00b3ff', linestyle=':', linewidth=3, alpha=0.8, label='SNIa')
-                ax.annotate('%s(%d,%d)'%(self.ZA_symb_list.values[i],Z[i],A[i]), xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
+                ax.annotate('%s(%d,%d)'%(self.ZA_symb_list.values[i],Z[i],A[i]), xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=7, alpha=0.7)
                 ax.set_ylim(-4.9, 9.9)
-                ax.set_xlim(0.01,13.8)
                 if not logAge:
-                    ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
-                    ax.tick_params(width = 1, length = 2, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
-                    ax.xaxis.set_major_locator(ticker.MultipleLocator(base=5))
-                    ax.tick_params(width = 1, length = 5, axis = 'x', which = 'major', bottom = True, top = True, direction = 'in')
+                    ax.plot(timex[:-1], Mass_SNII[i][:-1], color='#0034ff', linestyle='-.', linewidth=3, alpha=0.8, label='SNII')
+                    ax.plot(timex[:-1], Mass_AGB[i][:-1], color='#ff00b3', linestyle='--', linewidth=3, alpha=0.8, label='LIMs')
+                    ax.plot(timex[:-1], Mass_SNIa[i][:-1], color='#00b3ff', linestyle=':', linewidth=3, alpha=0.8, label='SNIa')
                 else:
-                    ax.set_xscale('log')
-                ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=1))
-                ax.tick_params(width = 1, length = 2, axis = 'y', which = 'minor', left = True, right = True, direction = 'in')
-                ax.yaxis.set_major_locator(ticker.MultipleLocator(base=5))
-                ax.tick_params(width = 1, length = 5, axis = 'y', which = 'major', left = True, right = True, direction = 'in')
+                    ax.plot(np.log10(timex)[:-1], Mass_SNII[i][:-1], color='#0034ff', linestyle='-.', linewidth=3, alpha=0.8, label='SNII')
+                    ax.plot(np.log10(timex)[:-1], Mass_AGB[i][:-1], color='#ff00b3', linestyle='--', linewidth=3, alpha=0.8, label='LIMs')
+                    ax.plot(np.log10(timex)[:-1], Mass_SNIa[i][:-1], color='#00b3ff', linestyle=':', linewidth=3, alpha=0.8, label='SNIa')
+                    #ax.set_xscale('log')
+                ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
+                ax.tick_params(width = 1, length = 1, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
+                ax.xaxis.set_major_locator(ticker.MultipleLocator(base=5))
+                ax.tick_params(width = 1, length = 3, axis = 'x', which = 'major', bottom = True, top = True, direction = 'in')
             else:
                 fig.delaxes(ax)
         for i in range(nrow):
@@ -652,14 +694,25 @@ class Plots(Setup):
                     axs[i,j].set_xticklabels([])
                     
         axs[nrow//2,0].set_ylabel(r'Masses [ $\log_{10}$($M_{\odot}$/yr)]', fontsize = 15)
-        axs[nrow-1, ncol//2].set_xlabel('Age [Gyr]', fontsize = 15)
-        axs[0, ncol//2].legend(ncol=3, loc='upper center', bbox_to_anchor=(0.5, 1.5), frameon=False, fontsize=15)
+        axs[0, ncol//2].legend(ncol=3, loc='upper center', bbox_to_anchor=(0.5, 1.8), frameon=False, fontsize=12)
         if not logAge:
+            ax.set_xlim(0.01,13.8)
             xscale = '_lin'
+            axs[nrow-1, ncol//2].set_xlabel('Age [Gyr]', fontsize = 15)
+            ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=1))
+            ax.tick_params(width = 1, length = 1, axis = 'y', which = 'minor', left = True, right = True, direction = 'in')
+            ax.yaxis.set_major_locator(ticker.MultipleLocator(base=5))
+            ax.tick_params(width = 1, length = 3, axis = 'y', which = 'major', left = True, right = True, direction = 'in')
         else:
+            ax.set_xlim(-2,1.8)
             xscale = '_log'
-        plt.tight_layout(rect = [0.03, 0, 1, .98])
+            axs[nrow-1, ncol//2].set_xlabel('Log  Age [Gyr]', fontsize = 15)
+            ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=.1))
+            ax.tick_params(width = 1, length = 1, axis = 'y', which = 'minor', left = True, right = True, direction = 'in')
+            ax.yaxis.set_major_locator(ticker.MultipleLocator(base=.5))
+            ax.tick_params(width = 1, length = 3, axis = 'y', which = 'major', left = True, right = True, direction = 'in')
         plt.subplots_adjust(wspace=0., hspace=0.)
+        plt.tight_layout(rect = [0.03, 0.03, 1, .90])
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'iso_evolution_comp'+str(xscale)+'.pdf', bbox_inches='tight')
 
