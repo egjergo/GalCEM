@@ -1,10 +1,9 @@
 import galcem as gc
-inputs = gc.Inputs()
-#inputs.nTimeStep = .25
-directory_name = str(input("Enter the run's folder name (default is 'base'): ") or "base")
-#oz = gc.OneZone(inputs,outdir='runs/'+directory_name+'/')
-#print('Loaded an instance of the OneZone class')
-#oz.main()
+import pickle
+
+directory_name = str(input("Enter the run's folder name (default format is 'YYYYMMDD_base_deltatimeMyr'): "))
+inputs = pickle.load(open('runs/'+directory_name+'/inputs.pkl','rb'))
+
 pl = gc.Plots(outdir='runs/'+directory_name+'/')
 print('Loaded an instance of the Plots class')
 #pl.plots()
@@ -18,3 +17,6 @@ print('Loaded an instance of the Plots class')
 #pl.phys_integral_plot()
 #pl.phys_integral_plot(logAge=True)
 #pl.iso_evolution_comp()
+#pl.iso_evolution_comp(logAge=True)
+pl.ind_evolution()
+pl.ind_evolution(logAge=True)

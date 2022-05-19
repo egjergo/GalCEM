@@ -1,0 +1,13 @@
+# Original file from the Supplementary data of NST2017: Nishimura, Sawai, Takiwaki, Yamada & Thielemann (2017, ApJL 836 L21) https://ui.adsabs.harvard.edu/abs/2017ApJ...836L..21N/abstract Submit Data manipulation bugs to GalacticCEM@gmail.com.
+# Data also available for download at  https://github.com/nnobuya/mrsn
+filename,ejectamass
+L0.10,7.66225e-03
+L0.20,1.34505e-02
+L0.30,2.09197e-02
+L0.40,3.19371e-02
+L0.50,6.17773e-02
+L0.60,1.19465e-01
+L0.75,2.00467e-01
+L1.00,2.38585e-01
+L1.25,2.61565e-01
+#ejectamass = pd.read_csv('galcem/input/yields/mrsn/n17/ejectamass.dat', sep=',', comment='#')

@@ -29,14 +29,15 @@
 # ytick.minor.size: 0
 
 # GalCEM Specific
-xtick.major.size: 15
-xtick.major.width: 2
-xtick.minor.size: 10
+xtick.major.size: 5
+xtick.major.width: 1
+xtick.minor.size: 2
 xtick.minor.width: 1
-ytick.major.size: 15
-ytick.major.width: 2
-ytick.minor.size: 10
+ytick.major.size: 5
+ytick.major.width: 1
+ytick.minor.size: 2
 ytick.minor.width: 1
-xtick.labelsize: 20
-ytick.labelsize: 20
-axes.linewidth: 2
+xtick.labelsize: 10
+ytick.labelsize: 10
+axes.linewidth: 1
+axes.prop_cycle: (cycler(color=['#252525', '#525252', '#737373', '#969696', '#bdbdbd', '#d9d9d9', '#7f0000', '#cc0000', '#ff4444', '#ff7f7f', '#ffb2b2', '#995100', '#cc6c00', '#ff8800', '#ffbb33', '#ffe564', '#2c4c00', '#436500', '#669900', '#99cc00', '#d2fe4c', '#3c1451', '#6b238e', '#9933cc', '#aa66cc', '#bc93d1', '#004c66', '#007299', '#0099cc', '#33b5e5', '#8ed5f0', '#660033', '#b20058', '#e50072', '#ff3298', '#ff7fbf']), cycler(marker=[r"$\mathcal{A}$",  r"$\mathcal{B}$",  r"$\mathcal{C}$", r"$\mathcal{D}$", r"$\mathcal{E}$", r"$\mathcal{F}$", r"$\mathcal{G}$", r"$\mathcal{H}$", r"$\mathcal{I}$", r"$\mathcal{J}$", r"$\mathcal{K}$", r"$\mathcal{L}$", r"$\mathcal{M}$", r"$\mathcal{N}$", r"$\mathcal{O}$", r"$\mathcal{P}$", r"$\mathcal{Q}$", r"$\mathcal{R}$", r"$\mathcal{S}$", r"$\mathcal{T}$", r"$\mathcal{U}$", r"$\mathcal{V}$", r"$\mathcal{X}$", r"$\mathcal{Y}$", "$1$", "$2$", "$3$", "$4$", "$5$", "$6$", "$7$", "$8$", "$9$", "$f$", "$\u266B$", r"$\frac{1}{2}$",  'o', '+', 'x', 'v', '^', '<', '>', 'P', '*', 'd', 'X',  "_", '|']))

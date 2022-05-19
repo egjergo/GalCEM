@@ -23,6 +23,21 @@ def _pick_yields(channel_switch, ZA_Symb, n, stellar_mass_idx=None, metallicity_
         idx = isotope_class.pick_by_Symb(yields_SNIa_class.elemZ, ZA_Symb)
         return yields_SNIa_class.yields[idx]
         
+# Formerly in Isotopes class      
+    def pick_by_Symb(self, ndarray_elemZ=0, elemSymb='Symb'):
+        '''
+        Finds the indices 
+        
+        Input:
+            ndarray_elemZ:    the elemZ instance variable in yield classes
+            elemSymb:        the periodic symbol of the given element
+            
+        Returns:
+            the indices of the yield classes corresponding to the given element 
+        '''
+        print('Symbol: \t %s'%type(self.elemSymb))
+        idx = np.where(self.elemSymb == elemSymb)
+        return np.where(ndarray_elemZ == self.elemZ[idx])
 
 """ load yield tables """
 X_lc18, Y_lc18, models_lc18, averaged_lc18 = yt.load_processed_yields(func_name='lc18', loc='input/yields/snii/lc18/tab_R', df_list=['X', 'Y', 'models', 'avgmassfrac'])
@@ -41,3 +56,19 @@ def test_fit(x,y,model, y_log10_scaled=False):
         print('\tMAE: %.1e'%np.mean(eps_abs))
         print('\tMax Abs Error: %.1e\n'%eps_abs.max())
     return None
+
+
+ # From setup class
+    def load_processed_yields(self,func_name, loc, df_list):
+        df_dict = {}
+        for df_l in df_list:
+            with open('%s/processed/%s.pkl'%(loc,df_l), 'rb') as pickle_file:
+                df_dict[df_l] = pickle.load(pickle_file)
+        return [df_dict[d] for d in df_list]#df_dict[df_list[0]], df_dict[df_list[1]]#, df_dict[df_list[2]]
+
+    def load_processed_yields_snia(self, func_name, loc, df_list):#, 'models']):
+        df_dict = {}
+        for df_l in df_list:
+            with open('%s/processed/%s.pkl'%(loc,df_l), 'rb') as pickle_file:
+                df_dict[df_l] = pickle.load(pickle_file)
+        return df_dict[df_list[0]]

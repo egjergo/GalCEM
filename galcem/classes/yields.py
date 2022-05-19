@@ -29,71 +29,33 @@ class Isotopes:
         self.elemSymb = self.IN.periodic['elemSymb']
         self.elemName = self.IN.periodic['elemName']
         self.elemA_characteristic = self.IN.periodic['elemA']
-        
-    def pick_by_Symb(self, ndarray_elemZ=0, elemSymb='Symb'):
-        '''
-        Finds the indices 
-        
-        Input:
-            ndarray_elemZ:    the elemZ instance variable in yield classes
-            elemSymb:        the periodic symbol of the given element
-            
-        Returns:
-            the indices of the yield classes corresponding to the given element 
-        '''
-        print('Symbol: \t %s'%type(self.elemSymb))
-        idx = np.where(self.elemSymb == elemSymb)
-        return np.where(ndarray_elemZ == self.elemZ[idx])
-        
-    def pick_by_ZA_sort(self, ZA_sorted, ndarray_elemZ, elemSymb):
-        '''
-        Finds the indices for class_instance.yields
-        
-        Input:
-            ndarray_elemZ:    the elemZ instance variable in yield classes
-            elemSymb:        the periodic symbol of the given element
-            
-        Returns:
-            the indices of the yield classes corresponding to the given element 
-        '''
-        print('Symbol: \t %s'%type(self.elemSymb))
-        idx = np.where(self.elemSymb == elemSymb)
-        return np.where(ndarray_elemZ == self.elemZ[idx])
     
-    def yield_vector_intersect(self, yield_channel, ZA_sorted, i):
-        idx = np.intersect1d(np.where(ZA_sorted[:,0] == yield_channel.elemZ[i]), 
-                             np.where(ZA_sorted[:,1] == yield_channel.elemA[i]))
-        return yield_channel.yields[i] 
-    
-    def construct_yield_vector(self, yield_channel, ZA_sorted):
-        extract_yield_vector = np.zeros(len(ZA_sorted))
-        for i in range(len(yield_channel.yields)): # !!!!!!! optimize later
-            idx = np.intersect1d(np.where(ZA_sorted[:,0] == yield_channel.elemZ[i]), 
-                                 np.where(ZA_sorted[:,1] == yield_channel.elemA[i]))
-            extract_yield_vector[idx] = yield_channel.yields[i] 
-        return extract_yield_vector
-
-    def construct_yield_SNII(self, yield_channel, ZA_sorted, iso):
-        dummy = np.zeros((4,3,9))
-        if np.intersect1d(np.where(yield_channel.elemZ == ZA_sorted[iso,0]), 
-                                 np.where(yield_channel.elemA == ZA_sorted[iso,1])):
-            idx = np.intersect1d(np.where(yield_channel.elemZ == ZA_sorted[iso,0]), 
-                                 np.where(yield_channel.elemA == ZA_sorted[iso,1]))[0]
-            X = None # !!!!!! take linear RBF interpolation but make test
-            Y = yield_channel.yields[:,:,idx,:] 
-            return X,Y
-        else:
-            return dummy
-
-    def construct_yield_LIMs(self, yield_channel, ZA_sorted, iso):
-        dummy = [0.]
-        if np.intersect1d(np.where(yield_channel.elemZ == ZA_sorted[iso,0]), 
-                                 np.where(yield_channel.elemA == ZA_sorted[iso,1])):
-            idx = np.intersect1d(np.where(yield_channel.elemZ == ZA_sorted[iso,0]), 
-                                 np.where(yield_channel.elemA == ZA_sorted[iso,1]))[0]
-            return [met.yields[idx,:] for met in yield_channel]
-        else:
-            return dummy
+    def pick_i_by_iso(self, ZA_sorted, elemZ, elemA):
+        '''Finds the isotope entry in the isotope list'''
+        idx_Z = np.where(ZA_sorted[:,0] == elemZ)[0]
+        idx_A = np.where(ZA_sorted[:,1] == elemA)[0]
+        idx =  np.intersect1d(idx_Z, idx_A)[0]
+        print("[Z, A] = ", ZA_sorted[idx])
+        return idx
+        
+    def pick_i_by_atomicnumber(self, ZA_sorted, elemZ):
+        '''Finds the isotope entry/entries in the isotope list having a certain atomic number'''
+        idx_Z = np.where(ZA_sorted[:,0] == elemZ)[0]
+        print(ZA_sorted[idx_Z])
+        return idx_Z
+            
+    def pick_i_by_atomicmass(self, ZA_sorted, elemA):
+        '''Finds the isotope entry/entries in the isotope list having a certain atomic mass'''
+        idx_A = np.where(ZA_sorted[:,1] == elemA)[0]
+        print(ZA_sorted[idx_A])
+        return idx_A
+                
+    def pick_i_by_Symbol(self, ZA_sorted, elemSymb):
+        '''Finds the isotope entry/entries in the isotope list having a certain atomic mass'''
+        id_periodic = np.where(self.elemSymb == elemSymb)[0]
+        idx_Z = np.where(ZA_sorted[:,0] == self.elemZ[id_periodic].values)[0]
+        print(ZA_sorted[idx_Z])
+        return idx_Z
 
 
 class Concentrations:
@@ -116,8 +78,8 @@ class Concentrations:
         self.solarA09_vs_Fe_bynumb = (self.solarA09 - self.solarA09[26])
         self.solarA09_vs_H_bymass = (self.solarA09_vs_H_bynumb + self.log10_avg_elem_vs_X(elemZ=1))
         self.solarA09_vs_Fe_bymass = (self.solarA09_vs_Fe_bynumb + self.log10_avg_elem_vs_X(elemZ=26))
-        self.asplund3_pd = self.IN.asplund3 #pd.DataFrame(self.IN.asplund3, columns=['elemN','elemZ','elemA','percentage'])
-        
+        self.asplund3_pd = self.IN.asplund3 
+                
     def log10_avg_elem_vs_X(self, elemZ=1):
         ''' log10(<M all> / <M elemZ>) absolute abundance by mass'''
         return np.log10(np.divide(self.select_periodic['elemA'],
@@ -136,17 +98,12 @@ class Concentrations:
                 percentages_pd[i] = np.array([1e-5])
         return np.array(percentages_pd, dtype=np.float16)
 
-    def extract_ZA_pairs_SNIa(self, yields):
-        return np.column_stack((yields.elemZ, yields.elemA))
-    
-    def extract_ZA_pairs_SNII(self, yields):
-        return np.column_stack((yields.elemZ, yields.elemA))
-        
-    def extract_ZA_pairs_LIMs(self, yields):
-        return np.column_stack((yields.elemZ_sorting[0][:,0], yields.elemA_sorting[0][:,0]))
+    def extract_ZA_pairs(self, yields):
+        ZA_pairs = np.column_stack((yields.elemZ, yields.elemA))
+        return self.ZA_sorted(ZA_pairs)
     
     def ZA_sorted(self, ZA_all):
-        Z_sorted = ZA_all[ZA_all[:,0].argsort()]
+        Z_sorted = np.array(ZA_all[ZA_all[:,0].argsort()]).astype(int)
         sorting_A = [] # isolating A indices with same Z
         A_sorted = [] # sorted indices for sorting_A
         for i in range(Z_sorted[:,0].max()+1):
@@ -156,26 +113,6 @@ class Concentrations:
         ZA_sorted = Z_sorted[list(flatten(A_sorted))]
         return np.unique(ZA_sorted, axis=0)
     
-    def ZA_Symb(self, ZA_sorted):
-        '''
-        Returns a complete list of the element symbol associated 
-        with each entry in ZA_sorted
-        '''
-        return [np.where(self.IN.periodic['elemZ'] == ZA_sorted[i,0])[0][0] for i in range(len(ZA_sorted))]
-        
-    def R_M_i_idx(self, yields_class, ZA_sorted, Mstar=None, metallicity=None, vel=None):
-        '''
-        This function is able to associate the entry in isotope-wide tracked quantities
-        with the respective yield. e.g.:
-        
-            for i in range(len(BBN_idx)):
-                self.Mass_i_t[BBN_idx[i]] += yields_BBN_class.yields[i] * Minfall_dt
-        '''
-        yieldchoice_ZA_list = np.array(list(zip(yields_class.elemZ, yields_class.elemA)))
-        yieldchoice_idx = [np.where((ZA_sorted[:,0] == yieldchoice_ZA_list[i,0]) 
-                    & (ZA_sorted[:,1] == yieldchoice_ZA_list[i,1]))[0][0] 
-                    for i in range(len(yieldchoice_ZA_list))]
-        return yieldchoice_idx
         
 class Yields:
     ''' Parent class for all Yields_* classes '''
@@ -213,9 +150,21 @@ class Yields_BBN(Yields):
             self.elemA = self.tables['elemA']
             self.elemZ = self.tables['elemZ']
             self.massCol = np.multiply(self.tables['numbFrac'], self.tables['mass'])
+            self.yields_list = np.divide(self.massCol, np.sum(self.massCol)) # fraction by mass 
             self.yields = np.divide(self.massCol, np.sum(self.massCol)) # fraction by mass 
-
-
+      
+    def construct_yields(self, ZA_sorted):
+        yields = []
+        for i,val in enumerate(ZA_sorted):
+            select_idz = np.where(self.elemZ == val[0])[0]
+            select_ida = np.where(self.elemA == val[1])[0]
+            select_id = np.intersect1d(select_idz,select_ida)
+            if len(select_id) > 0.:
+                yields.append(self.yields_list[select_id[0]])
+            else:
+                yields.append(0.)
+        self.yields = np.array(yields)
+        
 class Yields_SNIa(Yields):
     '''
     Yields by Type Ia Supernova, from Iwamoto+99 by default.
@@ -229,7 +178,7 @@ class Yields_SNIa(Yields):
         if self.option == 'k20':
             yd = self._dir + '/input/yields/snia/k20/'
             self.tables = pd.read_fwf(yd + 'yield_nucl.d', comment='#')
-            self.yields = self.tables['yields']
+            self.yields_list = self.tables['yields']
             self.elemA = self.tables['elemA']
             self.elemZ = self.tables['elemZ']
             
@@ -242,10 +191,21 @@ class Yields_SNIa(Yields):
                          ('TypeII','<f8'), ('W7','<f8'), ('W70','<f8'), 
                          ('WDD1','<f8'), ('WDD2','<f8'), ('WDD3','<f8'), 
                          ('CDD1','<f8'), ('CDD2','<f8')])
-            self.yields = self.tables['W7'] 
+            self.yields_list = self.tables['W7'] 
             self.elemA = self.tables['elemA']
             self.elemZ = self.tables['elemZ']
-
+            
+    def construct_yields(self, ZA_sorted):
+        yields = []
+        for i,val in enumerate(ZA_sorted):
+            select_idz = np.where(self.elemZ == val[0])[0]
+            select_ida = np.where(self.elemA == val[1])[0]
+            select_id = np.intersect1d(select_idz,select_ida)
+            if len(select_id) > 0.:
+                yields.append(self.yields_list[select_id[0]])
+            else:
+                yields.append(0.)
+        self.yields = yields
                 
 class Yields_SNII(Yields):
     '''
@@ -258,7 +218,7 @@ class Yields_SNII(Yields):
         super().__init__()
  
     def import_yields(self):
-        if self.option == 'lc18':
+        if self.option == 'lc18old':
             self.metallicity_bins = np.power(10, [0., -1., -2., -3.])
             self.rotationalVelocity_bins = [0., 150., 300.]
             yd = self._dir + '/input/yields/snii/lc18/tab_R/'
@@ -289,6 +249,35 @@ class Yields_SNII(Yields):
             self.stellarMassIni = self.tables[:,:,:,3].astype('float')
             self.yields = self.tables[:,:,:,4:].astype('float') 
     
+        if self.option == 'lc18':
+            import re
+            import glob
+            lc18 = pd.read_csv('yield_interpolation/lc18/data.csv')
+            lc18_yield_dir = 'yield_interpolation/lc18/models/'
+            self.metallicity_bins = np.unique(lc18['metallicity'].values)
+            self.elemA = lc18['a'].values #np.unique(lc18['a'].values)
+            self.elemZ = lc18['z'].values #np.unique(lc18['z'].values)
+            self.yields_list = glob.glob(lc18_yield_dir+'*.pkl')
+            patternz = "/z(.*?).a"
+            z_list = [re.search(patternz, yl).group(1) for yl in self.yields_list]
+            searcha = [".a",".irv0"]
+            a_list = [yl[yl.find(searcha[0])+len(searcha[0]):yl.find(searcha[1])] for yl in self.yields_list]
+            ZA_list = np.column_stack([z_list, a_list])
+            self.ZA_list = ZA_list.astype('int')
+            
+    def construct_yields(self, ZA_sorted):
+        import pickle
+        yields = []
+        yields_l = pd.Series(self.yields_list, dtype='str')
+        for i,val in enumerate(ZA_sorted):
+            pattern = '/z'+ str(val[0]) + '.a' + str(val[1])+'.irv0'
+            select_id = np.where(yields_l.str.contains(pattern))[0]
+            if len(select_id) > 0.:
+                yields.append(pickle.load(open(yields_l.iloc[select_id[0]],'rb')))
+            else:
+                yields.append(pd.DataFrame(columns=['mass', 'metallicity']))
+        self.yields = yields
+    
     
 class Yields_LIMs(Yields):
     '''
@@ -307,7 +296,7 @@ class Yields_LIMs(Yields):
         it_is[0] = it_is[0][:-1]
         it_is_T = [np.array(ii).T for ii in it_is]
         if (val == 'elemA' or val == 'elemZ'):
-            return it_is_T, unique[0]
+            return it_is_T, unique[0].astype(int)
         elif (val == 'Yield' or val == 'Mfin'):
             return it_is_T
         else:
@@ -335,7 +324,109 @@ class Yields_LIMs(Yields):
                 
             self.yields = self.is_unique('Yield', split_length)
             self.elemA_sorting, self.elemA = self.is_unique('elemA', split_length)
-            self.elemZ_sorting, self.elemZ = self.is_unique('elemZ', split_length)
+            self.elemZ_sorting, self.elemZ = self.is_unique('elemZ', split_length) # *_sorting associates elemZ to the index. elemZ is unique
             self.metallicityIni, self.metallicity_bins = self.is_unique('Zini', split_length)
             self.stellarMassIni, self.stellarMass_bins = self.is_unique('Mini', split_length)
-            self.Returned_stellar_mass = self.is_unique('Mfin', split_length)    
+            self.Returned_stellar_mass = self.is_unique('Mfin', split_length)  
+        
+        if self.option == 'c15':
+            import re
+            import glob
+            c15 = pd.read_csv('yield_interpolation/c15/data.csv')
+            c15_yield_dir = 'yield_interpolation/c15/models/'
+            self.metallicity_bins = np.unique(c15['metallicity'].values)
+            self.elemA = c15['a'].values #np.unique(c15['a'].values)
+            self.elemZ = c15['z'].values #np.unique(c15['z'].values)
+            self.yields_list = glob.glob(c15_yield_dir+'*.pkl')
+            patternz = "/z(.*?).a"
+            z_list = [re.search(patternz, yl).group(1) for yl in self.yields_list]
+            searcha = [".a",".irv0"]
+            a_list = [yl[yl.find(searcha[0])+len(searcha[0]):yl.find(searcha[1])] for yl in self.yields_list]
+            ZA_list = np.column_stack([z_list, a_list])
+            self.ZA_list = ZA_list.astype('int')
+            
+    def construct_yields(self, ZA_sorted):
+        import pickle
+        yields = []
+        yields_l = pd.Series(self.yields_list, dtype='str')
+        for i,val in enumerate(ZA_sorted):
+            pattern = '/z'+ str(val[0]) + '.a' + str(val[1])+'.irv0'
+            select_id = np.where(yields_l.str.contains(pattern))[0]
+            if len(select_id) > 0.:
+                yields.append(pickle.load(open(yields_l.iloc[select_id[0]],'rb')))
+            else:
+                yields.append(pd.DataFrame(columns=['mass', 'metallicity']))
+        self.yields = yields
+        
+        
+class Yields_MRSN(Yields):
+    '''
+    Yields by MRSN, from Nishimura et al. (2017) by default.
+    '''
+    def __init__(self, IN, option=None):
+        self.IN = IN
+        self.option = self.IN.yields_MRSN_option if option is None else option
+        super().__init__()
+        self.yd = self._dir + '/input/yields/mrsn/' + self.option
+        self.ejectamass = self.ejecta_mass()
+        
+    def ejecta_mass(self):
+        return pd.read_csv(self.yd + '/ejectamass.dat', sep=',', comment='#')
+
+    def import_yields(self):
+        #''''''
+        if self.option == 'n17':
+            import glob
+            all_files = glob.glob(self.yd + "/L*")
+            all_files = sorted(all_files)
+            li = []
+            ej_select = []
+            for filename in all_files:
+                df = pd.read_fwf(filename, skiprows=7, infer_nrows=150)
+                li.append(df)
+                idlabel = filename.replace(self.yd+'/','').replace('.dat','')
+                ej_select.append(self.ejectamass.loc[self.ejectamass['filename']==idlabel]['ejectamass'])
+            self.elemA = li[0]['A']
+            self.elemZ = li[0]['Z']
+            self.massFrac = [i['X'].values for i in li]
+            self.yields_list = np.multiply(ej_select, self.massFrac)
+                
+    def construct_yields(self, ZA_sorted):
+        yields = []
+        for i,val in enumerate(ZA_sorted):
+            select_idz = np.where(self.elemZ == val[0])[0]
+            select_ida = np.where(self.elemA == val[1])[0]
+            select_id = np.intersect1d(select_idz,select_ida)
+            if len(select_id) > 0.:
+                yields.append(self.yields_list[select_id[0]])
+            else:
+                yields.append(0.)
+        self.yields = yields
+
+class Yields_NSM(Yields):
+    '''
+    Yields by NSM, from Rosswog et al. (2014) by default.
+    '''
+    def __init__(self, IN, option=None):
+        self.IN = IN
+        self.option = self.IN.yields_NSM_option if option is None else option
+        super().__init__()
+        self.yd = self._dir + '/input/yields/nsm/' + self.option
+        self.ejectamass = 0.04 # Rastinejad+22
+        
+    def import_yields(self):
+        #''''''
+        if self.option == 'r14':
+            self.tables = pd.read_csv('galcem/input/yields/nsm/r14/Zsolar.dat', sep=',', comment='#')
+            self.elemA = self.tables['elemA']
+            self.elemZ = self.tables['elemZ']
+            self.massFrac = self.tables['massFrac']
+            self.yields = np.multiply(self.ejectamass, self.massFrac)  
+            
+    #def __repr__(self):
+    #    self.import_yields()
+    #    NSMobject = pd.DataFrame(self.elemZ)
+    #    #NSMobject['elemA'] = self.elemA
+    #    #NSMobject['massFrac'] = self.massFrac
+    #    #NSMobject['yields'] = self.yields
+    #    return NSMobject # err: not a string

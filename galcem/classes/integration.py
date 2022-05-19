@@ -56,6 +56,7 @@ class Wi:
         self.metallicity = self.Z_v[age_idx]
         self.age_idx = age_idx
         self.Wi_grid_class = Wi_grid(self.metallicity, self.age_idx, self.IN, lifetime_class, self.time_chosen)
+        self.MRSN_birthtime_grid, self.MRSN_lifetime_grid, self.MRSN_mass_grid = self.Wi_grid_class.grids(self.IN.Ml_MRSN, self.IN.Mu_MRSN)
         self.SNII_birthtime_grid, self.SNII_lifetime_grid, self.SNII_mass_grid = self.Wi_grid_class.grids(self.IN.Ml_SNII, self.IN.Mu_SNII)
         self.LIMs_birthtime_grid, self.LIMs_lifetime_grid, self.LIMs_mass_grid = self.Wi_grid_class.grids(self.IN.Ml_LIMs, self.IN.Mu_LIMs) # !!!!!!! you should subtract SNIa fraction
         self.SNIa_birthtime_grid, self.SNIa_lifetime_grid, self.SNIa_mass_grid = self.Wi_grid_class.grids(self.IN.Ml_SNIa, self.IN.Mu_SNIa)
@@ -70,7 +71,7 @@ class Wi:
     def Z_component(self, birthtime_grid):
         # Returns the interpolated SFR vector computed at the birthtime grids
         _Z_interp = interp.interp1d(self.time_chosen[:self.age_idx+1], self.Z_v[:self.age_idx+1], fill_value='extrapolate')
-        return _Z_interp(birthtime_grid)
+        return _Z_interp(birthtime_grid) # Linear metallicity
     
     def SFR_component(self, birthtime_grid):
         # Returns the interpolated SFR vector computed at the birthtime grids
@@ -88,35 +89,6 @@ class Wi:
             return self.lifetime_class.dMdtauM(np.log10(lifetime_grid), self.metallicity*np.ones(len(lifetime_grid)))#(lifetime_grid)
         if derlog == True:
             return 1   
- 
-    def _yield_array(self, channel_switch, mass_grid, birthtime_grid, vel_idx=None):
-        vel_idx = self.IN.LC18_vel_idx if vel_idx is None else vel_idx
-        len_X = len(mass_grid)
-        Z_comp = self.Z_v[self.age_idx] * np.ones(len_X) #self.Z_component(birthtime_grid)
-        y = []
-        if channel_switch == 'SNIa': 
-            y = self.yields_SNIa_class
-        else:  
-            if channel_switch == 'SNII':
-                X_sample = np.column_stack([Z_comp, vel_idx * np.ones(len_X), mass_grid])
-                models = self.models_lc18
-            elif channel_switch == 'LIMs':
-                Z_comp /= self.IN.solar_metallicity
-                X_sample = np.column_stack([Z_comp, mass_grid])
-                models = self.models_k10
-            else:
-                print('%s currently not included.'%channel_switch)
-                pass
-            
-            for i, model in enumerate(models):
-                if model != None:
-                    #print(f'{channel_switch=}, \t{i=}')
-                    fit = model(X_sample)
-                    #print(f"{len(fit)=}")
-                    y.append(fit) # !!!!!!! use asynchronicity to speed up the computation
-                else:
-                    y.append(np.zeros(len_X))
-        return 0.005 * np.ones(len(self.ZA_sorted)) #y # len consistent with ZA_sorted
 
     def yield_component(self, channel_switch, mass_grid, birthtime_grid, vel_idx=None):
         return interpolation(mass_grid, metallicity(birthtime_grid))
@@ -185,6 +157,10 @@ class Wi:
         return integr.simps(integrand, x=mass_grid)
     
     def compute_rates(self):
+        if len(self.grid_picker('MRSN', 'birthtime')) > 0.:
+            rateSNII = self.compute_rate(channel_switch='MRSN')
+        else:
+            rateMRSN = self.IN.epsilon
         if len(self.grid_picker('SNII', 'birthtime')) > 0.:
             rateSNII = self.compute_rate(channel_switch='SNII')
         else:
@@ -198,7 +174,7 @@ class Wi:
             R_SNIa = self.IN.A_SNIa * self.compute_rateSNIa()
         else:
             R_SNIa = self.IN.epsilon
-        return rateSNII, rateLIMs, R_SNIa
+        return rateMRSN, rateSNII, rateLIMs, R_SNIa
 
     def compute(self, channel_switch, vel_idx=None):
         vel_idx = self.IN.LC18_vel_idx if vel_idx is None else vel_idx
@@ -211,4 +187,4 @@ class Wi:
         #integrand = np.prod(np.vstack[SFR_comp, mass_comp, self.yield_load[i]])
         integrand = np.prod(np.vstack([SFR_comp, mass_comp]), axis=0)
         #return integr.simps(integrand, x=birthtime_grid)
-        return [integrand, mass_grid]
+        return [integrand, birthtime_grid, mass_grid]
