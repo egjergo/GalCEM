@@ -1,7 +1,6 @@
 import scipy.interpolate as interp
 import numpy as np
 import pandas as pd
-<<<<<<< HEAD
 import dill
 
 class GalCemInterpolant(object):
@@ -16,46 +15,6 @@ class GalCemInterpolant(object):
         if self.ycol in self.tf_funs:
             assert self.ycol+'_inv' in self.tf_funs
             assert self.ycol+'_prime' in self.tf_funs
-=======
-import pickle
-from galcem.classes.inputs import Inputs
-
-class GalCemInterpolant(object):
-    def __init__(self,s_y,dfx,xlog10cols,ylog10col):
-        self.empty = False
-        self.s_y = s_y.copy()
-        self.dfx = dfx.copy()
-        self.xlog10cols = xlog10cols
-        self.ylog10col = ylog10col
-        self.xnames = ['log10_'+xcol if xcol in self.xlog10cols else xcol for xcol in list(dfx.columns)]
-        self.dfx = self.tf_dfx(self.dfx)
-        self.descrip = self.dfx.describe()
-        self.s_ytf = self.s_y.copy()
-        if self.ylog10col:
-            self.s_ytf = np.log10(self.s_ytf)
-            self.s_ytf.name = 'log10_'+self.s_ytf.name
-        self.linear_nd_interpolator = interp.LinearNDInterpolator(self.dfx[self.xnames].to_numpy(),self.s_ytf.to_numpy(),rescale=True)
-        self.nearest_nd_interpolator = interp.NearestNDInterpolator(self.dfx[self.xnames].to_numpy(),self.s_ytf.to_numpy(),rescale=True)
-        self.train_metrics = self.get_train_metrics()
-        
-    def tf_dfx(self,dfx):
-        dfx2 = dfx.copy()
-        for xcol in self.xlog10cols:
-            if 'log10_'+xcol not in dfx.columns:
-                dfx2['log10_'+xcol] = np.log10(dfx2[xcol])
-        return dfx2
-    
-    def __call__(self,dfx,return_yhattf=False):
-        dfx2 = self.tf_dfx(dfx)
-        x = dfx2[self.xnames].to_numpy()
-        yhattf = self.linear_nd_interpolator(x)
-        yhattf[np.isnan(yhattf)] = self.nearest_nd_interpolator(x[np.isnan(yhattf)])
-        s_yhattf = pd.Series(yhattf,name=self.s_ytf.name)
-        if return_yhattf:
-            return s_yhattf
-        elif self.ylog10col:
-            s_yhat = 10**s_yhattf
->>>>>>> 04f1e990055b1e3e5d8eb24f670f9af5e1a030f2
         else:
             self.tf_funs[self.ycol] = lambda y:y
             self.tf_funs[self.ycol+'_inv'] = lambda y:y
@@ -175,11 +134,7 @@ class GalCemInterpolant(object):
         return metrics
     
     def __repr__(self):
-<<<<<<< HEAD
         s = 'GalCemInterpolant[%s](%s)\n'%(self.name,','.join(self.xcols))
-=======
-        s = GalCemInterpolant.__name__+'(%s)\n'%','.join(self.xnames)
->>>>>>> 04f1e990055b1e3e5d8eb24f670f9af5e1a030f2
         s += '\ttrain data description\n\t\t%s'%str(self.descrip).replace('\n','\n\t\t')
         s += '\n\ttrain data metrics\n'
         for metric,val in self.train_metrics.items(): s += '\t\t%25s: %.2e\n'%(metric,val)
@@ -190,12 +145,7 @@ def fit_isotope_interpolants_irv0(df,root):
     print('\n'+'~'*75+'\n')
     dfs = dict(tuple(df.groupby(['isotope','a','z'])))
     for ids,_df in dfs.items():
-<<<<<<< HEAD
         name = 'a%d.z%d.irv0.%s'%(*ids[1:],ids[0])
-=======
-        tag = 'z%d.a%d.irv0.%s'%(ids[2],ids[1],ids[0])
-        print('fitting interpolant %s\n'%tag)
->>>>>>> 04f1e990055b1e3e5d8eb24f670f9af5e1a030f2
         _df = _df[_df['irv']==0]
         # fit model
         interpolant = GalCemInterpolant(
