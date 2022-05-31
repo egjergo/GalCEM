@@ -4,7 +4,7 @@ import pandas as pd
 import dill
 
 class GalCemInterpolant(object):
-    def __init__(self,df,ycol,tf_funs={},name='',plot=False,fig_root='./',fig_view_angle=135):
+    def __init__(self,df,ycol,tf_funs={},name='',plot=False,fig_root='./',fig_view_angle=135,colormap='Paired'):
         # initial setup 
         self.ycol = ycol
         self.xcols = [col for col in list(df.columns) if col!=ycol]
@@ -38,6 +38,10 @@ class GalCemInterpolant(object):
         # optional plotting in transformed space
         if not plot: return
         from matplotlib import pyplot,cm
+        cmdot = pyplot.cm.get_cmap(colormap)
+        s_lifetimes_p98 = pd.read_csv('galcem/input/starlifetime/portinari98table14.dat')
+        s_lifetimes_p98.columns = [name.replace('#M','M').replace('Z=0.','Z') for name in s_lifetimes_p98.columns]
+        colordots = np.array([s_lifetimes_p98[c].to_numpy() for c in s_lifetimes_p98.columns[1:]]).flatten()
         fig = pyplot.figure(figsize=(30,5*3))
         nticks = 64
         sepfrac = 0.1
@@ -56,7 +60,7 @@ class GalCemInterpolant(object):
             ytfmesh = ytf.reshape(x0tfmesh.shape)
             ax = fig.add_subplot(3,4,4*i+1,projection='3d')
             ax.plot_surface(x0tfmesh,x1tfmesh,ytfmesh,cmap=cm.Greys,alpha=.9,vmin=ytfmesh.min(),vmax=ytfmesh.max())
-            if dx==[0,0]: ax.scatter(xtf[:,0],xtf[:,1],dftf[self.ycol].to_numpy(),color='r')
+            if dx==[0,0]: ax.scatter(xtf[:,0],xtf[:,1],dftf[self.ycol].to_numpy(),c=np.log10(colordots), cmap=cmdot)
             ax.set_xlabel(self.xcols[0])
             ax.set_ylabel(self.xcols[1])
             ax.set_zlabel(self.ycol)
@@ -65,7 +69,7 @@ class GalCemInterpolant(object):
             ax = fig.add_subplot(3,4,4*i+2)
             contour = ax.contourf(x0tfmesh,x1tfmesh,ytfmesh,cmap=cm.Greys,alpha=.95,vmin=ytfmesh.min(),vmax=ytfmesh.max(),levels=64)
             fig.colorbar(contour,ax=None,shrink=0.5,aspect=5)
-            ax.scatter(xtf[:,0],xtf[:,1],color='r')
+            ax.scatter(xtf[:,0],xtf[:,1],c=np.log10(colordots), cmap=cmdot)
             ax.set_xlabel(self.xcols[0])
             ax.set_ylabel(self.xcols[1])
             if dx!=[0,0]: ax.set_title('d(%s) / d(%s)'%(self.ycol,self.xcols[dx.index(1)]))
@@ -83,7 +87,7 @@ class GalCemInterpolant(object):
             ymesh = y.reshape(x0mesh.shape)
             ax = fig.add_subplot(3,4,4*i+3,projection='3d')
             ax.plot_surface(x0mesh,x1mesh,ymesh,cmap=cm.Greys,alpha=.9,vmin=ymesh.min(),vmax=ymesh.max())
-            if dx==[0,0]: ax.scatter(x[:,0],x[:,1],df[self.ycol].to_numpy(),color='r')
+            if dx==[0,0]: ax.scatter(x[:,0],x[:,1],df[self.ycol].to_numpy(),c=np.log10(colordots), cmap=cmdot)
             ax.set_xlabel(self.xcols[0])
             ax.set_ylabel(self.xcols[1])
             ax.set_zlabel(self.ycol)
@@ -92,11 +96,11 @@ class GalCemInterpolant(object):
             ax = fig.add_subplot(3,4,4*i+4)
             contour = ax.contourf(x0mesh,x1mesh,ymesh,cmap=cm.Greys,alpha=.95,vmin=ymesh.min(),vmax=ymesh.max(),levels=64)
             fig.colorbar(contour,ax=None,shrink=0.5,aspect=5)
-            ax.scatter(x[:,0],x[:,1],color='r')
+            ax.scatter(x[:,0],x[:,1],c=np.log10(colordots), cmap=cmdot)
             ax.set_xlabel(self.xcols[0])
             ax.set_ylabel(self.xcols[1])
             if dx!=[0,0]: ax.set_title('d(%s) / d(%s)'%(self.ycol,self.xcols[dx.index(1)]))
-        fig.suptitle('%s\n%s by %s\nTransformed Domain (left) | Original Domain (right)'%(self.name,self.ycol,str(self.xcols)))
+        fig.suptitle('%s\n%s by %s\nTransformed Domain (left) | Original Domain (right)'%(self.name,self.ycol,str(self.xcols)), fontsize=15)
         fig.savefig('%s%s.pdf'%(fig_root,name),format='pdf',bbox_inches='tight')
         pyplot.close(fig)
     
