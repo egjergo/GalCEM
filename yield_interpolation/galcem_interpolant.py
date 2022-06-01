@@ -31,8 +31,12 @@ class GalCemInterpolant(object):
         self.descrip_tf = dftf.describe()
         self.xtf = dftf[self.xcols].to_numpy()
         ytf = dftf[self.ycol].to_numpy()
-        self.interpolator = GaussianProcessRegressor(kernel=kernels.RationalQuadratic(alpha_bounds=(1e-8,1e5),length_scale_bounds=(1e-12,1e5)),normalize_y=True).fit(X=self.xtf,y=ytf)
-        self.k_alpha = self.interpolator.kernel_.alpha
+        self.interpolator = GaussianProcessRegressor(
+            kernel = kernels.RBF(length_scale_bounds=(1e-16,1e5)),
+            n_restarts_optimizer = 16,
+            normalize_y = True,
+            copy_X_train = True,
+            alpha = 1e-16).fit(X=self.xtf,y=ytf)
         self.k_l = self.interpolator.kernel_.length_scale
         self.weights = self.interpolator.alpha_
         self.train_metrics = self.get_metrics(df)
@@ -75,12 +79,11 @@ class GalCemInterpolant(object):
         xtf = dftf[self.xcols].to_numpy()
         # https://github.com/scikit-learn/scikit-learn/blob/80598905e/sklearn/gaussian_process/_gpr.py#L327
         dists = xtf[:,None,:]-self.xtf[None,:,:]
-        b = 1+np.sum(dists**2,-1)/(2*self.k_alpha*self.k_l**2)
-        k = b**(-self.k_alpha)
+        k = np.exp(-np.sum(dists**2,-1)/(2*self.k_l**2))
         yhattf = self.interpolator._y_train_std*k@self.weights+self.interpolator._y_train_mean
         if not return_grad: return yhattf
         # handle derivitives
-        grad_k = np.vstack([-self.weights[None,:]@(b[i,:,None]**(-self.k_alpha-1)*(xtf[i]-self.xtf))/(self.k_l**2) for i in range(len(xtf))])
+        grad_k = np.vstack([-self.weights[None,:]@(k[i,:,None]*(xtf[i]-self.xtf))/(self.k_l**2) for i in range(len(xtf))])
         grad_yhattf = self.interpolator._y_train_std*grad_k
         return yhattf,grad_yhattf
     
