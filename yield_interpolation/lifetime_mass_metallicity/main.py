@@ -40,7 +40,7 @@ def fit_lifetime_mass_metallicity_interpolants(df,root):
     dyquery_dmetallicity = lifetime_by_mass_metallicity_loaded(df,dwrt='metallicity')
     # mass by lifetime, metallicity
     mass_by_lifetime_metallicity = GalCemInterpolant(
-        df = df,
+        df = df[['lifetime_Gyr','mass','metallicity']],
         ycol = 'mass',
         tf_funs = {
             'lifetime_Gyr':lambda x:np.log10(x), 'lifetime_Gyr_prime':lambda x:1/(x*np.log(10)),
