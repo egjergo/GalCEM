@@ -24,7 +24,7 @@ def fit_lifetime_mass_metallicity_interpolants(df,root):
             'mass':lambda x:np.log10(x), 'mass_prime':lambda x:1/(x*np.log(10)),
             'metallicity':lambda x:np.sqrt(x), 'metallicity_prime':lambda x:1/(2*np.sqrt(x)),
             'lifetime_Gyr':lambda y:np.log10(y), 'lifetime_Gyr_prime':lambda y:1/(y*np.log(10)), 'lifetime_Gyr_inv':lambda y:10**y},
-        name = 'LifetimeInterpolant',
+        name = 'Lifetime Interpolant',
         plot = True,
         fig_root = root+'/figs/',
         fig_view_angle = 45)
@@ -36,8 +36,7 @@ def fit_lifetime_mass_metallicity_interpolants(df,root):
     lifetime_by_mass_metallicity_loaded = dill.load(open(root+'/models/lifetime_by_mass_metallicity.pkl','rb'))
     #   example model use
     yquery = lifetime_by_mass_metallicity_loaded(df)
-    dyquery_dmass = lifetime_by_mass_metallicity_loaded(df,dwrt='mass')
-    dyquery_dmetallicity = lifetime_by_mass_metallicity_loaded(df,dwrt='metallicity')
+    yquery,grad_yquery = lifetime_by_mass_metallicity_loaded(df,return_grad=True)
     # mass by lifetime, metallicity
     mass_by_lifetime_metallicity = GalCemInterpolant(
         df = df,
@@ -46,7 +45,7 @@ def fit_lifetime_mass_metallicity_interpolants(df,root):
             'lifetime_Gyr':lambda x:np.log10(x), 'lifetime_Gyr_prime':lambda x:1/(x*np.log(10)),
             'metallicity':lambda x:np.sqrt(x), 'metallicity_prime':lambda x:1/(2*np.sqrt(x)),
             'mass':lambda y:np.log10(y), 'mass_prime':lambda y:1/(y*np.log(10)), 'mass_inv':lambda y:10**y},
-        name = 'MassInterpolant',
+        name = 'Mass Interpolant',
         plot = True,
         fig_root = root+'/figs/',
         fig_view_angle = 45)
@@ -58,8 +57,7 @@ def fit_lifetime_mass_metallicity_interpolants(df,root):
     mass_by_lifetime_metallicity_loaded = dill.load(open(root+'/models/mass_by_lifetime_metallicity.pkl','rb'))
     #       example model use
     yquery = mass_by_lifetime_metallicity_loaded(df)
-    dyquery_dlifetime = mass_by_lifetime_metallicity_loaded(df,dwrt='lifetime_Gyr')
-    dyquery_dmetallicity = mass_by_lifetime_metallicity_loaded(df,dwrt='metallicity')
+    yquery,grad_yquery = mass_by_lifetime_metallicity_loaded(df,return_grad=True)
 
 if __name__ == '__main__':
     root = os.path.abspath(os.path.dirname(__file__))

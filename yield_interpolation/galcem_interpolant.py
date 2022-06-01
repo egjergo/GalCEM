@@ -1,14 +1,12 @@
-import scipy.interpolate as interp
 import numpy as np
 import pandas as pd
-import dill
 
 class GalCemInterpolant(object):
     def __init__(self,df,ycol,tf_funs={},name='',plot=False,fig_root='./',fig_view_angle=135,colormap='Paired'):
+        from sklearn.gaussian_process import GaussianProcessRegressor,kernels
         # initial setup 
         self.ycol = ycol
         self.xcols = [col for col in list(df.columns) if col!=ycol]
-        if len(self.xcols)!=2: raise Exception("GalCemInterpolant currently only supports models with 2D domain.")
         self.tf_funs = tf_funs
         self.name = name
         # parse y column transforms
@@ -31,97 +29,75 @@ class GalCemInterpolant(object):
         dftf = pd.DataFrame({col:self.tf_funs[col](df[col].to_numpy()) for col in list(df.columns)})
         self.descrip = df.describe()
         self.descrip_tf = dftf.describe()
-        xtf = dftf[self.xcols].to_numpy()
+        self.xtf = dftf[self.xcols].to_numpy()
         ytf = dftf[self.ycol].to_numpy()
-        self.interpolator = interp.SmoothBivariateSpline(x=xtf[:,0],y=xtf[:,1],z=ytf)
+        self.interpolator = GaussianProcessRegressor(kernel=kernels.RationalQuadratic(alpha_bounds=(1e-8,1e5),length_scale_bounds=(1e-12,1e5)),normalize_y=True).fit(X=self.xtf,y=ytf)
+        self.k_alpha = self.interpolator.kernel_.alpha
+        self.k_l = self.interpolator.kernel_.length_scale
+        self.weights = self.interpolator.alpha_
         self.train_metrics = self.get_metrics(df)
         # optional plotting in transformed space
         if not plot: return
+        if len(self.xcols)!=2: raise Exception("Plotting GalCemInterpolant currently only supports 2 dimensional domains.")
         from matplotlib import pyplot,cm
         cmdot = pyplot.cm.get_cmap(colormap)
         s_lifetimes_p98 = pd.read_csv('galcem/input/starlifetime/portinari98table14.dat')
         s_lifetimes_p98.columns = [name.replace('#M','M').replace('Z=0.','Z') for name in s_lifetimes_p98.columns]
         colordots = np.array([s_lifetimes_p98[c].to_numpy() for c in s_lifetimes_p98.columns[1:]]).flatten()
+        colordotstf = self.tf_funs[self.ycol](colordots)
         fig = pyplot.figure(figsize=(30,5*3))
         nticks = 64
         sepfrac = 0.1
-        for i,dx in enumerate([[0,0],[1,0],[0,1]]):
-            # transformed domain
-            xtf = dftf[self.xcols].to_numpy()
-            x0tfmin,x0tfmax = xtf[:,0].min(),xtf[:,0].max()
-            x0tf_sep = x0tfmax-x0tfmin
-            x0_ticks = np.linspace(x0tfmin-sepfrac*x0tf_sep,x0tfmax+sepfrac*x0tf_sep,nticks)
-            x1tfmin,x1tfmax = xtf[:,1].min(),xtf[:,1].max()
-            x1tf_sep = x1tfmax-x1tfmin
-            x1tf_ticks = np.linspace(x1tfmin-sepfrac*x1tf_sep,x1tfmax+sepfrac*x1tf_sep,nticks)
-            x0tfmesh,x1tfmesh = np.meshgrid(x0_ticks,x1tf_ticks)
-            x0tfmesh_flat,x1tfmesh_flat = x0tfmesh.flatten(),x1tfmesh.flatten()
-            ytf = self.interpolator(x=x0tfmesh_flat,y=x1tfmesh_flat,dx=dx[0],dy=dx[1],grid=False)
-            ytfmesh = ytf.reshape(x0tfmesh.shape)
-            ax = fig.add_subplot(3,4,4*i+1,projection='3d')
-            ax.plot_surface(x0tfmesh,x1tfmesh,ytfmesh,cmap=cm.Greys,alpha=.9,vmin=ytfmesh.min(),vmax=ytfmesh.max())
-            if dx==[0,0]: ax.scatter(xtf[:,0],xtf[:,1],dftf[self.ycol].to_numpy(),c=np.log10(colordots), cmap=cmdot)
+        self.xtf = dftf[self.xcols].to_numpy()
+        x0tfmin,x0tfmax = self.xtf[:,0].min(),self.xtf[:,0].max()
+        x0tf_sep = x0tfmax-x0tfmin
+        x0_ticks = np.linspace(x0tfmin-sepfrac*x0tf_sep,x0tfmax+sepfrac*x0tf_sep,nticks)
+        x1tfmin,x1tfmax = self.xtf[:,1].min(),self.xtf[:,1].max()
+        x1tf_sep = x1tfmax-x1tfmin
+        x1tf_ticks = np.linspace(x1tfmin-sepfrac*x1tf_sep,x1tfmax+sepfrac*x1tf_sep,nticks)
+        x0tfmesh,x1tfmesh = np.meshgrid(x0_ticks,x1tf_ticks)
+        ytf,grad_ytf = self.predict_tf(dftf=pd.DataFrame({self.xcols[0]:x0tfmesh.flatten(),self.xcols[1]:x1tfmesh.flatten()}),return_grad=True)
+        ytfmesh,grad0_ytf_mesh,grad1_ytf_mesh = ytf.reshape(x0tfmesh.shape),grad_ytf[:,0].reshape(x0tfmesh.shape),grad_ytf[:,1].reshape(x0tfmesh.shape)
+        for i,ztfmesh in enumerate([ytfmesh,grad0_ytf_mesh,grad1_ytf_mesh]):
+            ax = fig.add_subplot(3,2,2*i+1,projection='3d')
+            ax.plot_surface(x0tfmesh,x1tfmesh,ztfmesh,cmap=cm.Greys,alpha=.9,vmin=ztfmesh.min(),vmax=ztfmesh.max())
+            if i==0: ax.scatter(self.xtf[:,0],self.xtf[:,1],dftf[self.ycol].to_numpy(),c=colordotstf, cmap=cmdot)
             ax.set_xlabel(self.xcols[0])
             ax.set_ylabel(self.xcols[1])
             ax.set_zlabel(self.ycol)
-            if dx!=[0,0]: ax.set_title('d(%s) / d(%s)'%(self.ycol,self.xcols[dx.index(1)]))
+            if i!=0: ax.set_title('d(%s) / d(%s)'%(self.ycol,self.xcols[i-1]))
             ax.view_init(azim=fig_view_angle)
-            ax = fig.add_subplot(3,4,4*i+2)
-            contour = ax.contourf(x0tfmesh,x1tfmesh,ytfmesh,cmap=cm.Greys,alpha=.95,vmin=ytfmesh.min(),vmax=ytfmesh.max(),levels=64)
-            fig.colorbar(contour,ax=None,shrink=0.5,aspect=5)
-            ax.scatter(xtf[:,0],xtf[:,1],c=np.log10(colordots), cmap=cmdot)
-            ax.set_xlabel(self.xcols[0])
-            ax.set_ylabel(self.xcols[1])
-            if dx!=[0,0]: ax.set_title('d(%s) / d(%s)'%(self.ycol,self.xcols[dx.index(1)]))
-            # original domain
-            x = df[self.xcols].to_numpy()
-            x0min,x0max = x[:,0].min(),x[:,0].max()
-            x0_ticks = np.linspace(x0min,x0max,nticks)
-            x1min,x1max = x[:,1].min(),x[:,1].max()
-            x1_ticks = np.linspace(x1min,x1max,nticks)
-            x0mesh,x1mesh = np.meshgrid(x0_ticks,x1_ticks)
-            x0mesh_flat,x1mesh_flat = x0mesh.flatten(),x1mesh.flatten()
-            dfx = pd.DataFrame({self.xcols[0]:x0mesh_flat,self.xcols[1]:x1mesh_flat})
-            dfw = None if dx==[0,0] else self.xcols[dx.index(1)]
-            y = self.__call__(dfx=dfx,dwrt=dfw)
-            ymesh = y.reshape(x0mesh.shape)
-            ax = fig.add_subplot(3,4,4*i+3,projection='3d')
-            ax.plot_surface(x0mesh,x1mesh,ymesh,cmap=cm.Greys,alpha=.9,vmin=ymesh.min(),vmax=ymesh.max())
-            if dx==[0,0]: ax.scatter(x[:,0],x[:,1],df[self.ycol].to_numpy(),c=np.log10(colordots), cmap=cmdot)
-            ax.set_xlabel(self.xcols[0])
-            ax.set_ylabel(self.xcols[1])
-            ax.set_zlabel(self.ycol)
-            if dx!=[0,0]: ax.set_title('d(%s) / d(%s)'%(self.ycol,self.xcols[dx.index(1)]))
-            ax.view_init(azim=fig_view_angle)
-            ax = fig.add_subplot(3,4,4*i+4)
-            contour = ax.contourf(x0mesh,x1mesh,ymesh,cmap=cm.Greys,alpha=.95,vmin=ymesh.min(),vmax=ymesh.max(),levels=64)
-            fig.colorbar(contour,ax=None,shrink=0.5,aspect=5)
-            ax.scatter(x[:,0],x[:,1],c=np.log10(colordots), cmap=cmdot)
-            ax.set_xlabel(self.xcols[0])
-            ax.set_ylabel(self.xcols[1])
-            if dx!=[0,0]: ax.set_title('d(%s) / d(%s)'%(self.ycol,self.xcols[dx.index(1)]))
         fig.suptitle('%s\n%s by %s\nTransformed Domain (left) | Original Domain (right)'%(self.name,self.ycol,str(self.xcols)), fontsize=15)
         fig.savefig('%s%s.pdf'%(fig_root,name),format='pdf',bbox_inches='tight')
         pyplot.close(fig)
     
-    def __call__(self,dfx,dwrt=None):
-        dftf = pd.DataFrame({col:self.tf_funs[col](dfx[col].to_numpy()) for col in self.xcols})
+    def predict_tf(self,dftf,return_grad=False):
         xtf = dftf[self.xcols].to_numpy()
-        yhattf = self.interpolator(x=xtf[:,0],y=xtf[:,1],dx=0,dy=0,grid=False)
-        yhat = self.tf_funs[self.ycol+'_inv'](yhattf)
-        if dwrt is None: return yhat
+        # https://github.com/scikit-learn/scikit-learn/blob/80598905e/sklearn/gaussian_process/_gpr.py#L327
+        dists = xtf[:,None,:]-self.xtf[None,:,:]
+        b = 1+np.sum(dists**2,-1)/(2*self.k_alpha*self.k_l**2)
+        k = b**(-self.k_alpha)
+        yhattf = self.interpolator._y_train_std*k@self.weights+self.interpolator._y_train_mean
+        if not return_grad: return yhattf
         # handle derivitives
+        grad_k = np.vstack([-self.weights[None,:]@(b[i,:,None]**(-self.k_alpha-1)*(xtf[i]-self.xtf))/(self.k_l**2) for i in range(len(xtf))])
+        grad_yhattf = self.interpolator._y_train_std*grad_k
+        return yhattf,grad_yhattf
+    
+    def __call__(self,dfx,return_grad=False):
+        dftf = pd.DataFrame({col:self.tf_funs[col](dfx[col].to_numpy()) for col in self.xcols})
+        if not return_grad: yhattf = self.predict_tf(dftf,return_grad=return_grad)
+        else: yhattf,grad_yhattf = self.predict_tf(dftf,return_grad=return_grad)
+        yhat = self.tf_funs[self.ycol+'_inv'](yhattf)
+        if not return_grad: return yhat
         x = dfx[self.xcols].to_numpy()
-        didx = self.xcols.index(dwrt)
-        dx = [0,0]
-        dx[didx] = 1
-        yhattf_prime = self.interpolator(x=xtf[:,0],y=xtf[:,1],dx=dx[0],dy=dx[1],grid=False)
         # chain rule 
         #   y(x0,x1) = T^{-1}( I(g0(x0),g1(x1)) )
         #   dy/dxi = I'(g0(x0),g1(x1)) gi'(xi) / T'( T^{-1}( I(g0(x0),g1(x1)) ) )
-        #          = I(x0tf,x1tf), gi'(xi) / T'(yhat)
-        dyhat_dxi = yhattf_prime*self.tf_funs[dwrt+'_prime'](x[:,didx])/self.tf_funs[self.ycol+'_prime'](yhat)
-        return dyhat_dxi
+        #          = I(x0tf,x1tf) gi'(xi) / T'(yhat)
+        giprime = np.vstack([self.tf_funs[self.xcols[i]+'_prime'](x[:,i]) for i in range(len(self.xcols))]).T
+        grad_yhat = grad_yhattf*giprime/self.tf_funs[self.ycol+'_prime'](yhat)[:,None]
+        return yhat,grad_yhat        
         
     def get_metrics(self,df):
         y = df[self.ycol].to_numpy()
@@ -145,6 +121,7 @@ class GalCemInterpolant(object):
         return s
     
 def fit_isotope_interpolants_irv0(df,root):
+    import dill
     # iterate over a,z pairs and save interpolants based on irv=0
     print('\n'+'~'*75+'\n')
     dfs = dict(tuple(df.groupby(['isotope','a','z'])))
