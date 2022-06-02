@@ -101,8 +101,8 @@ class Setup:
         self.models_SNIa = self.yields_SNIa_class.yields
         #self.yields_NSM_class.construct_yields(self.ZA_sorted)
         #self.models_NSM = self.yields_NSM_class.yields
-        self.yields_MRSN_class.construct_yields(self.ZA_sorted)
-        self.models_MRSN = self.yields_MRSN_class.yields
+        #self.yields_MRSN_class.construct_yields(self.ZA_sorted)
+        #self.models_MRSN = self.yields_MRSN_class.yields
         
         # Initialize Global tracked quantities
         self.asplund3_percent = self.c_class.abund_percentage(self.ZA_sorted)
@@ -336,6 +336,101 @@ class Plots(Setup):
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'tracked_elements.pdf', bbox_inches='tight')
 
+    def tracked_elements_3D_plot(self, cmap_name='magma_r', cbins=10): # angle = 2 * np.pi / np.arctan(0.4) !!!!!!!
+        print('Starting ZA_sorted_plot()')
+        from matplotlib import cm,pyplot as plt
+        #plt.style.use(self._dir+'/galcem.mplstyle')
+        import matplotlib.colors as colors
+        import matplotlib.ticker as ticker
+        x = self.ZA_sorted[:,1]#- ZA_sorted[:,0]
+        y = self.ZA_sorted[:,0]
+        z = self.asplund3_percent
+        cmap_ = cm.get_cmap(cmap_name, cbins)
+        binning = np.digitize(z, np.linspace(0,9.*100/cbins,num=cbins-1))
+        percent_colors = [cmap_.colors[c] for c in binning]
+        fig, ax = plt.subplots(figsize =(11,5))
+        ax.grid(True, which='major', linestyle='--', linewidth=0.5, color='purple', alpha=0.5)
+        ax.grid(True, which='minor', linestyle=':', linewidth=0.5, color='purple', alpha=0.5)
+        ax.set_axisbelow(True)
+        smap = ax.scatter(x,y, marker='s', alpha=0.95, edgecolors='none', s=5, cmap=cmap_name, c=percent_colors) 
+        smap.set_clim(0, 100)
+        norm = colors.Normalize(vmin=0, vmax=100)
+        cb = fig.colorbar(cm.ScalarMappable(norm=norm, cmap=cmap_name), orientation='vertical', pad=0.0)
+        cb.set_label(label=r'Isotope $\odot$ abundance %', fontsize=17)
+        ax.set_ylabel(r'Proton (Atomic) Number Z', fontsize=20)
+        ax.set_xlabel(r'Atomic Mass $A$', fontsize=20)
+        ax.set_title(r'Tracked isotopes', fontsize=20)
+        ax.xaxis.set_major_locator(ticker.MultipleLocator(20))
+        ax.yaxis.set_major_locator(ticker.MultipleLocator(20))
+        ax.xaxis.set_minor_locator(ticker.MultipleLocator(5))
+        ax.yaxis.set_minor_locator(ticker.MultipleLocator(5))
+        ax.tick_params(width = 2, length = 10)
+        ax.tick_params(width = 1, length = 5, which = 'minor')
+        ax.set_xlim(np.min(x)-2.5, np.max(x)+2.5)
+        ax.set_ylim(np.min(y)-2.5, np.max(y)+2.5)
+        ax3 = fig.add_axes([.02, 0.5, .4, .4], projection='3d')
+        #ax3.azim=-90
+        ax3.bar3d(x, y, 0, 1, 1, z, color=percent_colors, zsort='average')
+        ax3.tick_params(axis='x', labelsize= 8, labeltop=True, labelbottom=False)
+        ax3.tick_params(axis='y', labelsize= 8, labelright=True, labelbottom=False, labelleft=False)
+        ax3.tick_params(axis='z', labelsize= 8)
+        ax3.set_zlabel(r'$\odot$ isotopic %', fontsize=8, labelpad=0)
+        ax3.set_ylabel(r'Atomic Number $Z$', fontsize=8, labelpad=0)
+        ax3.set_xlabel(r'Atomic Mass $A$', fontsize=8, labelpad=0)
+        #ax3.set_zticklabels([])
+        plt.tight_layout()
+        plt.show(block=False)
+        plt.savefig(self._dir_out_figs + 'tracked_elements.pdf', bbox_inches='tight')
+        
+    def tracked_elements_3D_indiv_plot(self, cmap_name='magma_r', cbins=10): # angle = 2 * np.pi / np.arctan(0.4) !!!!!!!
+        print('Starting ZA_sorted_plot()')
+        from matplotlib import cm,pyplot as plt
+        from mpl_toolkits.mplot3d.axes3d import Axes3D
+        #plt.style.use(self._dir+'/galcem.mplstyle')
+        import matplotlib.colors as colors
+        import matplotlib.ticker as ticker
+        x = self.ZA_sorted[:,1]#- ZA_sorted[:,0]
+        y = self.ZA_sorted[:,0]
+        z = self.asplund3_percent
+        #hist, xedges, yedges = np.histogram2d(x, y, bins=(np.max(x)-np.min(x), np.max(y)-np.min(y)))
+        #xpos, ypos = np.meshgrid(xedges[:-1]+xedges[1:], yedges[:-1]+yedges[1:])
+        #xpos = xpos.flatten()/2
+        #ypos = ypos.flatten()/2
+        #zpos = np.zeros_like(xpos)
+        #dx = 1
+        #dy = 1
+        #dz = z
+        cmap_ = cm.get_cmap(cmap_name, cbins)
+        binning = np.digitize(z, np.linspace(0,9.*100/cbins,num=cbins-1))
+        percent_colors = [cmap_.colors[c] for c in binning]
+        fig = plt.figure(figsize =(11,5))
+        ax = fig.add_subplot(111, projection='3d')
+        #ax.grid(True, which='major', linestyle='--', linewidth=0.5, color='purple', alpha=0.5)
+        #ax.grid(True, which='minor', linestyle=':', linewidth=0.5, color='purple', alpha=0.5)
+        #ax.set_axisbelow(True)
+        #smap = ax.scatter(x,y, marker='s', alpha=0.95, edgecolors='none', s=5, cmap=cmap_name, c=percent_colors) 
+        #smap.set_clim(0, 100)
+        #norm = colors.Normalize(vmin=0, vmax=100)
+        #cb = fig.colorbar(cm.ScalarMappable(norm=norm, cmap=cmap_name), orientation='vertical', pad=0.0)
+        #cb.set_label(label=r'Isotope $\odot$ abundance %', fontsize=17)
+        ax.bar3d(x, y, 0, 1, 1, z, color=percent_colors, zsort='average')
+        ax.azim=-90
+        ax.set_zlabel(r'$\odot$ isotopic %', fontsize=12)
+        ax.set_ylabel(r'Atomic Number $Z$', fontsize=12)
+        ax.set_xlabel(r'Atomic Mass $A$', fontsize=12)
+        ax.set_title(r'Tracked isotopes', fontsize=15)
+        #ax.xaxis.set_major_locator(ticker.MultipleLocator(20))
+        #ax.yaxis.set_major_locator(ticker.MultipleLocator(20))
+        #ax.xaxis.set_minor_locator(ticker.MultipleLocator(5))
+        #ax.yaxis.set_minor_locator(ticker.MultipleLocator(5))
+        #ax.tick_params(width = 2, length = 10)
+        #ax.tick_params(width = 1, length = 5, which = 'minor')
+        #ax.set_xlim(np.min(x)-2.5, np.max(x)+2.5)
+        #ax.set_ylim(np.min(y)-2.5, np.max(y)+2.5)
+        plt.tight_layout()
+        plt.show(block=False)
+        plt.savefig(self._dir_out_figs + 'tracked_elements_3D.pdf', bbox_inches='tight')
+
     def DTD_plot(self):
         print('Starting DTD_plot()')
         from matplotlib import pyplot as plt
@@ -370,8 +465,8 @@ class Plots(Setup):
         ax.vlines(9, 0.6,2.6, color='red', alpha=0.3, linestyle = ':', label=r'$9 M_{\odot}$')
         cm = plt.cm.get_cmap(colormap)
         sc=ax.scatter(self.IN.s_lifetimes_p98['M'], divid05, c=np.log10(self.IN.s_lifetimes_p98['Z05']), cmap=cm, s=50)
-        sc=ax.scatter(self.IN.s_lifetimes_p98['M'], divid02, c=np.log10(self.IN.s_lifetimes_p98['Z05']), cmap=cm, s=50)
-        sc=ax.scatter(self.IN.s_lifetimes_p98['M'], divid008, c=np.log10(self.IN.s_lifetimes_p98['Z05']), cmap=cm, s=50)
+        sc=ax.scatter(self.IN.s_lifetimes_p98['M'], divid02, c=np.log10(self.IN.s_lifetimes_p98['Z02']), cmap=cm, s=50)
+        sc=ax.scatter(self.IN.s_lifetimes_p98['M'], divid008, c=np.log10(self.IN.s_lifetimes_p98['Z008']), cmap=cm, s=50)
         fig.colorbar(sc, label=r'$\tau(M_*)$')
         ax.legend(loc='best', frameon=False, fontsize=13)
         ax.set_ylabel(r'$\tau(X)/\tau(Z=0.0004)$', fontsize=15)
