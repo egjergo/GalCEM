@@ -158,7 +158,7 @@ class Wi:
     
     def compute_rates(self):
         if len(self.grid_picker('MRSN', 'birthtime')) > 0.:
-            rateSNII = self.compute_rate(channel_switch='MRSN')
+            rateMRSN = self.compute_rate(channel_switch='MRSN')
         else:
             rateMRSN = self.IN.epsilon
         if len(self.grid_picker('SNII', 'birthtime')) > 0.:
@@ -174,7 +174,7 @@ class Wi:
             R_SNIa = self.IN.A_SNIa * self.compute_rateSNIa()
         else:
             R_SNIa = self.IN.epsilon
-        return rateMRSN, rateSNII, rateLIMs, R_SNIa
+        return rateSNII, rateLIMs, R_SNIa #rateMRSN, 
 
     def compute(self, channel_switch, vel_idx=None):
         vel_idx = self.IN.LC18_vel_idx if vel_idx is None else vel_idx

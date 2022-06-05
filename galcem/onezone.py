@@ -209,10 +209,10 @@ class OneZone(Setup):
                 else:
                     Wi_vals.append(0.)
             returned = [Wi_vals[0], Wi_vals[1], Wi_vals[2], Wi_SNIa] # MRSN, SNII, LIMs, SNIa
+            #self.W_i_comp[i,n,0] = returned[0] 
             self.W_i_comp[i,n,0] = returned[0] 
             self.W_i_comp[i,n,1] = returned[1] 
-            self.W_i_comp[i,n,2] = returned[2] 
-            self.W_i_comp[i,n,3] = returned[3]
+            self.W_i_comp[i,n,2] = returned[2]
             val = infall_comp - sfr_comp + np.sum(returned)
         return val
 
@@ -749,10 +749,10 @@ class Plots(Setup):
         #W_i_comp +=  100.
         W_i_comp = np.asarray(W_i_comp, dtype=float)
         W_i_comp = np.log10(W_i_comp)
-        Mass_MRSN = W_i_comp[:,:,0]
-        Mass_SNII = W_i_comp[:,:,1]
-        Mass_AGB = W_i_comp[:,:,2]
-        Mass_SNIa = W_i_comp[:,:,3]
+        #Mass_MRSN = W_i_comp[:,:,0]
+        Mass_SNII = W_i_comp[:,:,0]
+        Mass_AGB = W_i_comp[:,:,1]
+        Mass_SNIa = W_i_comp[:,:,2]
         timex = phys[:,0]
         Z = self.ZA_sorted[:,0]
         A = self.ZA_sorted[:,1]
