@@ -1,4 +1,4 @@
-from yield_interpolation.galcem_interpolant import GalCemInterpolant
+from yield_interpolation.galcem_interpolant import SmootheSpline2D_GCI
 import pandas as pd
 import numpy as np
 import dill
@@ -17,7 +17,7 @@ def parse_lifetime_mass_metallicity_raw():
 def fit_lifetime_mass_metallicity_interpolants(df,root):
     # lifetime by mass, metallicity
     #   fit model
-    lifetime_by_mass_metallicity = GalCemInterpolant(
+    lifetime_by_mass_metallicity = SmootheSpline2D_GCI(
         df = df,
         ycol = 'lifetime_Gyr',
         tf_funs = {
@@ -25,9 +25,10 @@ def fit_lifetime_mass_metallicity_interpolants(df,root):
             'metallicity':lambda x:np.sqrt(x), 'metallicity_prime':lambda x:1/(2*np.sqrt(x)),
             'lifetime_Gyr':lambda y:np.log10(y), 'lifetime_Gyr_prime':lambda y:1/(y*np.log(10)), 'lifetime_Gyr_inv':lambda y:10**y},
         name = 'LifetimeInterpolant',
-        plot = True,
+        plot = 'grad',
         fig_root = root+'/figs/',
-        fig_view_angle = 45)
+        fig_view_angle = 45,
+        colormap = True)
     #   print model
     print(lifetime_by_mass_metallicity)
     #   save model
@@ -39,7 +40,7 @@ def fit_lifetime_mass_metallicity_interpolants(df,root):
     dyquery_dmass = lifetime_by_mass_metallicity_loaded(df,dwrt='mass')
     dyquery_dmetallicity = lifetime_by_mass_metallicity_loaded(df,dwrt='metallicity')
     # mass by lifetime, metallicity
-    mass_by_lifetime_metallicity = GalCemInterpolant(
+    mass_by_lifetime_metallicity = SmootheSpline2D_GCI(
         df = df[['lifetime_Gyr','mass','metallicity']],
         ycol = 'mass',
         tf_funs = {
@@ -47,9 +48,10 @@ def fit_lifetime_mass_metallicity_interpolants(df,root):
             'metallicity':lambda x:np.sqrt(x), 'metallicity_prime':lambda x:1/(2*np.sqrt(x)),
             'mass':lambda y:np.log10(y), 'mass_prime':lambda y:1/(y*np.log(10)), 'mass_inv':lambda y:10**y},
         name = 'MassInterpolant',
-        plot = True,
+        plot = 'grad',
         fig_root = root+'/figs/',
-        fig_view_angle = 45)
+        fig_view_angle = 45,
+        colormap = True)
     #       print model
     print(mass_by_lifetime_metallicity)
     #       save model
