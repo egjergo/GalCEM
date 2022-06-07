@@ -290,8 +290,10 @@ class Plots(Setup):
     def plots(self):
         self.tic.append(time.process_time())
         print('Starting to plot')
-        self.FeH_evolution()
-        self.OH_evolution()
+        self.FeH_evolution(logAge=True)
+        self.OH_evolution(logAge=True)
+        self.FeH_evolution(logAge=False)
+        self.OH_evolution(logAge=False)
         self.phys_integral_plot(logAge=False)
         self.phys_integral_plot(logAge=True)
         #self.DTD_plot()
@@ -747,12 +749,11 @@ class Plots(Setup):
         Masses = np.log10(Mass_i[:,2:])
         phys = np.loadtxt(self._dir_out + 'phys.dat')
         W_i_comp = pickle.load(open(self._dir_out + 'W_i_comp.pkl','rb'))
-        W_i_comp = np.log10(W_i_comp)
-        #Mass_MRSN = W_i_comp[:,:,0]
+        #Mass_MRSN = np.log10(W_i_comp['MRSN'])
         Mass_BBN = np.log10(W_i_comp['BBN'])
         Mass_SNII = np.log10(W_i_comp['SNII'])
         Mass_AGB = np.log10(W_i_comp['LIMs'])
-        Mass_SNIa = np.log1(W_i_comp['SNIa'])
+        Mass_SNIa = np.log10(W_i_comp['SNIa'])
         timex = phys[:,0]
         Z = self.ZA_sorted[:,0]
         A = self.ZA_sorted[:,1]
@@ -765,13 +766,13 @@ class Plots(Setup):
                 print('i %d'%(i))
                 print('%s(%d,%d)'%(self.ZA_symb_list.values[i],Z[i],A[i]))
                 ax.annotate('%d%s'%(A[i],self.ZA_symb_list.values[i]), xy=(0.5, 0.3), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=7, alpha=0.7)
-                ax.set_ylim(-4.9, 9.9)
+                ax.set_ylim(-4.9, 10.9)
                 ax.set_xlim(0.01,13.8)
                 ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=1))
                 ax.tick_params(width=1, length=2, axis='y', which='minor', left=True, right=True, direction='in')
                 ax.yaxis.set_major_locator(ticker.MultipleLocator(base=5))
                 ax.tick_params(width=1, length=3, axis='y', which='major', left=True, right=True, direction='in')
-                ax.plot(timex[:-1], Mass_BBN[i][:-1], color='#black', linestyle='-.', linewidth=3, alpha=0.8, label='BBN')
+                ax.plot(timex[:-1], Mass_BBN[i][:-1], color='black', linestyle='-.', linewidth=3, alpha=0.8, label='BBN')
                 ax.plot(timex[:-1], Mass_SNII[i][:-1], color='#0034ff', linestyle='-.', linewidth=3, alpha=0.8, label='SNII')
                 ax.plot(timex[:-1], Mass_AGB[i][:-1], color='#ff00b3', linestyle='--', linewidth=3, alpha=0.8, label='LIMs')
                 ax.plot(timex[:-1], Mass_SNIa[i][:-1], color='#00b3ff', linestyle=':', linewidth=3, alpha=0.8, label='SNIa')
