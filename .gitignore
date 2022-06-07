@@ -148,4 +148,7 @@ yield_interpolation/**/*.pdf
 yield_interpolation/**/*.pkl
 !/galcem/input/observations/*/*
 !/galcem/input/observations/*
+**.DS_Store**
 
+# dev specific
+**ags**

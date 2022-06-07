@@ -1,136 +1,217 @@
 import scipy.interpolate as interp
 import numpy as np
 import pandas as pd
-import pickle
-from galcem.classes.inputs import Inputs
+import dill
 
 class GalCemInterpolant(object):
-    def __init__(self,s_y,dfx,xlog10cols,ylog10col):
-        self.empty = False
-        self.s_y = s_y.copy()
-        self.dfx = dfx.copy()
-        self.xlog10cols = xlog10cols
-        self.ylog10col = ylog10col
-        self.xnames = ['log10_'+xcol if xcol in self.xlog10cols else xcol for xcol in list(dfx.columns)]
-        self.dfx = self.tf_dfx(self.dfx)
-        self.descrip = self.dfx.describe()
-        self.s_ytf = self.s_y.copy()
-        if self.ylog10col:
-            self.s_ytf = np.log10(self.s_ytf)
-            self.s_ytf.name = 'log10_'+self.s_ytf.name
-        self.linear_nd_interpolator = interp.LinearNDInterpolator(self.dfx[self.xnames].to_numpy(),self.s_ytf.to_numpy(),rescale=True)
-        self.nearest_nd_interpolator = interp.NearestNDInterpolator(self.dfx[self.xnames].to_numpy(),self.s_ytf.to_numpy(),rescale=True)
-        self.train_metrics = self.get_train_metrics()
-        
-    def tf_dfx(self,dfx):
-        dfx2 = dfx.copy()
-        for xcol in self.xlog10cols:
-            if 'log10_'+xcol not in dfx.columns:
-                dfx2['log10_'+xcol] = np.log10(dfx2[xcol])
-        return dfx2
-    
-    def __call__(self,dfx,return_yhattf=False):
-        dfx2 = self.tf_dfx(dfx)
-        x = dfx2[self.xnames].to_numpy()
-        yhattf = self.linear_nd_interpolator(x)
-        yhattf[np.isnan(yhattf)] = self.nearest_nd_interpolator(x[np.isnan(yhattf)])
-        s_yhattf = pd.Series(yhattf,name=self.s_ytf.name)
-        if return_yhattf:
-            return s_yhattf
-        elif self.ylog10col:
-            s_yhat = 10**s_yhattf
+    def __init__(self,df,ycol,tf_funs={},name='',plot=None,fig_root='./',fig_view_angle=135,colormap=False):
+        # initial setup 
+        self.ycol = ycol
+        self.xcols = [col for col in list(df.columns) if col!=ycol]
+        if len(self.xcols)!=2: raise Exception("GalCemInterpolant currently only supports models with 2D domain.")
+        self.tf_funs = tf_funs
+        self.name = name
+        # parse y column transforms
+        if self.ycol in self.tf_funs:
+            assert self.ycol+'_inv' in self.tf_funs
+            assert self.ycol+'_prime' in self.tf_funs
         else:
-            s_yhat = s_yhattf
-        s_yhat.name = self.s_y.name
-        return s_yhat
+            self.tf_funs[self.ycol] = lambda y:y
+            self.tf_funs[self.ycol+'_inv'] = lambda y:y
+            self.tf_funs[self.ycol+'_prime'] = lambda y:y
+        # parse x column transforms
+        for col in list(df.columns):
+            if col==self.ycol: continue
+            if col in self.tf_funs:
+                assert col+'_prime' in self.tf_funs                    
+            else:
+                self.tf_funs[col] = lambda x: x
+                self.tf_funs[col+'_prime'] = lambda x: x
+        # remaining setup
+        dftf = pd.DataFrame({col:self.tf_funs[col](df[col].to_numpy()) for col in list(df.columns)})
+        self.descrip = df.describe()
+        self.descrip_tf = dftf.describe()
+        xtf = dftf[self.xcols].to_numpy()
+        ytf = dftf[self.ycol].to_numpy()
+        self.fit(xtf,ytf)       
+        self.train_metrics = self.get_metrics(df)
+        # optional plotting in transformed space
+        if plot is None: return
+        assert plot in ['std','grad']
+        dxs = [[0,0]] if plot=='std' else [[0,0],[1,0],[0,1]]
+        from matplotlib import pyplot,cm
+        cmdot,colordots,colordotstf = 'r','r','r'
+        if colormap:
+            cmdot = pyplot.cm.get_cmap('Paired')
+            s_lifetimes_p98 = pd.read_csv('galcem/input/starlifetime/portinari98table14.dat')
+            s_lifetimes_p98.columns = [name.replace('#M','M').replace('Z=0.','Z') for name in s_lifetimes_p98.columns]
+            colordots = np.array([s_lifetimes_p98[c].to_numpy() for c in s_lifetimes_p98.columns[1:]]).flatten()
+            colordotstf = colordots#self.tf_funs[self.ycol](colordots)
+        fig = pyplot.figure(figsize=(23,20) if plot=='grad' else (23,15))
+        nticks = 64
+        sepfrac = 0.1
+        for i,dx in enumerate(dxs):
+            # transformed domain
+            xtf = dftf[self.xcols].to_numpy()
+            x0tfmin,x0tfmax = xtf[:,0].min(),xtf[:,0].max()
+            x0tf_sep = x0tfmax-x0tfmin
+            x0_ticks = np.linspace(x0tfmin-sepfrac*x0tf_sep,x0tfmax+sepfrac*x0tf_sep,nticks)
+            x1tfmin,x1tfmax = xtf[:,1].min(),xtf[:,1].max()
+            x1tf_sep = x1tfmax-x1tfmin
+            x1tf_ticks = np.linspace(x1tfmin-sepfrac*x1tf_sep,x1tfmax+sepfrac*x1tf_sep,nticks)
+            x0tfmesh,x1tfmesh = np.meshgrid(x0_ticks,x1tf_ticks)
+            x0tfmesh_flat,x1tfmesh_flat = x0tfmesh.flatten(),x1tfmesh.flatten()
+            ytf = self.eval_with_grad(x=np.vstack([x0tfmesh_flat,x1tfmesh_flat]).T,dx=dx)
+            ytfmesh = ytf.reshape(x0tfmesh.shape)
+            ax = fig.add_subplot(3,4,4*i+1,projection='3d')
+            ax.plot_surface(x0tfmesh,x1tfmesh,ytfmesh,cmap=cm.Greys,alpha=.9,vmin=ytfmesh.min(),vmax=ytfmesh.max())
+            if dx==[0,0]: ax.scatter(xtf[:,0],xtf[:,1],dftf[self.ycol].to_numpy(),c=colordotstf, cmap=cmdot)
+            ax.set_xlabel(self.xcols[0])
+            ax.set_ylabel(self.xcols[1])
+            ax.set_zlabel(self.ycol)
+            if dx!=[0,0]: ax.set_title('d(%s) / d(%s)'%(self.ycol,self.xcols[dx.index(1)]))
+            ax.view_init(azim=fig_view_angle)
+            ax = fig.add_subplot(3,4,4*i+2)
+            contour = ax.contourf(x0tfmesh,x1tfmesh,ytfmesh,cmap=cm.Greys,alpha=.95,vmin=ytfmesh.min(),vmax=ytfmesh.max(),levels=64)
+            xlim,ylim = ax.get_xlim(),ax.get_ylim()
+            ax.set_aspect((xlim[1]-xlim[0])/(ylim[1]-ylim[0]))
+            fig.colorbar(contour,ax=None,shrink=0.5,aspect=5)
+            ax.scatter(xtf[:,0],xtf[:,1],c=colordotstf, cmap=cmdot)
+            ax.set_xlabel(self.xcols[0])
+            ax.set_ylabel(self.xcols[1])
+            if dx!=[0,0]: ax.set_title('d(%s) / d(%s)'%(self.ycol,self.xcols[dx.index(1)]))
+            # original domain
+            x = df[self.xcols].to_numpy()
+            x0min,x0max = x[:,0].min(),x[:,0].max()
+            x0_ticks = np.linspace(x0min,x0max,nticks)
+            x1min,x1max = x[:,1].min(),x[:,1].max()
+            x1_ticks = np.linspace(x1min,x1max,nticks)
+            x0mesh,x1mesh = np.meshgrid(x0_ticks,x1_ticks)
+            x0mesh_flat,x1mesh_flat = x0mesh.flatten(),x1mesh.flatten()
+            dfx = pd.DataFrame({self.xcols[0]:x0mesh_flat,self.xcols[1]:x1mesh_flat})
+            dfw = None if dx==[0,0] else self.xcols[dx.index(1)]
+            y = self.__call__(dfx=dfx,dwrt=dfw)
+            ymesh = y.reshape(x0mesh.shape)
+            ax = fig.add_subplot(3,4,4*i+3,projection='3d')
+            ax.plot_surface(x0mesh,x1mesh,ymesh,cmap=cm.Greys,alpha=.9,vmin=ymesh.min(),vmax=ymesh.max())
+            if dx==[0,0]: ax.scatter(x[:,0],x[:,1],df[self.ycol].to_numpy(),c=colordots, cmap=cmdot)
+            ax.set_xlabel(self.xcols[0])
+            ax.set_ylabel(self.xcols[1])
+            ax.set_zlabel(self.ycol)
+            if dx!=[0,0]: ax.set_title('d(%s) / d(%s)'%(self.ycol,self.xcols[dx.index(1)]))
+            ax.view_init(azim=fig_view_angle)
+            ax = fig.add_subplot(3,4,4*i+4)
+            contour = ax.contourf(x0mesh,x1mesh,ymesh,cmap=cm.Greys,alpha=.95,vmin=ymesh.min(),vmax=ymesh.max(),levels=64)
+            xlim,ylim = ax.get_xlim(),ax.get_ylim()
+            ax.set_aspect((xlim[1]-xlim[0])/(ylim[1]-ylim[0]))
+            fig.colorbar(contour,ax=None,shrink=0.5,aspect=5)
+            ax.scatter(x[:,0],x[:,1],c=colordots, cmap=cmdot)
+            ax.set_xlabel(self.xcols[0])
+            ax.set_ylabel(self.xcols[1])
+            if dx!=[0,0]: ax.set_title('d(%s) / d(%s)'%(self.ycol,self.xcols[dx.index(1)]))
+        fig.suptitle('%s\n%s by %s\nTransformed Domain (left) | Original Domain (right)'%(self.name,self.ycol,str(self.xcols)), fontsize=15)
+        pyplot.subplots_adjust(left=0,bottom=0.1,right=1,top=0.9,wspace=0.2,hspace=0.2)
+        #fig.tight_layout()
+        fig.savefig('%s%s.pdf'%(fig_root,name),format='pdf',bbox_inches='tight')
+        pyplot.close(fig)
     
-    def get_train_metrics(self,by={}):
-        dfx2 = self.dfx.copy()
-        s_y2 = self.s_y.copy()
-        for col,val in by.items():
-            idxs = dfx2[col]==val
-            dfx2 = dfx2[idxs]
-            s_y2 = s_y2[idxs]
-        yhat = self.__call__(dfx2)
-        eps_abs = np.abs(yhat-s_y2.to_numpy())
-        train_metrics = {
-            'Number of Samples': len(yhat),
-            'Root Mean Square Error': np.sqrt(np.mean(eps_abs**2)),
-            'Mean Absoute Error': np.mean(eps_abs),
-            'Max Abs Error': eps_abs.max()}
-        return train_metrics
+    def fit(self, x, y): 
+        raise NotImplementedError
+    
+    def __call__(self,dfx,dwrt=None):
+        dftf = pd.DataFrame({col:self.tf_funs[col](dfx[col].to_numpy()) for col in self.xcols})
+        xtf = dftf[self.xcols].to_numpy()
+        yhattf = self.eval_with_grad(xtf,dx=[0,0])
+        yhat = self.tf_funs[self.ycol+'_inv'](yhattf)
+        if dwrt is None: return yhat
+        # handle derivitives
+        x = dfx[self.xcols].to_numpy()
+        didx = self.xcols.index(dwrt)
+        dx = [0,0]
+        dx[didx] = 1
+        yhattf_prime = self.eval_with_grad(xtf,dx=dx)
+        # chain rule 
+        #   y(x0,x1) = T^{-1}( I(g0(x0),g1(x1)) )
+        #   dy/dxi = I'(g0(x0),g1(x1)) gi'(xi) / T'( T^{-1}( I(g0(x0),g1(x1)) ) )
+        #          = I(x0tf,x1tf), gi'(xi) / T'(yhat)
+        dyhat_dxi = yhattf_prime*self.tf_funs[dwrt+'_prime'](x[:,didx])/self.tf_funs[self.ycol+'_prime'](yhat)
+        return dyhat_dxi
+    
+    def eval_with_grad(self, x, dwrt):
+        raise NotImplementedError
+        
+    def get_metrics(self,df):
+        y = df[self.ycol].to_numpy()
+        yhat = self.__call__(df)
+        eps_abs = np.abs(yhat-y)
+        eps_rel = np.abs(eps_abs/y)
+        metrics = {
+            'RMSE Abs': np.sqrt(np.mean(eps_abs**2)),
+            'MAE Abs': np.mean(eps_abs),
+            'Max Abs': eps_abs.max(),
+            'RMSE Rel': np.sqrt(np.mean(eps_rel**2)),
+            'MAE Rel:': np.mean(eps_rel),
+            'Max Rel': eps_rel.max()}
+        return metrics
     
     def __repr__(self):
-        s = GalCemInterpolant.__name__+'(%s)\n'%','.join(self.xnames)
+        s = 'GalCemInterpolant[%s](%s)\n'%(self.name,','.join(self.xcols))
         s += '\ttrain data description\n\t\t%s'%str(self.descrip).replace('\n','\n\t\t')
         s += '\n\ttrain data metrics\n'
         for metric,val in self.train_metrics.items(): s += '\t\t%25s: %.2e\n'%(metric,val)
         return s
-    
-    def plot(self,xcols,xfixed={},figroot=None,title=None,view_angle=135):
-        xcols = ['log10_'+xcol if xcol in self.xlog10cols else xcol for xcol in xcols]
-        nticks = 64
-        sepfrac = 0.1
-        if len(xcols)!=2: raise Exception('plot_interpolant currently only creates 3d plots, so please ensure len(xcols)==2.')
-        x = self.dfx[xcols].to_numpy()
-        x0min,x0max = x[:,0].min(),x[:,0].max()
-        x0_sep = x0max-x0min
-        x0_ticks = np.linspace(x0min-sepfrac*x0_sep,x0max+sepfrac*x0_sep,nticks)
-        x1min,x1max = x[:,1].min(),x[:,1].max()
-        x1_sep = x1max-x1min
-        x1_ticks = np.linspace(x1min-sepfrac*x1_sep,x1max+sepfrac*x1_sep,nticks)
-        x0mesh,x1mesh = np.meshgrid(x0_ticks,x1_ticks)
-        df_xquery = pd.DataFrame({xcols[0]:x0mesh.flatten(),xcols[1]:x1mesh.flatten()})
-        for xcol,val in xfixed.items(): df_xquery[xcol] = val
-        s_yhattf_query = self.__call__(df_xquery,return_yhattf=True)
-        ymesh = s_yhattf_query.to_numpy().reshape(x1mesh.shape)
-        from matplotlib import pyplot,cm
-        fig = pyplot.figure(figsize=(15,5))
-        ax = fig.add_subplot(1,2,1,projection='3d')
-        ax.plot_surface(x0mesh,x1mesh,ymesh,cmap=cm.Greys,alpha=.9,vmin=ymesh.min(),vmax=ymesh.max())
-        ax.scatter(x[:,0],x[:,1],self.s_ytf,color='r')
-        ax.set_xlabel(xcols[0])
-        ax.set_ylabel(xcols[1])
-        ax.set_zlabel(self.s_ytf.name)
-        ax.view_init(azim=view_angle)
-        ax = fig.add_subplot(1,2,2)
-        contour = ax.contourf(x0mesh,x1mesh,ymesh,cmap=cm.Greys,alpha=.95,vmin=ymesh.min(),vmax=ymesh.max())
-        fig.colorbar(contour,ax=None,shrink=0.5,aspect=5)
-        ax.scatter(x[:,0],x[:,1],color='r')
-        ax.set_xlabel(xcols[0])
-        ax.set_ylabel(xcols[1])
-        fig.suptitle(title)
-        if figroot: fig.savefig('%s.pdf'%figroot,format='pdf',bbox_inches='tight')
-        else: fig.show()
 
+class LinearAndNearestNeighbor_GCI(GalCemInterpolant):
+    
+    def fit(self, x, y):
+        assert x.ndim==2 and y.shape==(len(x),)
+        self.inhull_model = interp.LinearNDInterpolator(x,y,rescale=True)
+        self.outhull_model = interp.NearestNDInterpolator(x,y,rescale=True)
+
+    def eval_with_grad(self, x, dx):
+        assert x.ndim==2 and len(dx)==x.shape[1]
+        assert (np.atleast_1d(dx)==0).all()
+        y = self.inhull_model(x)
+        y[np.isnan(y)] = self.outhull_model(x[np.isnan(y)])
+        return y
+
+class SmootheSpline2D_GCI(GalCemInterpolant):
+    
+    def fit(self, x, y):
+        assert x.ndim==2 and x.shape[1]==2 and y.shape==(len(x),)
+        self.model = interp.SmoothBivariateSpline(x=x[:,0],y=x[:,1],z=y)
+    def eval_with_grad(self, x, dx):
+        assert x.ndim==2 and x.shape[1]==2 and len(dx)==x.shape[1]
+        y = self.model(x=x[:,0],y=x[:,1],dx=dx[0],dy=dx[1],grid=False)
+        return y
+
+    
 def fit_isotope_interpolants_irv0(df,root):
     # iterate over a,z pairs and save interpolants based on irv=0
     print('\n'+'~'*75+'\n')
     dfs = dict(tuple(df.groupby(['isotope','a','z'])))
     for ids,_df in dfs.items():
-        tag = 'z%d.a%d.irv0.%s'%(ids[2],ids[1],ids[0])
-        print('fitting interpolant %s\n'%tag)
+        name = 'z%d.a%d.irv0.%s'%(ids[2],ids[1],ids[0])
         _df = _df[_df['irv']==0]
         # fit model
-        interpolant = GalCemInterpolant(
-            s_y = _df['yield'],
-            dfx = _df[['mass','metallicity']],
-            xlog10cols = ['metallicity'],
-            ylog10col = True)
+        interpolant = LinearAndNearestNeighbor_GCI(
+            df = _df[['mass','metallicity','yield']],
+            ycol = 'yield',
+            tf_funs = {
+                'mass':lambda x:np.log10(x), 'mass_prime':lambda x:1/(x*np.log(10)),
+                'metallicity':lambda x:np.log10(x), 'metallicity_prime':lambda x:1/(x*np.log(10)),
+                'yield':lambda y:np.log10(y), 'yield_prime':lambda y:1/(y*np.log(10)), 'yield_inv':lambda y:10**y},
+            name = name,
+            plot = 'std',
+            fig_root = root+'/figs/',
+            fig_view_angle = -45,
+            colormap=False)
         #   print model
         print(interpolant)
-        #   plot model
-        interpolant.plot(
-            xcols = ['mass','metallicity'],
-            xfixed = {},
-            figroot = root+'figs/%s'%tag,
-            title = 'Yield by Mass, Metallicity',
-            view_angle = -45)
         #   save model
-        pickle.dump(interpolant,open(root+'models/%s.pkl'%tag,'wb'))
+        dill.dump(interpolant,open(root+'/models/%s.pkl'%name,'wb'))
         #   load model
-        interpolant_loaded = pickle.load(open(root+'models/%s.pkl'%tag,'rb'))
+        interpolant_loaded = dill.load(open(root+'/models/%s.pkl'%name,'rb'))
         #   example model use
-        xquery = pd.DataFrame({'mass':[15],'metallicity':[0.01648]})
-        yquery = interpolant_loaded(xquery)
+        yquery = interpolant_loaded(_df)
         print('~'*75+'\n')

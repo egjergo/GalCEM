@@ -31,8 +31,8 @@ def parse_c15_raw():
     return df
 
 if __name__ == '__main__':
-    root = 'yield_interpolation/c15/'
+    root = os.path.abspath(os.path.dirname(__file__))
     df = parse_c15_raw()
-    df.to_csv(root+'data.csv',index=False)
+    df.to_csv(root+'/data.csv',index=False)
     fit_isotope_interpolants_irv0(df,root)
     
