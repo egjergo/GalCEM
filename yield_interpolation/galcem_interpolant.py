@@ -163,6 +163,10 @@ class GalCemInterpolant(object):
 
 class LinearAndNearestNeighbor_GCI(GalCemInterpolant):
     
+    def __init__(self, df, ycol, *args, **kwargs):
+        super().__init__(df, ycol, *args, **kwargs)
+        self.empty = False
+    
     def fit(self, x, y):
         assert x.ndim==2 and y.shape==(len(x),)
         self.inhull_model = interp.LinearNDInterpolator(x,y,rescale=True)

@@ -1,8 +1,6 @@
 import numpy as np
 import pandas as pd
 import os
-# Romano+10 uses Portinari's code, with Kroupa+93 and the two-infall model
-# So far, I'm using Salpeter+55 for the IMF. Also check the Schmidt power exponent
 
 """"""""""""""""""""""""""""""""""""""""""""""""
 "                                              "
@@ -78,15 +76,15 @@ class Inputs:
 
         self.yields_NSM_option = 'r14'
         self.yields_MRSN_option = 'n17'
-        self.yields_LIMs_option = 'k10'
+        self.yields_LIMs_option = 'c15'
         self.yields_SNII_option = 'lc18'
-        self.LC18_vel_idx = 0 # !!!!!!! eventually you should write a function about this
+        self.LC18_vel_idx = 0 # !!!!!!! eventually you should write a function to compute this
         self.yields_SNIa_option = 'i99' # 'k20' 
         self.yields_BBN_option = 'gp13'
 
         self.delta_max = 8e-2 # Convergence limit for eq. 28, Portinari+98
         self.epsilon = 1e-32 # Avoid numerical errors - consistent with BBN
-        self.SFR_rescaling = 1 #np.reciprocal(self.M_inf) # !!!!!!! Constrained by observations at z=0 of the galaxy of interest
+        self.SFR_rescaling = 1 # !!!!!!! Constrained by present-day observations of the galaxy of interest
         self.derlog = True
         
         _dir = os.path.join(os.path.dirname( __file__ ), '..')
@@ -107,7 +105,6 @@ class Inputs:
         self.p98_t14_df = p98_t14_df
         
         self.asplund1 = pd.read_csv(_dir+'/input/physics/asplund09/table1.dat', sep=',', comment='#')
-        #self.asplund1 = self.asplund1.astype({'elemZ': int, 'elemSymb': str})
         self.asplund1['photospheric'] = pd.to_numeric(self.asplund1['photospheric'], errors='coerce')
         self.asplund1['meteoric'] = pd.to_numeric(self.asplund1['meteoric'], errors='coerce')
         self.asplund1['P-err'] = pd.to_numeric(self.asplund1['P-err'], errors='coerce')
@@ -117,9 +114,18 @@ class Inputs:
     
     def default_params(self, choice, morphology):
         '''
+        Dictionary of dictionaries. Picks default morphology parameters:
+        M_inf              - Final baryonic mass of the galaxy [Msun]
+        Reff               - effective radius [kpc]
+        tau_inf            - infall timescale [Gyr]
+        nu                 - star formation efficiency [Gyr^-1]
+        wind_efficiency    - outflow parameter [dimensionless]
+        
         Calibrations from Molero+21a and b
         
-        Default options:
+        Default options for morphologies include 
+        characteristic values and specific values
+        calibrated to a list of dwarf galaxies:
             'elliptical'
             'spiral'
             'irregular'
@@ -133,7 +139,7 @@ class Inputs:
             'UrsaMinor'
         '''
         dictionary = {
-        'M_inf' : {'elliptical': 5.0e11, # Final baryonic mass of the galaxy in [Msun]
+        'M_inf' : {'elliptical': 5.0e11, 
             'spiral': 5.0e10,
             'irregular': 5.5e8,
             'Fornax': 5.0e8,
@@ -144,7 +150,7 @@ class Inputs:
             'Sagittarius': 2.1e9,
             'Sextan': 5.0e8,
             'UrsaMinor': 5.0e8},
-        'Reff' : {'elliptical': 7, # effective radius in [kpc]
+        'Reff' : {'elliptical': 7,
 		    'spiral': 3.5,
 		    'irregular': 1,
             'Fornax': 1, # !!!!!!! Ask!!!!!!! not on the paper
@@ -155,7 +161,7 @@ class Inputs:
             'Sagittarius': 1,
             'Sextan': 1,
             'UrsaMinor': 1},
-        'tau_inf' : {'elliptical': 0.2, # infall timescale [Gyr]
+        'tau_inf' : {'elliptical': 0.2, 
            'spiral': 7.,
            'irregular': 7.,
            'Fornax': 3,
@@ -166,7 +172,7 @@ class Inputs:
            'Sagittarius': 0.5,
            'Sextan': 0.5,
            'UrsaMinor': 0.5},
-        'nu' : {'elliptical': 17.,  # nu is the SF efficiency in [Gyr^-1]
+        'nu' : {'elliptical': 17., 
 	        'spiral': 1., 
 	        'irregular': 0.1,
             'Fornax': 0.1,
@@ -177,7 +183,7 @@ class Inputs:
             'Sagittarius': 1,
             'Sextan': 0.005,
             'UrsaMinor': 0.05},
-        'wind_efficiency' : {'elliptical': 10, # ouflow parameter [dimensionless]
+        'wind_efficiency' : {'elliptical': 10, 
 			'spiral': 0.2,
 			'irregular': 0.5,
         	'Fornax': 1,

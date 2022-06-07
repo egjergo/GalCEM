@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from pandas.core.common import flatten
 import os
+import re
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""
 "                                                    "
@@ -151,7 +152,6 @@ class Yields_BBN(Yields):
             self.elemZ = self.tables['elemZ']
             self.massCol = np.multiply(self.tables['numbFrac'], self.tables['mass'])
             self.yields_list = np.divide(self.massCol, np.sum(self.massCol)) # fraction by mass 
-            self.yields = np.divide(self.massCol, np.sum(self.massCol)) # fraction by mass 
       
     def construct_yields(self, ZA_sorted):
         yields = []
