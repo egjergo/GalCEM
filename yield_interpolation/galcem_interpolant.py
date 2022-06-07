@@ -191,7 +191,7 @@ def fit_isotope_interpolants_irv0(df,root):
     print('\n'+'~'*75+'\n')
     dfs = dict(tuple(df.groupby(['isotope','a','z'])))
     for ids,_df in dfs.items():
-        name = 'a%d.z%d.irv0.%s'%(*ids[1:],ids[0])
+        name = 'z%d.a%d.irv0.%s'%(ids[2],ids[1],ids[0])
         _df = _df[_df['irv']==0]
         # fit model
         interpolant = LinearAndNearestNeighbor_GCI(
