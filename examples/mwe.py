@@ -2,7 +2,7 @@ import datetime
 import galcem as gc
 
 inputs = gc.Inputs()
-#inputs.nTimeStep = .25 #.002
+inputs.nTimeStep = .25 #.002
 
 directory_name = str(input("Enter the run's folder name (default is 'base'): ") or "base")
 dir_name = 'runs/'+f"{datetime.datetime.now():%Y%m%d}"+'_'+directory_name+'_'+str(int(inputs.nTimeStep*1000))+'Myr/'

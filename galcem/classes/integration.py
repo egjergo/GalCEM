@@ -41,7 +41,7 @@ class Wi:
     birthtime (t')     is the stellar birthtime
     lifetime (tau)    is the stellar lifetime
     '''
-    def __init__(self, age_idx, IN, lifetime_class, time_chosen, Z_v, SFR_v, f_SNIa_v, IMF, yields_SNIa_class, models_lc18, models_k10, ZA_sorted):
+    def __init__(self, age_idx, IN, lifetime_class, time_chosen, Z_v, SFR_v, f_SNIa_v, IMF, ZA_sorted):
         self.IN = IN
         self.lifetime_class = lifetime_class
         self.time_chosen = time_chosen
@@ -49,14 +49,12 @@ class Wi:
         self.SFR_v = SFR_v
         self.f_SNIa_v = f_SNIa_v
         self.IMF = IMF
-        self.yields_SNIa_class = yields_SNIa_class
-        self.models_lc18 = models_lc18
-        self.models_k10 = models_k10
         self.ZA_sorted = ZA_sorted
         self.metallicity = self.Z_v[age_idx]
         self.age_idx = age_idx
         self.Wi_grid_class = Wi_grid(self.metallicity, self.age_idx, self.IN, lifetime_class, self.time_chosen)
         self.MRSN_birthtime_grid, self.MRSN_lifetime_grid, self.MRSN_mass_grid = self.Wi_grid_class.grids(self.IN.Ml_MRSN, self.IN.Mu_MRSN)
+        self.NSM_birthtime_grid, self.NSM_lifetime_grid, self.NSM_mass_grid = self.Wi_grid_class.grids(self.IN.Ml_NSM, self.IN.Mu_NSM)
         self.SNII_birthtime_grid, self.SNII_lifetime_grid, self.SNII_mass_grid = self.Wi_grid_class.grids(self.IN.Ml_SNII, self.IN.Mu_SNII)
         self.LIMs_birthtime_grid, self.LIMs_lifetime_grid, self.LIMs_mass_grid = self.Wi_grid_class.grids(self.IN.Ml_LIMs, self.IN.Mu_LIMs) # !!!!!!! you should subtract SNIa fraction
         self.SNIa_birthtime_grid, self.SNIa_lifetime_grid, self.SNIa_mass_grid = self.Wi_grid_class.grids(self.IN.Ml_SNIa, self.IN.Mu_SNIa)
@@ -156,35 +154,34 @@ class Wi:
         integrand = np.multiply(SFR_comp, IMF_comp)
         return integr.simps(integrand, x=mass_grid)
     
+    def exec_compute_rate(self, channel_switch):
+        if channel_switch == 'SNIa':
+            if len(self.grid_picker('SNIa', 'birthtime')) > 0.:
+                #R_SNIa = self.IN.A_SNIa * self.compute_rate(channel_switch='SNIa')
+                return self.IN.A_SNIa * self.compute_rateSNIa()
+            else:
+                return self.IN.epsilon  
+        else:
+            if len(self.grid_picker(channel_switch, 'birthtime')) > 0.:
+                return self.compute_rate(channel_switch=channel_switch)
+            else:
+                return self.IN.epsilon
+    
     def compute_rates(self):
-        if len(self.grid_picker('MRSN', 'birthtime')) > 0.:
-            rateSNII = self.compute_rate(channel_switch='MRSN')
-        else:
-            rateMRSN = self.IN.epsilon
-        if len(self.grid_picker('SNII', 'birthtime')) > 0.:
-            rateSNII = self.compute_rate(channel_switch='SNII')
-        else:
-            rateSNII = self.IN.epsilon
-        if len(self.grid_picker('LIMs', 'birthtime')) > 0.:
-            rateLIMs = self.compute_rate(channel_switch='LIMs')
-        else:
-            rateLIMs = self.IN.epsilon
-        if len(self.grid_picker('SNIa', 'birthtime')) > 0.:
-            #R_SNIa = self.IN.A_SNIa * self.compute_rate(channel_switch='SNIa')
-            R_SNIa = self.IN.A_SNIa * self.compute_rateSNIa()
-        else:
-            R_SNIa = self.IN.epsilon
-        return rateSNII, rateLIMs, R_SNIa #rateMRSN, 
+        return [self.exec_compute_rate(ch) for ch in self.IN.include_channel]
 
     def compute(self, channel_switch, vel_idx=None):
-        vel_idx = self.IN.LC18_vel_idx if vel_idx is None else vel_idx
-        mass_grid = self.grid_picker(channel_switch, 'mass')
-        lifetime_grid = self.grid_picker(channel_switch, 'lifetime')        
-        birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
-        SFR_comp = self.SFR_component(birthtime_grid)
-        SFR_comp[SFR_comp<0] = 0.
-        IMF_comp, mass_comp = self.mass_component(channel_switch, mass_grid, lifetime_grid)# 
-        #integrand = np.prod(np.vstack[SFR_comp, mass_comp, self.yield_load[i]])
-        integrand = np.prod(np.vstack([SFR_comp, mass_comp]), axis=0)
-        #return integr.simps(integrand, x=birthtime_grid)
-        return [integrand, birthtime_grid, mass_grid]
+        if channel_switch == "SNIa":
+            return {'integrand': [0.5], 'birthtime_grid': [0.5], 'mass_grid': [0.5]}
+        else:
+            vel_idx = self.IN.LC18_vel_idx if vel_idx is None else vel_idx
+            mass_grid = self.grid_picker(channel_switch, 'mass')
+            lifetime_grid = self.grid_picker(channel_switch, 'lifetime')        
+            birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
+            SFR_comp = self.SFR_component(birthtime_grid)
+            SFR_comp[SFR_comp<0] = 0.
+            IMF_comp, mass_comp = self.mass_component(channel_switch, mass_grid, lifetime_grid)# 
+            #integrand = np.prod(np.vstack[SFR_comp, mass_comp, self.yield_load[i]])
+            integrand = np.prod(np.vstack([SFR_comp, mass_comp]), axis=0)
+            #return integr.simps(integrand, x=birthtime_grid)
+            return {'integrand': integrand, 'birthtime_grid': birthtime_grid, 'mass_grid': mass_grid}

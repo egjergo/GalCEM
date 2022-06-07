@@ -101,9 +101,10 @@ class Setup:
         self.yields_SNIa_class.construct_yields(self.ZA_sorted)
         self.models_SNIa = self.yields_SNIa_class.yields
         #self.yields_NSM_class.construct_yields(self.ZA_sorted)
-        #self.models_NSM = self.yields_NSM_class.yields
+        #models_NSM = self.yields_NSM_class.yields
         #self.yields_MRSN_class.construct_yields(self.ZA_sorted)
-        #self.models_MRSN = self.yields_MRSN_class.yields
+        #models_MRSN = self.yields_MRSN_class.yields
+        self.yield_models = {ch: self.__dict__['models_'+ch] for ch in self.IN.include_channel}
         
         # Initialize Global tracked quantities
         self.asplund3_percent = self.c_class.abund_percentage(self.ZA_sorted)
@@ -117,8 +118,9 @@ class Setup:
         self.SFR_v = self.IN.epsilon * np.ones(len(self.time_chosen)) #
         self.f_SNIa_v = self.IN.epsilon * np.ones(len(self.time_chosen))
         self.Mass_i_v = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)))    # Gass mass (i,j) where the i rows are the isotopes and j are the timesteps, [:,j] follows the timesteps
-        self.W_i_comp = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen), 3), dtype=object)    # Gass mass (i,j) where the i rows are the isotopes and j are the timesteps, [:,j] follows the timesteps
-        #self.Xi_inf = self.models_BBN
+        self.W_i_comp = {ch: self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)), dtype=float) for ch in self.IN.include_channel}#dtype=object   # Gass mass (i,j) where the i rows are the isotopes and j are the timesteps, [:,j] follows the timesteps
+        self.W_i_comp['BBN'] = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)), dtype=float)
+        #self.Xi_inf = self.yield_models['BBN']
         #self.Mass_i_inf = np.column_stack(([self.Xi_inf] * len(self.Mtot)))
         self.Xi_v = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)))    # Xi 
         self.Z_v = self.IN.epsilon * np.ones(len(self.time_chosen)) # Metallicity 
@@ -128,6 +130,7 @@ class Setup:
         self.Rate_LIMs = self.IN.epsilon * np.ones(len(self.time_chosen)) 
         self.Rate_SNIa = self.IN.epsilon * np.ones(len(self.time_chosen)) 
         self.Rate_NSM = self.IN.epsilon * np.ones(len(self.time_chosen)) 
+        self.Rate_MRSN = self.IN.epsilon * np.ones(len(self.time_chosen)) 
    
         
 class OneZone(Setup):
@@ -147,7 +150,6 @@ class OneZone(Setup):
     
     def main(self):
         ''' Run the OneZone program '''
-        #import pandas as pd
         self.tic.append(time.process_time())
         self.file1 = open(self._dir_out + "Terminal_output.txt", "w")
         pickle.dump(self.IN,open(self._dir_out + 'inputs.pkl','wb'))
@@ -178,8 +180,8 @@ class OneZone(Setup):
     
     def evolve(self):
         '''Evolution routine'''
-        self.file1.write('A list of the proton/isotope number pairs for all the nuclides included in this run.\n ZA_sorted =\n\n')
-        self.file1.write(self.ZA_sorted)
+        #self.file1.write('A list of the proton/isotope number pairs for all the nuclides included in this run.\n ZA_sorted =\n\n')
+        #self.file1.write(self.ZA_sorted)
         self.Mass_i_v[:,0] = np.multiply(self.Mtot[0], self.models_BBN)
         self.Mass_i_v[:,1] = np.multiply(self.Mtot[1], self.models_BBN)
         for n in range(len(self.time_chosen[:self.idx_age_Galaxy])):
@@ -187,19 +189,22 @@ class OneZone(Setup):
             self.file1.write('n = %d\n'%n)
             self.phys_integral(n)        
             self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
+            self.Z_v[n] = np.divide(np.sum(self.Mass_i_v[self.i_Z:,n]), self.Mgas_v[n])
             self.file1.write(' sum X_i at n %d= %.3f\n'%(n, np.sum(self.Xi_v[:,n])))
-            channel_switch = ['SNII', 'LIMs'] #'MRSN',
-            yield_comp = [self.models_SNII, self.models_LIMs]
             if n > 0.: 
-                Wi_class = Wi(n, self.IN, self.lifetime_class, self.time_chosen, self.Z_v, self.SFR_v, self.f_SNIa_v,
-                              self.IMF, self.yields_SNIa_class, self.models_SNII, self.models_LIMs, self.ZA_sorted)
+                Wi_class = Wi(n, self.IN, self.lifetime_class, self.time_chosen, self.Z_v, self.SFR_v, 
+                              self.f_SNIa_v, self.IMF, self.ZA_sorted)
                 self.Rate_SNII[n], self.Rate_LIMs[n], self.Rate_SNIa[n] = Wi_class.compute_rates()
-                Wi_comp = [Wi_class.compute(cs) for cs in channel_switch]
-                Z_comp = [pd.DataFrame(Wi_class.Z_component(wic[1]), columns=['metallicity']) for wic in Wi_comp]
-                #for i, _ in enumerate(self.ZA_sorted): 
-                #    self.Mass_i_v[i, n+1] = self.aux.RK4(self.solve_integral, self.time_chosen[n], self.Mass_i_v[i,n], n, self.IN.nTimeStep, i=i, Wi_comp=Wi_comp, Z_comp=Z_comp, yield_comp=yield_comp, channel_switch=channel_switch)
-                self.Z_v[n] = np.divide(np.sum(self.Mass_i_v[self.i_Z:,n]), self.Mgas_v[n])
-            self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
+                Wi_comp = {ch: Wi_class.compute(ch) for ch in self.IN.include_channel}
+                Z_comp = {}
+                for ch in self.IN.include_channel:
+                    if len(Wi_comp[ch]['birthtime_grid']) > 1.:
+                        Z_comp[ch] = pd.DataFrame(Wi_class.Z_component(Wi_comp[ch]['birthtime_grid']), columns=['metallicity']) 
+                    else:
+                        Z_comp[ch] = pd.DataFrame(columns=['metallicity']) 
+                for i, _ in enumerate(self.ZA_sorted): 
+                    self.Mass_i_v[i, n+1] = self.aux.RK4(self.solve_integral, self.time_chosen[n], self.Mass_i_v[i,n], n, self.IN.nTimeStep, i=i, Wi_comp=Wi_comp, Z_comp=Z_comp)
+            #self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
         self.Z_v[-1] = np.divide(np.sum(self.Mass_i_v[self.i_Z:,-1]), self.Mgas_v[-1])
         self.Xi_v[:,-1] = np.divide(self.Mass_i_v[:,-1], self.Mgas_v[-1]) 
 
@@ -207,11 +212,11 @@ class OneZone(Setup):
         # Explicit general diff eq GCE function
         # Mgas(t)
         #print(f'{self.SFR_tn(n)==self.SFR_v[n]=}')
-        return self.Infall_rate[n] + np.sum(self.W_i_comp[:,n,:]) - self.SFR_tn(n) #* np.sum(self.Xi_v[:,n])
+        return self.Infall_rate[n] + np.sum([self.W_i_comp[ch][:,n] for ch in self.IN.include_channel]) - self.SFR_tn(n) #* np.sum(self.Xi_v[:,n])
     
     def Mstar_func(self, t_n, y_n, n, i=None):
         # Mstar(t)
-        return - np.sum(self.W_i_comp[:,n,:]) + self.SFR_tn(n) #* np.sum(self.Xi_v[:,n])
+        return - np.sum([self.W_i_comp[ch][:,n] for ch in self.IN.include_channel]) + self.SFR_tn(n) #* np.sum(self.Xi_v[:,n])
 
     def SFR_tn(self, timestep_n):
         '''
@@ -241,35 +246,30 @@ class OneZone(Setup):
         SFR: [Msun/Gyr]
         '''
         i = kwargs['i']
-        channel_switch = kwargs['channel_switch']
         Wi_comps = kwargs['Wi_comp'] 
         Z_comps = kwargs['Z_comp'] 
-        yield_comps = kwargs['yield_comp'] 
-        Wi_SNIa = self.Rate_SNIa[n] * self.models_SNIa[i]
         infall_comp = self.Infall_rate[n] * self.models_BBN[i]
+        self.W_i_comp['BBN'][i,n] = infall_comp
         sfr_comp = self.SFR_v[n] * self.Xi_v[i,n] 
         if n <= 0:
             val = infall_comp - sfr_comp
         else:
-            Wi_vals = []
-            for j,val in enumerate(Wi_comps):
-                if len(val[1]) > 0.:
-                    print(f'{j=}, {i=}')
-                    if not yield_comps[j][i].empty:
-                        yield_grid = Z_comps[j]
-                        yield_grid['mass'] = val[2]
-                        print(yield_grid)
-                        Wi_vals.append(integr.simps(np.multiply(val[0], yield_comps[j][i](yield_grid)), x=val[1]))   
-                    else:
-                        Wi_vals.append(0.)
+            Wi_vals = {}
+            for ch in self.IN.include_channel:
+                if ch == 'SNIa':
+                    Wi_vals[ch] = self.Rate_SNIa[n] * self.yield_models['SNIa'][i] 
                 else:
-                    Wi_vals.append(0.)
-            returned = [Wi_vals[0], Wi_vals[1], Wi_SNIa] #Wi_vals[2],  # MRSN, SNII, LIMs, SNIa
-            self.W_i_comp[i,n,0] = returned[0] 
-            self.W_i_comp[i,n,1] = returned[1] 
-            self.W_i_comp[i,n,2] = returned[2] 
-            #self.W_i_comp[i,n,3] = returned[3]
-            val = infall_comp - sfr_comp + np.sum(returned)
+                    if len(Wi_comps[ch]['birthtime_grid']) > 1.:
+                        if not self.yield_models[ch][i].empty:
+                            yield_grid = Z_comps[ch]
+                            yield_grid['mass'] = Wi_comps[ch]['mass_grid']
+                            Wi_vals[ch] = integr.simps(np.multiply(Wi_comps[ch]['integrand'], self.yield_models[ch][i](yield_grid)), x=Wi_comps[ch]['birthtime_grid'])
+                        else:
+                            Wi_vals[ch] = 0.
+                    else:
+                        Wi_vals[ch] = 0.
+                self.W_i_comp[ch][i,n] = Wi_vals[ch] 
+            val = infall_comp - sfr_comp + np.sum([Wi_vals[ch] for ch in self.IN.include_channel])
         return val
 
 
@@ -292,11 +292,12 @@ class Plots(Setup):
         print('Starting to plot')
         self.FeH_evolution()
         self.OH_evolution()
-        self.phys_integral_plot()
+        self.phys_integral_plot(logAge=False)
         self.phys_integral_plot(logAge=True)
         #self.DTD_plot()
         #self.iso_abundance()
         ## self.iso_evolution()
+        self.iso_evolution_comp(logAge=False)
         self.iso_evolution_comp(logAge=True)
         self.observational()
         self.observational_lelemZ()
@@ -334,8 +335,8 @@ class Plots(Setup):
         ax.yaxis.set_major_locator(ticker.MultipleLocator(20))
         ax.xaxis.set_minor_locator(ticker.MultipleLocator(5))
         ax.yaxis.set_minor_locator(ticker.MultipleLocator(5))
-        ax.tick_params(width = 2, length = 10)
-        ax.tick_params(width = 1, length = 5, which = 'minor')
+        ax.tick_params(width=2, length=10)
+        ax.tick_params(width=1, length = 5, which='minor')
         ax.set_xlim(np.min(x)-2.5, np.max(x)+2.5)
         ax.set_ylim(np.min(y)-2.5, np.max(y)+2.5)
         plt.tight_layout()
@@ -370,8 +371,8 @@ class Plots(Setup):
         ax.yaxis.set_major_locator(ticker.MultipleLocator(20))
         ax.xaxis.set_minor_locator(ticker.MultipleLocator(5))
         ax.yaxis.set_minor_locator(ticker.MultipleLocator(5))
-        ax.tick_params(width = 2, length = 10)
-        ax.tick_params(width = 1, length = 5, which = 'minor')
+        ax.tick_params(width=2, length=10)
+        ax.tick_params(width=1, length = 5, which='minor')
         ax.set_xlim(np.min(x)-2.5, np.max(x)+2.5)
         ax.set_ylim(np.min(y)-2.5, np.max(y)+2.5)
         ax3 = fig.add_axes([.02, 0.5, .4, .4], projection='3d')
@@ -429,8 +430,8 @@ class Plots(Setup):
         #ax.yaxis.set_major_locator(ticker.MultipleLocator(20))
         #ax.xaxis.set_minor_locator(ticker.MultipleLocator(5))
         #ax.yaxis.set_minor_locator(ticker.MultipleLocator(5))
-        #ax.tick_params(width = 2, length = 10)
-        #ax.tick_params(width = 1, length = 5, which = 'minor')
+        #ax.tick_params(width=2, length=10)
+        #ax.tick_params(width=1, length = 5, which='minor')
         #ax.set_xlim(np.min(x)-2.5, np.max(x)+2.5)
         #ax.set_ylim(np.min(y)-2.5, np.max(y)+2.5)
         plt.tight_layout()
@@ -507,7 +508,7 @@ class Plots(Setup):
         time_plot = time_chosen
         xscale = '_lin'
         MW_SFR_xcoord = 13.7
-        axs[0].hlines(self.IN.M_inf, 0, self.IN.age_Galaxy, label=r'$M_{gal,f}$', linewidth = 1, linestyle = '-.', color='#8c00ff')
+        axs[0].hlines(self.IN.M_inf, 0, self.IN.age_Galaxy, label=r'$M_{gal,f}$', linewidth=1, linestyle = '-.', color='#8c00ff')
         axt.vlines(MW_SFR_xcoord, self.IN.MW_SFR-.4, self.IN.MW_SFR+0.4, label=r'SFR$_{MW}$ CP11', linewidth = 6, linestyle = '-', color='#ff8c00', alpha=0.8)
         axt.vlines(MW_SFR_xcoord, self.IN.MW_RSNII[2], self.IN.MW_RSNII[1], label=r'R$_{SNII,MW}$ M05', linewidth = 6, linestyle = '-', color='#0034ff', alpha=0.8)
         axt.vlines(MW_SFR_xcoord, self.IN.MW_RSNIa[2], self.IN.MW_RSNIa[1], label=r'R$_{SNIa,MW}$ M05', linewidth = 6, linestyle = '-', color='#00b3ff', alpha=0.8)
@@ -517,7 +518,7 @@ class Plots(Setup):
         axs[0].semilogy(time_plot, np.sum(Mass_i[:2,2:], axis=0), label = r'$M_{H,g}$', linewidth=1, linestyle='-.', color='#0033ff')
         axs[0].semilogy(time_plot, np.sum(Mass_i[4:,2:], axis=0), label = r'$M_{Z,g}$', linewidth=2, linestyle=':', color='#ff0073')
         axs[0].semilogy(time_plot, Mtot, label=r'$M_{tot}$', linewidth=4, color='black')
-        axs[0].semilogy(time_plot, Mstar_v + Mgas_v, label= r'$M_g + M_s$', linewidth = 3, linestyle = '--', color='#a9a9a9')
+        axs[0].semilogy(time_plot, Mstar_v + Mgas_v, label= r'$M_g + M_s$', linewidth=3, linestyle = '--', color='#a9a9a9')
         axs[0].semilogy(time_plot, np.sum(Mass_i[2:4,2:], axis=0), label = r'$M_{He,g}$', linewidth=1, linestyle='--', color='#0073ff')
         axs[1].semilogy(time_plot[:-1], np.divide(Rate_SNII[:-1],1e9), label= r'$R_{SNII}$', color = '#0034ff', linestyle=':', linewidth=3)
         axs[1].semilogy(time_plot[:-1], np.divide(Rate_SNIa[:-1],1e9), label= r'$R_{SNIa}$', color = '#00b3ff', linestyle=':', linewidth=3)
@@ -533,13 +534,13 @@ class Plots(Setup):
             axs[1].set_xlim(0,13.8)
             axt.set_xlim(0,13.8)
             axs[0].xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
-            axs[0].tick_params(width = 1, length = 10, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
+            axs[0].tick_params(width=1, length=10, axis='x', which='minor', bottom=True, top=True, direction='in')
             axs[0].xaxis.set_major_locator(ticker.MultipleLocator(base=5))
-            axs[0].tick_params(width = 2, length = 15, axis = 'x', which = 'major', bottom = True, top = True, direction = 'in')
+            axs[0].tick_params(width=2, length=15, axis='x', which='major', bottom=True, top=True, direction='in')
             axs[1].xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
-            axs[1].tick_params(width = 1, length = 10, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
+            axs[1].tick_params(width=1, length=10, axis='x', which='minor', bottom=True, top=True, direction='in')
             axs[1].xaxis.set_major_locator(ticker.MultipleLocator(base=5))
-            axs[1].tick_params(width = 2, length = 15, axis = 'x', which = 'major', bottom = True, top = True, direction = 'in')
+            axs[1].tick_params(width=2, length=15, axis='x', which='major', bottom=True, top=True, direction='in')
         else:
             axs[0].set_xscale('log')
             axs[1].set_xscale('log')
@@ -561,8 +562,6 @@ class Plots(Setup):
         plt.savefig(self._dir_out_figs + 'total_physical'+str(xscale)+'.pdf', bbox_inches='tight')
         
     def age_observations(self):
-        #import pandas as pd
-        #import numpy as np
         observ = pd.read_table(self._dir + '/input/observations/age/meusinger91.txt', sep=',')
         observ_SA = np.genfromtxt(self._dir + '/input/observations/age/silva-aguirre18.txt', names=['KIC', 'Mass', 'e_Mass', 'Rad', 'e_Rad', 'logg', 'e_logg', 'Age', 'e_Age', 'Lum', 'e_Lum', 'Dist', 'e_Dist', 'Prob'])
         observ_P14_2 = np.genfromtxt(self._dir + '/input/observations/age/pinsonneault14/table2.dat', names=['KIC', 'Teff', 'FeH', 'log(g)', 'e_log(g)'])
@@ -579,10 +578,9 @@ class Plots(Setup):
         metallicity_age = observ_SA['Age'][id_match5[2]]
         return FeH_value, FeH_age, metallicity_value, metallicity_age
         
-    def FeH_evolution(self, c=2, elemZ=26, logAge=False):
+    def FeH_evolution(self, c=2, elemZ=26, logAge=True):
         print('Starting FeH_evolution()')
         from matplotlib import pyplot as plt
-        #import pandas as pd
         #plt.style.use(self._dir+'/galcem.mplstyle')
         Z_list = np.unique(self.ZA_sorted[:,0])
         phys = np.loadtxt(self._dir_out + 'phys.dat')
@@ -620,7 +618,6 @@ class Plots(Setup):
     def OH_evolution(self, c=2, elemZ=8, logAge=False):
         print('Starting OH_evolution()')
         from matplotlib import pyplot as plt
-        #import pandas as pd
         #plt.style.use(self._dir+'/galcem.mplstyle')
         Z_list = np.unique(self.ZA_sorted[:,0])
         phys = np.loadtxt(self._dir_out + 'phys.dat')
@@ -658,7 +655,6 @@ class Plots(Setup):
         elemZ2 = 12 
         print('Starting ind_evolution()')
         from matplotlib import pyplot as plt
-        #import pandas as pd
         #plt.style.use(self._dir+'/galcem.mplstyle')
         Z_list = np.unique(self.ZA_sorted[:,0])
         phys = np.loadtxt(self._dir_out + 'phys.dat')
@@ -719,13 +715,13 @@ class Plots(Setup):
                 ax.set_ylim(-7.5, 10.5)
                 ax.set_xlim(0.1,13.8)
                 ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
-                ax.tick_params(width = 1, length = 2, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
+                ax.tick_params(width=1, length=2, axis='x', which='minor', bottom=True, top=True, direction='in')
                 ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=1))
-                ax.tick_params(width = 1, length = 2, axis = 'y', which = 'minor', left = True, right = True, direction = 'in')
+                ax.tick_params(width=1, length=2, axis='y', which='minor', left = True, right = True, direction='in')
                 ax.xaxis.set_major_locator(ticker.MultipleLocator(base=5))
-                ax.tick_params(width = 1, length = 5, axis = 'x', which = 'major', bottom = True, top = True, direction = 'in')
+                ax.tick_params(width=1, length = 5, axis='x', which='major', bottom=True, top=True, direction='in')
                 ax.yaxis.set_major_locator(ticker.MultipleLocator(base=5))
-                ax.tick_params(width = 1, length = 5, axis = 'y', which = 'major', left = True, right = True, direction = 'in')
+                ax.tick_params(width=1, length = 5, axis='y', which='major', left = True, right = True, direction='in')
             else:
                 fig.delaxes(ax)
         for i in range(nrow):
@@ -741,7 +737,8 @@ class Plots(Setup):
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'iso_evolution.pdf', bbox_inches='tight')
 
-    def iso_evolution_comp(self, figsize=(15,12), logAge=False):
+    def iso_evolution_comp(self, figsize=(12,18), logAge=True, ncol=15):
+        import math
         print('Starting iso_evolution_comp()')
         from matplotlib import pyplot as plt
         plt.style.use(self._dir+'/galcem.mplstyle')
@@ -750,76 +747,76 @@ class Plots(Setup):
         Masses = np.log10(Mass_i[:,2:])
         phys = np.loadtxt(self._dir_out + 'phys.dat')
         W_i_comp = pickle.load(open(self._dir_out + 'W_i_comp.pkl','rb'))
-        #W_i_comp +=  100.
-        W_i_comp = np.asarray(W_i_comp, dtype=float)
         W_i_comp = np.log10(W_i_comp)
         #Mass_MRSN = W_i_comp[:,:,0]
-        Mass_SNII = W_i_comp[:,:,0]
-        Mass_AGB = W_i_comp[:,:,1]
-        Mass_SNIa = W_i_comp[:,:,2]
+        Mass_BBN = np.log10(W_i_comp['BBN'])
+        Mass_SNII = np.log10(W_i_comp['SNII'])
+        Mass_AGB = np.log10(W_i_comp['LIMs'])
+        Mass_SNIa = np.log1(W_i_comp['SNIa'])
         timex = phys[:,0]
         Z = self.ZA_sorted[:,0]
         A = self.ZA_sorted[:,1]
-        ncol = self.aux.find_nearest(np.power(np.arange(22),2), len(Z))
-        if len(self.ZA_sorted) > ncol:
-            nrow = ncol
-        else:
-            nrow = ncol + 1
+        if ncol==None: ncol = np.floor(np.sqrt(lenA)).astype('int')
+        nrow = np.ceil(len(A)/ncol).astype('int')
+        print('(# nuclides, nrow, ncol) = (%d, %d, %d)'%(len(Z), nrow, ncol))
         fig, axs = plt.subplots(nrow, ncol, figsize=figsize)#, sharex=True)
         for i, ax in enumerate(axs.flat):
-            print('i %d'%(i))
-            print('%s(%d,%d)'%(self.ZA_symb_list.values[i],Z[i],A[i]))
-            if i < len(Z)-1:
-                ax.annotate('%s(%d,%d)'%(self.ZA_symb_list.values[i],Z[i],A[i]), xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=7, alpha=0.7)
+            if i < len(Z):
+                print('i %d'%(i))
+                print('%s(%d,%d)'%(self.ZA_symb_list.values[i],Z[i],A[i]))
+                ax.annotate('%d%s'%(A[i],self.ZA_symb_list.values[i]), xy=(0.5, 0.3), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=7, alpha=0.7)
                 ax.set_ylim(-4.9, 9.9)
+                ax.set_xlim(0.01,13.8)
+                ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=1))
+                ax.tick_params(width=1, length=2, axis='y', which='minor', left=True, right=True, direction='in')
+                ax.yaxis.set_major_locator(ticker.MultipleLocator(base=5))
+                ax.tick_params(width=1, length=3, axis='y', which='major', left=True, right=True, direction='in')
+                ax.plot(timex[:-1], Mass_BBN[i][:-1], color='#black', linestyle='-.', linewidth=3, alpha=0.8, label='BBN')
+                ax.plot(timex[:-1], Mass_SNII[i][:-1], color='#0034ff', linestyle='-.', linewidth=3, alpha=0.8, label='SNII')
+                ax.plot(timex[:-1], Mass_AGB[i][:-1], color='#ff00b3', linestyle='--', linewidth=3, alpha=0.8, label='LIMs')
+                ax.plot(timex[:-1], Mass_SNIa[i][:-1], color='#00b3ff', linestyle=':', linewidth=3, alpha=0.8, label='SNIa')
                 if not logAge:
                     #ax.plot(timex[:-1], Mass_MRSN[i][:-1], color='#000c3b', linestyle='-', linewidth=3, alpha=0.8, label='MRSN')
-                    ax.plot(timex[:-1], Mass_SNII[i][:-1], color='#0034ff', linestyle='-.', linewidth=3, alpha=0.8, label='SNII')
-                    ax.plot(timex[:-1], Mass_AGB[i][:-1], color='#ff00b3', linestyle='--', linewidth=3, alpha=0.8, label='LIMs')
-                    ax.plot(timex[:-1], Mass_SNIa[i][:-1], color='#00b3ff', linestyle=':', linewidth=3, alpha=0.8, label='SNIa')
+                    ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
+                    ax.tick_params(width=1, length=2, axis='x', which='minor', bottom=True, top=True, direction='in')
+                    ax.xaxis.set_major_locator(ticker.MultipleLocator(base=5))
+                    ax.tick_params(width=1, length=3, axis='x', which='major', bottom=True, top=True, direction='in')
                 else:
-                    #ax.plot(np.log10(timex)[:-1], Mass_MRSN[i][:-1], color='#000c3b', linestyle='-', linewidth=3, alpha=0.8, label='MRSN')
-                    ax.plot(np.log10(timex)[:-1], Mass_SNII[i][:-1], color='#0034ff', linestyle='-.', linewidth=3, alpha=0.8, label='SNII')
-                    ax.plot(np.log10(timex)[:-1], Mass_AGB[i][:-1], color='#ff00b3', linestyle='--', linewidth=3, alpha=0.8, label='LIMs')
-                    ax.plot(np.log10(timex)[:-1], Mass_SNIa[i][:-1], color='#00b3ff', linestyle=':', linewidth=3, alpha=0.8, label='SNIa')
-                    #ax.set_xscale('log')
-                ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
-                ax.tick_params(width = 1, length = 1, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
-                ax.xaxis.set_major_locator(ticker.MultipleLocator(base=5))
-                ax.tick_params(width = 1, length = 3, axis = 'x', which = 'major', bottom = True, top = True, direction = 'in')
+                    ax.set_xscale('log')
+                    #ax.set_xticks([0.01, 1])
+                    #ax.get_xaxis().set_major_formatter(ticker.ScalarFormatter())
+                    ax.xaxis.set_major_locator(ticker.LogLocator(base=100, numticks=3))
+                    ax.tick_params(width=1, length=3, axis='x', which='major', bottom=True, top=True, direction='in')
+                    ax.xaxis.set_minor_locator(ticker.LogLocator(base=10.0,subs=(0.2,0.4,0.6,0.8,1.),numticks=5))
+                    ax.xaxis.set_minor_formatter(ticker.NullFormatter())
+                    ax.tick_params(width=1, length=2, axis='x', which='minor', bottom=True, top=True, direction='in')
             else:
                 fig.delaxes(ax)
+            last_idx =i
         for i in range(nrow):
             for j in range(ncol):
                 if j != 0:
                     axs[i,j].set_yticklabels([])
-                if i != nrow-1:
+                if i < nrow-2:
                     axs[i,j].set_xticklabels([])
                     
-        axs[nrow//2,0].set_ylabel(r'Masses [ $\log_{10}$($M_{\odot}$/yr)]', fontsize = 15)
-        axs[0, ncol//2].legend(ncol=3, loc='upper center', bbox_to_anchor=(0.5, 1.8), frameon=False, fontsize=12)
+        #axs[nrow//2,0].set_ylabel(r'Masses [ $\log_{10}$($M_{\odot}$/yr)]', fontsize = 15)
+        axs[nrow//2,0].set_ylabel(r'Masses [ $\log_{10}$($M_{\odot}$)]', fontsize = 15)
+        axs[0, ncol//2].legend(ncol=len(W_i_comp), loc='upper center', bbox_to_anchor=(0.5, 1.8), frameon=False, fontsize=12)
         if not logAge:
-            ax.set_xlim(0.01,13.8)
             xscale = '_lin'
-            axs[nrow-1, ncol//2].set_xlabel('Age [Gyr]', fontsize = 15)
-            ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=1))
-            ax.tick_params(width = 1, length = 1, axis = 'y', which = 'minor', left = True, right = True, direction = 'in')
-            ax.yaxis.set_major_locator(ticker.MultipleLocator(base=5))
-            ax.tick_params(width = 1, length = 3, axis = 'y', which = 'major', left = True, right = True, direction = 'in')
+            axs[nrow-2, ncol//2].set_xlabel('Age [Gyr]', fontsize = 15)
+            #axs.flat[last_idx].set_xlabel('Age [Gyr]', fontsize = 15)
+            #plt.xlabel('Age [Gyr]', fontsize = 15)
         else:
-            ax.set_xlim(-2,1.8)
             xscale = '_log'
-            axs[nrow-1, ncol//2].set_xlabel('Log  Age [Gyr]', fontsize = 15)
-            ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=.1))
-            ax.tick_params(width = 1, length = 1, axis = 'y', which = 'minor', left = True, right = True, direction = 'in')
-            ax.yaxis.set_major_locator(ticker.MultipleLocator(base=.5))
-            ax.tick_params(width = 1, length = 3, axis = 'y', which = 'major', left = True, right = True, direction = 'in')
+            axs[nrow-2, ncol//2].set_xlabel('Log  Age [Gyr]', fontsize = 15)
         plt.subplots_adjust(wspace=0., hspace=0.)
         plt.tight_layout(rect = [0.03, 0.03, 1, .90])
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'iso_evolution_comp'+str(xscale)+'.pdf', bbox_inches='tight')
 
-    def iso_abundance(self, figsize=(40,13), c=3): 
+    def iso_abundance(self, figsize=(20,13), c=3): 
         print('Starting iso_abundance()')
         from matplotlib import pyplot as plt
         #plt.style.use(self._dir+'/galcem.mplstyle')
@@ -843,13 +840,13 @@ class Plots(Setup):
                 ax.set_ylim(-15, 0.5)
                 ax.set_xlim(-11, 0.5)
                 ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
-                ax.tick_params(width = 1, length = 2, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
+                ax.tick_params(width=1, length=2, axis='x', which='minor', bottom=True, top=True, direction='in')
                 ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=1))
-                ax.tick_params(width = 1, length = 2, axis = 'y', which = 'minor', left = True, right = True, direction = 'in')
+                ax.tick_params(width=1, length=2, axis='y', which='minor', left = True, right = True, direction='in')
                 ax.xaxis.set_major_locator(ticker.MultipleLocator(base=5))
-                ax.tick_params(width = 1, length = 5, axis = 'x', which = 'major', bottom = True, top = True, direction = 'in')
+                ax.tick_params(width=1, length = 5, axis='x', which='major', bottom=True, top=True, direction='in')
                 ax.yaxis.set_major_locator(ticker.MultipleLocator(base=5))
-                ax.tick_params(width = 1, length = 5, axis = 'y', which = 'major', left = True, right = True, direction = 'in')
+                ax.tick_params(width=1, length = 5, axis='y', which='major', left = True, right = True, direction='in')
             else:
                 fig.delaxes(ax)
         for i in range(nrow):
@@ -918,13 +915,13 @@ class Plots(Setup):
                 ax.set_ylim(setylim) #(-2, 2) #(-1.5, 1.5)
                 ax.set_xlim(setxlim) #(-11, -2) #(-8.5, 0.5)
                 ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
-                ax.tick_params(width = 1, length = 2, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
+                ax.tick_params(width=1, length=2, axis='x', which='minor', bottom=True, top=True, direction='in')
                 ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=1))
-                ax.tick_params(width = 1, length = 2, axis = 'y', which = 'minor', left = True, right = True, direction = 'in')
+                ax.tick_params(width=1, length=2, axis='y', which='minor', left = True, right = True, direction='in')
                 ax.xaxis.set_major_locator(ticker.MultipleLocator(base=5))
-                ax.tick_params(width = 1, length = 5, axis = 'x', which = 'major', bottom = True, top = True, direction = 'in')
+                ax.tick_params(width=1, length = 5, axis='x', which='major', bottom=True, top=True, direction='in')
                 ax.yaxis.set_major_locator(ticker.MultipleLocator(base=5))
-                ax.tick_params(width = 1, length = 5, axis = 'y', which = 'major', left = True, right = True, direction = 'in')
+                ax.tick_params(width=1, length = 5, axis='y', which='major', left = True, right = True, direction='in')
             else:
                 fig.delaxes(ax)
         for i in range(nrow):
@@ -948,7 +945,6 @@ class Plots(Setup):
         print('Starting observational()')
         import glob
         import itertools
-        #import pandas as pd
         from matplotlib import pyplot as plt
         import matplotlib.ticker as ticker
         plt.style.use(self._dir+'/galcem.mplstyle')
@@ -1003,12 +999,12 @@ class Plots(Setup):
                                     "$7$", "$8$", "$9$", "$f$", "$\u266B$",
                                     r"$\frac{1}{2}$",  'o', '+', 'x', 'v', '^', '<', '>',
                                     'P', '*', 'd', 'X',  "_", '|']
-        listcolors = ['#252525', '#525252', '#737373', '#969696', '#bdbdbd', '#d9d9d9',           
-        '#7f0000', '#cc0000', '#ff4444', '#ff7f7f', '#ffb2b2', '#995100', 
-        '#cc6c00', '#ff8800', '#ffbb33', '#ffe564', '#2c4c00', '#436500',
+        listcolors = ['#cc6c00', '#ff8800', '#ffbb33', '#ffe564', '#2c4c00', '#436500',
         '#669900', '#99cc00', '#d2fe4c', '#3c1451', '#6b238e', '#9933cc',
         '#aa66cc', '#bc93d1', '#004c66', '#007299', '#0099cc', '#33b5e5',
-        '#8ed5f0', '#660033', '#b20058', '#e50072', '#ff3298', '#ff7fbf']
+        '#8ed5f0', '#660033', '#b20058', '#e50072', '#ff3298', '#ff7fbf',
+        '#252525', '#525252', '#737373', '#969696', '#bdbdbd', '#d9d9d9',
+        '#7f0000', '#cc0000', '#ff4444', '#ff7f7f', '#ffb2b2', '#995100']
                      #['#ff3399', '#5d8aa8', '#e32636', '#ffbf00', '#9966cc', '#a4c639',
                      # '#cd9575', '#008000', '#fbceb1', '#00ffff', '#4b5320', '#a52a2a',
                      # '#007fff', '#ff2052', '#21abcd', '#e97451', '#592720', '#fad6a5',
@@ -1024,22 +1020,23 @@ class Plots(Setup):
                 ip = i+2 # Shift to skip H and He
                 idx_obs = np.where(ll.iloc[:,0] == ip+1)[0]
                 ax.scatter(ll.iloc[idx_obs,1], ll.iloc[idx_obs,2], label=linames[j], alpha=0.3, marker=next(markerlist), c=next(colorlist), s=20)
-            if i == len(Z_list)-1:
-                    ax.legend(ncol=4, loc='upper left', bbox_to_anchor=(1, 1), frameon=False, fontsize=7)
+            if i == len(Z_list)-3:
+                    ax.legend(ncol=7, loc='upper left', bbox_to_anchor=(1, 1), frameon=False, fontsize=7)
+                    ax.set_xlabel(f'[Fe/H]', fontsize = 15)
             if i < len(Z_list)-2:
                 ip = i+2 # Shift to skip H and He
                 ax.plot(FeH, Masses2[ip], color='black', linewidth=2)
                 ax.annotate(f"{Z_list[ip]}{Z_symb_list[Z_list[ip]]}", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
                 ax.set_ylim(-5.9, 5.9)
-                ax.set_xlim(-6.5, 0.5)
+                ax.set_xlim(-6.5, 1.5)
                 ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=.5))
-                ax.tick_params(width = 1, length = 2, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
+                ax.tick_params(width=1, length=2, axis='x', which='minor', bottom=True, top=True, direction='in')
                 ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=.5))
-                ax.tick_params(width = 1, length = 2, axis = 'y', which = 'minor', left = True, right = True, direction = 'in')
+                ax.tick_params(width=1, length=2, axis='y', which='minor', left = True, right = True, direction='in')
                 ax.xaxis.set_major_locator(ticker.MultipleLocator(base=2))
-                ax.tick_params(width = 1, length = 5, axis = 'x', which = 'major', bottom = True, top = True, direction = 'in')
+                ax.tick_params(width=1, length = 5, axis='x', which='major', bottom=True, top=True, direction='in')
                 ax.yaxis.set_major_locator(ticker.MultipleLocator(base=3))
-                ax.tick_params(width = 1, length = 5, axis = 'y', which = 'major', left = True, right = True, direction = 'in')
+                ax.tick_params(width=1, length = 5, axis='y', which='major', left = True, right = True, direction='in')
             else:
                 fig.delaxes(ax)
         for i in range(nrow):
@@ -1049,7 +1046,7 @@ class Plots(Setup):
                 if i != nrow-1:
                     axs[i,j].set_xticklabels([])
         axs[nrow//2,0].set_ylabel('[X/Fe]', fontsize = 15)
-        axs[nrow-1, ncol//2].set_xlabel(f'[Fe/H]', fontsize = 15)
+        #axs[nrow-1, ncol//2].set_xlabel(f'[Fe/H]', fontsize = 15)
         fig.tight_layout(rect = [0.03, 0, 1, 1])
         fig.subplots_adjust(wspace=0., hspace=0.)
         plt.show(block=False)
@@ -1061,7 +1058,6 @@ class Plots(Setup):
         print('Starting observational_lelemZ()')
         import glob
         import itertools
-        #import pandas as pd
         from matplotlib import pyplot as plt
         import matplotlib.ticker as ticker
         #plt.style.use(self._dir+'/galcem.mplstyle')
@@ -1116,12 +1112,12 @@ class Plots(Setup):
                                     "$7$", "$8$", "$9$", "$f$", "$\u266B$",
                                     r"$\frac{1}{2}$",  'o', '+', 'x', 'v', '^', '<', '>',
                                     'P', '*', 'd', 'X',  "_", '|']
-        listcolors = ['#aa66cc', '#bc93d1', '#004c66', '#007299', '#0099cc', '#33b5e5',
+        listcolors = ['#cc6c00', '#ff8800', '#ffbb33', '#ffe564', '#2c4c00', '#436500',
+        '#669900', '#99cc00', '#d2fe4c', '#3c1451', '#6b238e', '#9933cc',
+        '#aa66cc', '#bc93d1', '#004c66', '#007299', '#0099cc', '#33b5e5',
         '#8ed5f0', '#660033', '#b20058', '#e50072', '#ff3298', '#ff7fbf',
-        '#252525', '#525252', '#737373', '#969696', '#bdbdbd', '#d9d9d9',           
-        '#7f0000', '#cc0000', '#ff4444', '#ff7f7f', '#ffb2b2', '#995100',
-        '#cc6c00', '#ff8800', '#ffbb33', '#ffe564', '#2c4c00', '#436500',
-        '#669900', '#99cc00', '#d2fe4c', '#3c1451', '#6b238e', '#9933cc']
+        '#252525', '#525252', '#737373', '#969696', '#bdbdbd', '#d9d9d9',
+        '#7f0000', '#cc0000', '#ff4444', '#ff7f7f', '#ffb2b2', '#995100']
                      #['#ff3399', '#5d8aa8', '#e32636', '#ffbf00', '#9966cc', '#a4c639',
                      # '#cd9575', '#008000', '#fbceb1', '#00ffff', '#4b5320', '#a52a2a',
                      # '#007fff', '#ff2052', '#21abcd', '#e97451', '#592720', '#fad6a5',
@@ -1145,15 +1141,15 @@ class Plots(Setup):
                 ax.annotate(f"{Z_list[ip]}{Z_symb_list[Z_list[ip]]}", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
                 ax.set_ylim(-2.5, 2.5)
                 if yrange=='full': ax.set_ylim(-5.9, 5.9)
-                ax.set_xlim(-6.5, 0.5)
+                ax.set_xlim(-6.5, 1.5)
                 ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=.5))
-                ax.tick_params(width = 1, length = 5, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
+                ax.tick_params(width=1, length = 5, axis='x', which='minor', bottom=True, top=True, direction='in')
                 ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=.5))
-                ax.tick_params(width = 1, length = 5, axis = 'y', which = 'minor', left = True, right = True, direction = 'in')
+                ax.tick_params(width=1, length = 5, axis='y', which='minor', left = True, right = True, direction='in')
                 ax.xaxis.set_major_locator(ticker.MultipleLocator(base=2))
-                ax.tick_params(width = 1, length = 7, axis = 'x', which = 'major', bottom = True, top = True, direction = 'in')
+                ax.tick_params(width=1, length = 7, axis='x', which='major', bottom=True, top=True, direction='in')
                 ax.yaxis.set_major_locator(ticker.MultipleLocator(base=2))
-                ax.tick_params(width = 1, length = 7, axis = 'y', which = 'major', left = True, right = True, direction = 'in')
+                ax.tick_params(width=1, length = 7, axis='y', which='major', left = True, right = True, direction='in')
             else:
                 fig.delaxes(ax)
         for i in range(nrow):
@@ -1174,7 +1170,6 @@ class Plots(Setup):
         print('Starting observational_lelemZ()')
         import glob
         import itertools
-        #import pandas as pd
         from matplotlib import pyplot as plt
         import matplotlib.ticker as ticker
         #plt.style.use(self._dir+'/galcem.mplstyle')
@@ -1261,13 +1256,13 @@ class Plots(Setup):
                 ax.set_ylim(-4.9, 4.9)
                 ax.set_xlim(-6.5, 0.5)
                 ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=.5))
-                ax.tick_params(width = 1, length = 2, axis = 'x', which = 'minor', bottom = True, top = True, direction = 'in')
+                ax.tick_params(width=1, length=2, axis='x', which='minor', bottom=True, top=True, direction='in')
                 ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=.5))
-                ax.tick_params(width = 1, length = 2, axis = 'y', which = 'minor', left = True, right = True, direction = 'in')
+                ax.tick_params(width=1, length=2, axis='y', which='minor', left = True, right = True, direction='in')
                 ax.xaxis.set_major_locator(ticker.MultipleLocator(base=2))
-                ax.tick_params(width = 1, length = 5, axis = 'x', which = 'major', bottom = True, top = True, direction = 'in')
+                ax.tick_params(width=1, length = 5, axis='x', which='major', bottom=True, top=True, direction='in')
                 ax.yaxis.set_major_locator(ticker.MultipleLocator(base=2))
-                ax.tick_params(width = 1, length = 5, axis = 'y', which = 'major', left = True, right = True, direction = 'in')
+                ax.tick_params(width=1, length = 5, axis='y', which='major', left = True, right = True, direction='in')
             else:
                 fig.delaxes(ax)
         for i in range(nrow):
