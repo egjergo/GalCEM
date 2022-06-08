@@ -49,11 +49,11 @@ class Setup:
         self.idx_age_Galaxy = self.aux.find_nearest(self.time_chosen, self.IN.age_Galaxy)
         # Surface density for the disk. The bulge goes as an inverse square law
         surf_density_Galaxy = self.IN.sd / np.exp(self.IN.r / self.IN.Reff) #sigma(t_G) before eq(7) not used so far !!!!!!!
-        infall_class = Infall(self.IN, morphology=self.IN.morphology, time=self.time_chosen)
-        self.infall = infall_class.inf()
+        self.infall_class = Infall(self.IN, morphology=self.IN.morphology, time=self.time_chosen)
+        infall = self.infall_class.inf()
         self.SFR_class = Star_Formation_Rate(self.IN, self.IN.SFR_option, self.IN.custom_SFR)
-        IMF_class = Initial_Mass_Function(Ml, Mu, self.IN, self.IN.IMF_option, self.IN.custom_IMF)
-        self.IMF = IMF_class.IMF() #() # Function @ input stellar mass
+        self.IMF_class = Initial_Mass_Function(Ml, Mu, self.IN, self.IN.IMF_option, self.IN.custom_IMF)
+        #IMF = IMF_class.IMF() #() # Function @ input stellar mass
         
         # Initialize Yields
         isotope_class = Isotopes(self.IN)
@@ -85,7 +85,7 @@ class Setup:
         #self.yields_MRSN_class.elemZ, self.yields_MRSN_class.elemA = self.ZA_MRSN[:,0], self.ZA_MRSN[:,1] # !!!!!!! remove eventually
         ZA_all = np.vstack((self.ZA_LIMs, self.ZA_SNIa, self.ZA_SNII))#, self.ZA_NSM, self.ZA_MRSN))
         
-        self.Infall_rate = self.infall(self.time_chosen)
+        self.Infall_rate = infall(self.time_chosen)
         self.ZA_sorted = self.c_class.ZA_sorted(ZA_all) # [Z, A] VERY IMPORTANT! 321 isotopes with yields_SNIa_option = 'km20', 192 isotopes for 'i99' 
         #self.ZA_sorted = self.ZA_sorted[1:,:]
         self.ZA_symb_list = self.IN.periodic['elemSymb'][self.ZA_sorted[:,0]] # name of elements for all isotopes
@@ -110,11 +110,13 @@ class Setup:
         self.asplund3_percent = self.c_class.abund_percentage(self.ZA_sorted)
         #self.ZA_symb_iso_list = np.asarray([ str(A) for A in self.IN.periodic['elemA'][self.ZA_sorted]])  # name of elements for all isotopes
         self.i_Z = np.where(self.ZA_sorted[:,0]>2)[0][0] #  starting idx (int) that excludes H and He for the metallicity selection
-        self.Mtot = np.insert(np.cumsum((self.Infall_rate[1:] + self.Infall_rate[:-1]) * self.IN.nTimeStep / 2), 0, self.IN.epsilon) # The total baryonic mass (i.e. the infall mass) is computed right away
+        self.Mtot = np.cumsum(self.Infall_rate*self.IN.nTimeStep) #np.insert(np.cumsum((self.Infall_rate[1:] + self.Infall_rate[:-1]) * self.IN.nTimeStep / 2), 0, self.IN.epsilon) # The total baryonic mass (i.e. the infall mass) is computed right away
+        
         #Mtot_quad = [quad(infall, self.time_chosen[0], i)[0] for i in range(1,len(self.time_chosen)-1)] # slow loop, deprecate!!!!!!!
         self.Mstar_v = self.IN.epsilon * np.ones(len(self.time_chosen)) 
         self.Mgas_v = self.IN.epsilon * np.ones(len(self.time_chosen)) 
-        self.returned_Mass_v = self.IN.epsilon * np.ones(len(self.time_chosen)) 
+        self.Mgas_i_v = self.IN.epsilon * np.ones(len(self.time_chosen)) # returned mass
+        #self.returned_Mass_v = self.IN.epsilon * np.ones(len(self.time_chosen)) 
         self.SFR_v = self.IN.epsilon * np.ones(len(self.time_chosen)) #
         self.f_SNIa_v = self.IN.epsilon * np.ones(len(self.time_chosen))
         self.Mass_i_v = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)))    # Gass mass (i,j) where the i rows are the isotopes and j are the timesteps, [:,j] follows the timesteps
@@ -146,7 +148,7 @@ class OneZone(Setup):
         # Record load time
         self.tic.append(time.process_time())
         package_loading_time = self.tic[-1]
-        print('Package lodaded in %.1e seconds.'%package_loading_time)   
+        print('Package loaded in %.1e seconds.'%package_loading_time)   
     
     def main(self):
         ''' Run the OneZone program '''
@@ -168,13 +170,14 @@ class OneZone(Setup):
         G_v = np.divide(self.Mgas_v, self.Mtot)
         S_v = 1 - G_v
         print("Saving the output...")
-        np.savetxt(self._dir_out + 'phys.dat', np.column_stack((self.time_chosen, self.Mtot, self.Mgas_v, self.Mstar_v, self.SFR_v/1e9, self.Infall_rate/1e9, self.Z_v, G_v, S_v, self.Rate_SNII, self.Rate_SNIa, self.Rate_LIMs, self.f_SNIa_v)), fmt='%-12.4e', #SFR is divided by 1e9 to get the /Gyr to /yr conversion 
-                header = ' (0) time_chosen [Gyr]    (1) Mtot [Msun]    (2) Mgas_v [Msun]    (3) Mstar_v [Msun]    (4) SFR_v [Msun/yr]    (5)Infall_v [Msun/yr]    (6) Z_v    (7) G_v    (8) S_v     (9) Rate_SNII     (10) Rate_SNIa     (11) Rate_LIMs     (12) DTD SNIa')
+        np.savetxt(self._dir_out + 'phys.dat', np.column_stack((self.time_chosen, self.Mtot, self.Mgas_v, self.Mstar_v, self.SFR_v/1e9, self.Infall_rate/1e9, self.Z_v, G_v, S_v, self.Rate_SNII, self.Rate_SNIa, self.Rate_LIMs, self.f_SNIa_v, self.Mgas_i_v)), fmt='%-12.4e', #SFR is divided by 1e9 to get the /Gyr to /yr conversion 
+                header = ' (0) time_chosen [Gyr]    (1) Mtot [Msun]    (2) Mgas_v [Msun]    (3) Mstar_v [Msun]    (4) SFR_v [Msun/yr]    (5)Infall_v [Msun/yr]    (6) Z_v    (7) G_v    (8) S_v     (9) Rate_SNII     (10) Rate_SNIa     (11) Rate_LIMs     (12) DTD SNIa   (13)Mgas_i_v')
         np.savetxt(self._dir_out +  'Mass_i.dat', np.column_stack((self.ZA_sorted, self.Mass_i_v)), fmt=' '.join(['%5.i']*2 + ['%12.4e']*self.Mass_i_v[0,:].shape[0]),
                 header = ' (0) elemZ,    (1) elemA,    (2) masses [Msun] of every isotope for every timestep')
         np.savetxt(self._dir_out +  'X_i.dat', np.column_stack((self.ZA_sorted, self.Xi_v)), fmt=' '.join(['%5.i']*2 + ['%12.4e']*self.Xi_v[0,:].shape[0]),
                 header = ' (0) elemZ,    (1) elemA,    (2) abundance mass ratios of every isotope for every timestep (normalized to solar, Asplund et al., 2009)')
         pickle.dump(self.W_i_comp,open(self._dir_out + 'W_i_comp.pkl','wb'))
+        #pickle.dump(self,open(self._dir_out + 'oz.pkl','wb'))
         self.aux.tic_count(string="Output saved in", tic=self.tic)
         self.file1.close()
     
@@ -183,17 +186,20 @@ class OneZone(Setup):
         #self.file1.write('A list of the proton/isotope number pairs for all the nuclides included in this run.\n ZA_sorted =\n\n')
         #self.file1.write(self.ZA_sorted)
         self.Mass_i_v[:,0] = np.multiply(self.Mtot[0], self.models_BBN)
-        self.Mass_i_v[:,1] = np.multiply(self.Mtot[1], self.models_BBN)
+        #self.Mass_i_v[:,1] = np.multiply(self.Mtot[1], self.models_BBN)
+        self.Mgas_v[0] = self.Mtot[0]
+        #self.Mgas_v[1] = self.Mtot[1]
         for n in range(len(self.time_chosen[:self.idx_age_Galaxy])):
             print('time [Gyr] = %.2f'%self.time_chosen[n])
             self.file1.write('n = %d\n'%n)
             self.phys_integral(n)        
-            self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
-            self.Z_v[n] = np.divide(np.sum(self.Mass_i_v[self.i_Z:,n]), self.Mgas_v[n])
+            self.Mgas_i_v[n+1] = np.sum(self.Mass_i_v[:,n])
+            self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_i_v[n])#self.Mgas_v[n])
+            self.Z_v[n] = np.divide(np.sum(self.Mass_i_v[self.i_Z:,n]), self.Mgas_i_v[n])
             self.file1.write(' sum X_i at n %d= %.3f\n'%(n, np.sum(self.Xi_v[:,n])))
             if n > 0.: 
                 Wi_class = Wi(n, self.IN, self.lifetime_class, self.time_chosen, self.Z_v, self.SFR_v, 
-                              self.f_SNIa_v, self.IMF, self.ZA_sorted)
+                              self.f_SNIa_v, self.IMF_class.IMF(), self.ZA_sorted)
                 self.Rate_SNII[n], self.Rate_LIMs[n], self.Rate_SNIa[n] = Wi_class.compute_rates()
                 Wi_comp = {ch: Wi_class.compute(ch) for ch in self.IN.include_channel}
                 Z_comp = {}
@@ -205,18 +211,19 @@ class OneZone(Setup):
                 for i, _ in enumerate(self.ZA_sorted): 
                     self.Mass_i_v[i, n+1] = self.aux.RK4(self.solve_integral, self.time_chosen[n], self.Mass_i_v[i,n], n, self.IN.nTimeStep, i=i, Wi_comp=Wi_comp, Z_comp=Z_comp)
             #self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
-        self.Z_v[-1] = np.divide(np.sum(self.Mass_i_v[self.i_Z:,-1]), self.Mgas_v[-1])
-        self.Xi_v[:,-1] = np.divide(self.Mass_i_v[:,-1], self.Mgas_v[-1]) 
+        self.Mgas_i_v[-1] = np.sum(self.Mass_i_v[:,-1])
+        self.Z_v[-1] = np.divide(np.sum(self.Mass_i_v[self.i_Z:,-1]), self.Mgas_i_v[-1])#np.sum(self.Mass_i_v[:,-1]))#self.Mgas_v[-1])
+        self.Xi_v[:,-1] = np.divide(self.Mass_i_v[:,-1], self.Mgas_i_v[-1])#np.sum(self.Mass_i_v[:,-1]))#self.Mgas_v[-1]) 
 
     def Mgas_func(self, t_n, y_n, n, i=None):
         # Explicit general diff eq GCE function
         # Mgas(t)
         #print(f'{self.SFR_tn(n)==self.SFR_v[n]=}')
-        return self.Infall_rate[n] + np.sum([self.W_i_comp[ch][:,n] for ch in self.IN.include_channel]) - self.SFR_tn(n) #* np.sum(self.Xi_v[:,n])
+        return self.Infall_rate[n] - self.SFR_tn(n) + np.sum([self.W_i_comp[ch][:,n] for ch in self.IN.include_channel]) #* np.sum(self.Xi_v[:,n]) 
     
     def Mstar_func(self, t_n, y_n, n, i=None):
         # Mstar(t)
-        return - np.sum([self.W_i_comp[ch][:,n] for ch in self.IN.include_channel]) + self.SFR_tn(n) #* np.sum(self.Xi_v[:,n])
+        return self.SFR_tn(n) - np.sum([self.W_i_comp[ch][:,n] for ch in self.IN.include_channel]) #* np.sum(self.Xi_v[:,n]) # - np.sum([self.W_i_comp[ch][:,n] for ch in self.IN.include_channel])
 
     def SFR_tn(self, timestep_n):
         '''
@@ -263,6 +270,9 @@ class OneZone(Setup):
                         if not self.yield_models[ch][i].empty:
                             yield_grid = Z_comps[ch]
                             yield_grid['mass'] = Wi_comps[ch]['mass_grid']
+                            print('------------------------------------')
+                            print(yield_grid)
+                            print(f'{ch=}, {n=}, {i=}')
                             Wi_vals[ch] = integr.simps(np.multiply(Wi_comps[ch]['integrand'], self.yield_models[ch][i](yield_grid)), x=Wi_comps[ch]['birthtime_grid'])
                         else:
                             Wi_vals[ch] = 0.
@@ -285,7 +295,7 @@ class Plots(Setup):
         # Record load time
         self.tic.append(time.process_time())
         package_loading_time = self.tic[-1]
-        print('Lodaded the plotting class in %.1e seconds.'%package_loading_time)   
+        print('Loaded the plotting class in %.1e seconds.'%package_loading_time)   
         
     def plots(self):
         self.tic.append(time.process_time())
@@ -516,6 +526,7 @@ class Plots(Setup):
         axt.vlines(MW_SFR_xcoord, self.IN.MW_RSNIa[2], self.IN.MW_RSNIa[1], label=r'R$_{SNIa,MW}$ M05', linewidth = 6, linestyle = '-', color='#00b3ff', alpha=0.8)
         axs[0].semilogy(time_plot, Mstar_v, label= r'$M_{star}$', linewidth=3, color='#ff8c00')
         axs[0].semilogy(time_plot, Mgas_v, label= r'$M_{gas}$', linewidth=3, color='#0d00ff')
+        #axs[0].semilogy(time_plot, np.sum(Mass_i[:,2:], axis=0), label= r'$M_{gas}$', linewidth=3, color='#0d00ff')
         axs[0].semilogy(time_plot, np.sum(Mass_i[:,2:], axis=0), label = r'$M_{g,tot,i}$', linewidth=2, linestyle=':', color='#00b3ff')
         axs[0].semilogy(time_plot, np.sum(Mass_i[:2,2:], axis=0), label = r'$M_{H,g}$', linewidth=1, linestyle='-.', color='#0033ff')
         axs[0].semilogy(time_plot, np.sum(Mass_i[4:,2:], axis=0), label = r'$M_{Z,g}$', linewidth=2, linestyle=':', color='#ff0073')
@@ -599,7 +610,8 @@ class Plots(Setup):
         fig, ax = plt.subplots(1,1, figsize=(7,5))
         ax.plot(time, FeH, color='black', label='[Fe/H]', linewidth=3) 
         ax.axvline(x=self.IN.age_Galaxy-self.IN.age_Sun, linewidth=2, color='orange', label=r'Age$_{\odot}$')
-        ax.plot(self.IN.age_Galaxy +0.5 - FeH_age, a*FeH_age+b, color='red', alpha=1, linewidth=3, label='linear fit on [Fe/H]')
+        if logAge==False:
+            ax.plot(self.IN.age_Galaxy +0.5 - FeH_age, a*FeH_age+b, color='red', alpha=1, linewidth=3, label='linear fit on [Fe/H]')
         ax.scatter(self.IN.age_Galaxy +0.5 - FeH_age, FeH_value, color='red', marker='*', alpha=0.3, label='Silva Aguirre et al. (2018)')
         ax.axhline(y=0, linewidth=1, color='orange', linestyle='--')
         #ax.errorbar(self.IN.age_Galaxy - observ['age'], observ['FeH'], yerr=observ['FeHerr'], marker='s', label='Meusinger+91', mfc='gray', ecolor='gray', ls='none')
@@ -635,7 +647,8 @@ class Plots(Setup):
         ax.plot(time, OH, color='blue', label='[O/H]', linewidth=3)
         ax.axvline(x=self.IN.age_Galaxy-self.IN.age_Sun, linewidth=2, color='orange', label=r'Age$_{\odot}$')
         ax.axhline(y=0, linewidth=1, color='orange', linestyle='--')
-        ax.plot(self.IN.age_Galaxy +0.5 - metallicity_age, a*metallicity_age+b, color='red', alpha=1, linewidth=3, label='linear fit on [M/H]')
+        if logAge==False:
+            ax.plot(self.IN.age_Galaxy +0.5 - metallicity_age, a*metallicity_age+b, color='red', alpha=1, linewidth=3, label='linear fit on [M/H]')
         ax.scatter(self.IN.age_Galaxy +0.5 - metallicity_age, metallicity_value, color='red', marker='*', alpha=0.3, label='Silva Aguirre et al. (2018)')
         #ax.errorbar(self.IN.age_Galaxy - observ['age'], observ['FeH'], yerr=observ['FeHerr'], marker='s', label='Meusinger+91', mfc='gray', ecolor='gray', ls='none')
         ax.legend(loc='lower right', frameon=False, fontsize=17)

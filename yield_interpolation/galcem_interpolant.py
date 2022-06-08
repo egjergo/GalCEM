@@ -1,11 +1,14 @@
 import scipy.interpolate as interp
+from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import pandas as pd
 import dill
+import os
 
 class GalCemInterpolant(object):
     def __init__(self,df,ycol,tf_funs={},name='',plot=None,fig_root='./',fig_view_angle=135,colormap=False):
         # initial setup 
+        os.system('pwd')
         self.ycol = ycol
         self.xcols = [col for col in list(df.columns) if col!=ycol]
         if len(self.xcols)!=2: raise Exception("GalCemInterpolant currently only supports models with 2D domain.")
