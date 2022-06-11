@@ -36,7 +36,7 @@ class Setup:
         os.makedirs(self._dir_out_figs,exist_ok=True)
         self.IN = IN
         self.aux = Auxiliary()
-        self.lifetime_class = Stellar_Lifetimes(self.IN)
+        self.lifetime_class = Stellar_Lifetimes(IN)
         
         # Setup
         Ml = self.lifetime_class.s_mass[0] # Lower limit stellar masses [Msun] 

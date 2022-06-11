@@ -1,9 +1,10 @@
-import math, time
+import math
+import time
+import dill
+import os
 import numpy as np
-import scipy.integrate
+import scipy.integrate as integr
 import scipy.misc as sm 
-import scipy.interpolate as interp
-import scipy.stats as ss
 
 """"""""""""""""""""""""""""""""""""""""""""""""
 "                                              "
@@ -67,7 +68,7 @@ class Auxiliary:
         lookback time.
         '''
         H0 = 100 * h * 3.24078e-20 * 3.15570e16 # [ km s^-1 Mpc^-1 * Mpc km^-1 * s Gyr^-1 ]
-        age = scipy.integrate.quad(lambda z: 1 / ( (z + 1) *np.sqrt(OmegaLambda0 + 
+        age = integr.quad(lambda z: 1 / ( (z + 1) *np.sqrt(OmegaLambda0 + 
                                 Omegam0 * (z+1)**3 + Omegar0 * (z+1)**4) ), 
                                 zf, np.inf)[0] / H0 # Since BB [Gyr]
         if not lookback_time:
@@ -109,41 +110,25 @@ class Stellar_Lifetimes:
     '''
     def __init__(self, IN):
         self.IN = IN
-        self.Z_names = ['Z0004', 'Z008', 'Z02', 'Z05']
-        self.Z_binned = [0.0004, 0.008, 0.02, 0.05]
-        self.Z_bins = [0.001789, 0.012649, 0.031623] # log-avg'd Z_binned
+        s_mlz_root = os.path.dirname(__file__)+'/../../yield_interpolation/lifetime_mass_metallicity/'
         self.s_mass = self.IN.s_lifetimes_p98['M'].values
-    
-    def interp_tau(self, idx):
-        tau = self.IN.s_lifetimes_p98[self.Z_names[idx]] / 1e9
-        return interp.interp1d(self.s_mass, tau)
-    def stellar_lifetimes(self):
-        return [self.interp_tau(ids) for ids in range(4)]
-        
-    def interp_M(self, idx):
-        tau = self.IN.s_lifetimes_p98[self.Z_names[idx]] / 1e9
-        return interp.interp1d(tau, self.s_mass)
-    def stellar_masses(self):
-        return [self.interp_M(idx) for idx in range(4)]
+        self.lifetime_by_mass_metallicity_loaded = dill.load(open(s_mlz_root+'models/lifetime_by_mass_metallicity.pkl','rb'))
+        self.mass_by_lifetime_metallicity_loaded = dill.load(open(s_mlz_root+'models/mass_by_lifetime_metallicity.pkl','rb'))
     
     def interp_stellar_lifetimes(self, metallicity):
         '''Picks the tau(M) interpolation at the appropriate metallicity'''
-        Z_idx = np.digitize(metallicity, self.Z_bins)
-        return self.stellar_lifetimes()[Z_idx]
+        return self.lifetime_by_mass_metallicity_loaded(metallicity)
 
     def interp_stellar_masses(self, metallicity):
         '''Picks the M(tau) interpolation at the appropriate metallicity'''
-        Z_idx = np.digitize(metallicity, self.Z_bins)
-        return self.stellar_masses()[Z_idx]
+        return self.mass_by_lifetime_metallicity_loaded(metallicity)
 
-    def dMdtauM(self, metallicity, time_chosen, n=1):
+    def dMdtauM(self, metallicity):#, time_chosen, n=1):
         '''
         Computes the first order derivative of the M(tau) function
         with respect to dtau, but multiplied by dtau/dt' = -1
         '''
-        Z_idx = np.digitize(metallicity, self.Z_bins)
-        dMdtau_deriv = - sm.derivative(self.interp_stellar_masses(metallicity), time_chosen[1001:-1000], n=n) #time_chosen[501:-500], n=n) !!!!!!!
-        return ss.mode(dMdtau_deriv)[0][0]
+        return - self.mass_by_lifetime_metallicity_loaded(metallicity,dwrt='lifetime_Gyr')
         
         
 class Infall:
@@ -192,7 +177,7 @@ class Infall:
         USED IN:
             inf() and SFR()
         """
-        return np.divide(self.IN.M_inf, scipy.integrate.quad(self.infall_func(),
+        return np.divide(self.IN.M_inf, integr.quad(self.infall_func(),
                              self.time[0], self.IN.age_Galaxy)[0])
 
     def inf(self):
@@ -282,7 +267,7 @@ class Initial_Mass_Function:
         return Mstar * self.IMF_select()(Mstar)
         
     def normalization(self): 
-        return np.reciprocal(scipy.integrate.quad(self.integrand, self.Ml, self.Mu)[0])
+        return np.reciprocal(integr.quad(self.integrand, self.Ml, self.Mu)[0])
 
     def IMF(self): #!!!!!!!! might not be efficient with the IGIMF
         return lambda Mstar: self.integrand(Mstar) * self.normalization()
@@ -291,7 +276,7 @@ class Initial_Mass_Function:
         '''
         Returns the normalized integrand integral. If the IMF works, it should return 1.
         '''
-        return self.normalization() * scipy.integrate.quad(self.integrand, self.Ml, self.Mu)[0]
+        return self.normalization() * integr.quad(self.integrand, self.Ml, self.Mu)[0]
         
         
 class Star_Formation_Rate:
