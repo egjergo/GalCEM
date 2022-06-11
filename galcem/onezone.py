@@ -263,7 +263,7 @@ class OneZone(Setup):
                         if not self.yield_models[ch][i].empty:
                             yield_grid = Z_comps[ch]
                             yield_grid['mass'] = Wi_comps[ch]['mass_grid']
-                            Wi_vals[ch] = integr.simps(np.multiply(Wi_comps[ch]['integrand'], self.yield_models[ch][i](yield_grid)), x=Wi_comps[ch]['birthtime_grid'])
+                            Wi_vals[ch] = integr.simps(np.multiply(Wi_comps[ch]['integrand'], self.yield_models[ch][i](yield_grid)), x=Wi_comps[ch]['mass_grid'])
                         else:
                             Wi_vals[ch] = 0.
                     else:
@@ -759,12 +759,12 @@ class Plots(Setup):
         A = self.ZA_sorted[:,1]
         if ncol==None: ncol = np.floor(np.sqrt(lenA)).astype('int')
         nrow = np.ceil(len(A)/ncol).astype('int')
-        print('(# nuclides, nrow, ncol) = (%d, %d, %d)'%(len(Z), nrow, ncol))
+        #print('(# nuclides, nrow, ncol) = (%d, %d, %d)'%(len(Z), nrow, ncol))
         fig, axs = plt.subplots(nrow, ncol, figsize=figsize)#, sharex=True)
         for i, ax in enumerate(axs.flat):
             if i < len(Z):
-                print('i %d'%(i))
-                print('%s(%d,%d)'%(self.ZA_symb_list.values[i],Z[i],A[i]))
+                #print('i %d'%(i))
+                #print('%s(%d,%d)'%(self.ZA_symb_list.values[i],Z[i],A[i]))
                 ax.annotate('%d%s'%(A[i],self.ZA_symb_list.values[i]), xy=(0.5, 0.3), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=7, alpha=0.7)
                 ax.set_ylim(-4.9, 10.9)
                 ax.set_xlim(0.01,13.8)
