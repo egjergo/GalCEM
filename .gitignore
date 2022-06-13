@@ -144,6 +144,7 @@ cython_debug/
 runs/
 !/galcem/input/yields/lims/c15/data/*.txt
 /galcem/input/yields/snia/k20/*
+/galcem/input/r10
 yield_interpolation/**/*.pdf
 yield_interpolation/**/*.pkl
 !/galcem/input/observations/*/*

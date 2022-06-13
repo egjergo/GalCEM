@@ -115,20 +115,20 @@ class Stellar_Lifetimes:
         self.lifetime_by_mass_metallicity_loaded = dill.load(open(s_mlz_root+'models/lifetime_by_mass_metallicity.pkl','rb'))
         self.mass_by_lifetime_metallicity_loaded = dill.load(open(s_mlz_root+'models/mass_by_lifetime_metallicity.pkl','rb'))
     
-    def interp_stellar_lifetimes(self, metallicity):
+    def interp_stellar_lifetimes(self, mz):
         '''Picks the tau(M) interpolation at the appropriate metallicity'''
-        return self.lifetime_by_mass_metallicity_loaded(metallicity)
+        return self.lifetime_by_mass_metallicity_loaded(mz)
 
-    def interp_stellar_masses(self, metallicity):
+    def interp_stellar_masses(self, lz):
         '''Picks the M(tau) interpolation at the appropriate metallicity'''
-        return self.mass_by_lifetime_metallicity_loaded(metallicity)
+        return self.mass_by_lifetime_metallicity_loaded(lz)
 
-    def dMdtauM(self, metallicity):#, time_chosen, n=1):
+    def dMdtauM(self, lz):#, time_chosen, n=1):
         '''
         Computes the first order derivative of the M(tau) function
         with respect to dtau, but multiplied by dtau/dt' = -1
         '''
-        return - self.mass_by_lifetime_metallicity_loaded(metallicity,dwrt='lifetime_Gyr')
+        return - self.mass_by_lifetime_metallicity_loaded(lz,dwrt='lifetime_Gyr')
         
         
 class Infall:

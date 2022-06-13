@@ -57,10 +57,10 @@ class Setup:
         
         # Initialize Yields
         isotope_class = Isotopes(self.IN)
-        #self.yields_MRSN_class = Yields_MRSN(self.IN)
-        #self.yields_MRSN_class.import_yields()
-        #self.yields_NSM_class = Yields_NSM(self.IN)
-        #self.yields_NSM_class.import_yields()
+        self.yields_MRSN_class = Yields_MRSN(self.IN)
+        self.yields_MRSN_class.import_yields()
+        self.yields_NSM_class = Yields_NSM(self.IN)
+        self.yields_NSM_class.import_yields()
         self.yields_LIMs_class = Yields_LIMs(self.IN)
         self.yields_LIMs_class.import_yields()
         self.yields_SNII_class = Yields_SNII(self.IN)
@@ -79,11 +79,11 @@ class Setup:
         self.yields_SNIa_class.elemZ, self.yields_SNIa_class.elemA = self.ZA_SNIa[:,0], self.ZA_SNIa[:,1] # !!!!!!! remove eventually
         self.ZA_SNII = self.c_class.extract_ZA_pairs(self.yields_SNII_class)
         self.yields_SNII_class.elemZ, self.yields_SNII_class.elemA = self.ZA_SNII[:,0], self.ZA_SNII[:,1] # !!!!!!! remove eventually
-        #self.ZA_NSM = self.c_class.extract_ZA_pairs(self.yields_NSM_class)
-        #self.yields_NSM_class.elemZ, self.yields_NSM_class.elemA = self.ZA_NSM[:,0], self.ZA_NSM[:,1] # !!!!!!! remove eventually
-        #self.ZA_MRSN = self.c_class.extract_ZA_pairs(self.yields_MRSN_class)
-        #self.yields_MRSN_class.elemZ, self.yields_MRSN_class.elemA = self.ZA_MRSN[:,0], self.ZA_MRSN[:,1] # !!!!!!! remove eventually
-        ZA_all = np.vstack((self.ZA_LIMs, self.ZA_SNIa, self.ZA_SNII))#, self.ZA_NSM, self.ZA_MRSN))
+        self.ZA_NSM = self.c_class.extract_ZA_pairs(self.yields_NSM_class)
+        self.yields_NSM_class.elemZ, self.yields_NSM_class.elemA = self.ZA_NSM[:,0], self.ZA_NSM[:,1] # !!!!!!! remove eventually
+        self.ZA_MRSN = self.c_class.extract_ZA_pairs(self.yields_MRSN_class)
+        self.yields_MRSN_class.elemZ, self.yields_MRSN_class.elemA = self.ZA_MRSN[:,0], self.ZA_MRSN[:,1] # !!!!!!! remove eventually
+        ZA_all = np.vstack((self.ZA_LIMs, self.ZA_SNIa, self.ZA_SNII, self.ZA_MRSN, self.ZA_NSM))
         
         self.Infall_rate = self.infall(self.time_chosen)
         self.ZA_sorted = self.c_class.ZA_sorted(ZA_all) # [Z, A] VERY IMPORTANT! 321 isotopes with yields_SNIa_option = 'km20', 192 isotopes for 'i99' 
@@ -102,8 +102,8 @@ class Setup:
         self.models_SNIa = self.yields_SNIa_class.yields
         #self.yields_NSM_class.construct_yields(self.ZA_sorted)
         #models_NSM = self.yields_NSM_class.yields
-        #self.yields_MRSN_class.construct_yields(self.ZA_sorted)
-        #models_MRSN = self.yields_MRSN_class.yields
+        self.yields_MRSN_class.construct_yields(self.ZA_sorted)
+        self.models_MRSN = self.yields_MRSN_class.yields
         self.yield_models = {ch: self.__dict__['models_'+ch] for ch in self.IN.include_channel}
         
         # Initialize Global tracked quantities
@@ -114,7 +114,7 @@ class Setup:
         #Mtot_quad = [quad(infall, self.time_chosen[0], i)[0] for i in range(1,len(self.time_chosen)-1)] # slow loop, deprecate!!!!!!!
         self.Mstar_v = self.IN.epsilon * np.ones(len(self.time_chosen)) 
         self.Mgas_v = self.IN.epsilon * np.ones(len(self.time_chosen)) 
-        self.returned_Mass_v = self.IN.epsilon * np.ones(len(self.time_chosen)) 
+        self.Mgas_i_v = self.IN.epsilon * np.ones(len(self.time_chosen)) 
         self.SFR_v = self.IN.epsilon * np.ones(len(self.time_chosen)) #
         self.f_SNIa_v = self.IN.epsilon * np.ones(len(self.time_chosen))
         self.Mass_i_v = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)))    # Gass mass (i,j) where the i rows are the isotopes and j are the timesteps, [:,j] follows the timesteps
@@ -168,8 +168,8 @@ class OneZone(Setup):
         G_v = np.divide(self.Mgas_v, self.Mtot)
         S_v = 1 - G_v
         print("Saving the output...")
-        np.savetxt(self._dir_out + 'phys.dat', np.column_stack((self.time_chosen, self.Mtot, self.Mgas_v, self.Mstar_v, self.SFR_v/1e9, self.Infall_rate/1e9, self.Z_v, G_v, S_v, self.Rate_SNII, self.Rate_SNIa, self.Rate_LIMs, self.f_SNIa_v)), fmt='%-12.4e', #SFR is divided by 1e9 to get the /Gyr to /yr conversion 
-                header = ' (0) time_chosen [Gyr]    (1) Mtot [Msun]    (2) Mgas_v [Msun]    (3) Mstar_v [Msun]    (4) SFR_v [Msun/yr]    (5)Infall_v [Msun/yr]    (6) Z_v    (7) G_v    (8) S_v     (9) Rate_SNII     (10) Rate_SNIa     (11) Rate_LIMs     (12) DTD SNIa')
+        np.savetxt(self._dir_out + 'phys.dat', np.column_stack((self.time_chosen, self.Mtot, self.Mgas_v, self.Mstar_v, self.SFR_v/1e9, self.Infall_rate/1e9, self.Z_v, G_v, S_v, self.Rate_SNII, self.Rate_SNIa, self.Rate_LIMs, self.f_SNIa_v, self.Rate_MRSN)), fmt='%-12.4e', #SFR is divided by 1e9 to get the /Gyr to /yr conversion 
+                header = ' (0) time_chosen [Gyr]    (1) Mtot [Msun]    (2) Mgas_v [Msun]    (3) Mstar_v [Msun]    (4) SFR_v [Msun/yr]    (5)Infall_v [Msun/yr]    (6) Z_v    (7) G_v    (8) S_v     (9) Rate_SNII     (10) Rate_SNIa     (11) Rate_LIMs     (12) DTD SNIa     (13) Rate_MRSN')
         np.savetxt(self._dir_out +  'Mass_i.dat', np.column_stack((self.ZA_sorted, self.Mass_i_v)), fmt=' '.join(['%5.i']*2 + ['%12.4e']*self.Mass_i_v[0,:].shape[0]),
                 header = ' (0) elemZ,    (1) elemA,    (2) masses [Msun] of every isotope for every timestep')
         np.savetxt(self._dir_out +  'X_i.dat', np.column_stack((self.ZA_sorted, self.Xi_v)), fmt=' '.join(['%5.i']*2 + ['%12.4e']*self.Xi_v[0,:].shape[0]),
@@ -182,19 +182,17 @@ class OneZone(Setup):
         '''Evolution routine'''
         #self.file1.write('A list of the proton/isotope number pairs for all the nuclides included in this run.\n ZA_sorted =\n\n')
         #self.file1.write(self.ZA_sorted)
-        self.Mass_i_v[:,0] = np.multiply(self.Mtot[0], self.models_BBN)
-        self.Mass_i_v[:,1] = np.multiply(self.Mtot[1], self.models_BBN)
+        self.ini_setup(0)
+        self.ini_setup(1)
         for n in range(len(self.time_chosen[:self.idx_age_Galaxy])):
             print('time [Gyr] = %.2f'%self.time_chosen[n])
             self.file1.write('n = %d\n'%n)
             self.phys_integral(n)        
-            self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
-            self.Z_v[n] = np.divide(np.sum(self.Mass_i_v[self.i_Z:,n]), self.Mgas_v[n])
             self.file1.write(' sum X_i at n %d= %.3f\n'%(n, np.sum(self.Xi_v[:,n])))
             if n > 0.: 
                 Wi_class = Wi(n, self.IN, self.lifetime_class, self.time_chosen, self.Z_v, self.SFR_v, 
                               self.f_SNIa_v, self.IMF, self.ZA_sorted)
-                self.Rate_SNII[n], self.Rate_LIMs[n], self.Rate_SNIa[n] = Wi_class.compute_rates()
+                self.Rate_SNII[n], self.Rate_LIMs[n], self.Rate_SNIa[n], self.Rate_MRSN[n] = Wi_class.compute_rates()
                 Wi_comp = {ch: Wi_class.compute(ch) for ch in self.IN.include_channel}
                 Z_comp = {}
                 for ch in self.IN.include_channel:
@@ -204,19 +202,25 @@ class OneZone(Setup):
                         Z_comp[ch] = pd.DataFrame(columns=['metallicity']) 
                 for i, _ in enumerate(self.ZA_sorted): 
                     self.Mass_i_v[i, n+1] = self.aux.RK4(self.solve_integral, self.time_chosen[n], self.Mass_i_v[i,n], n, self.IN.nTimeStep, i=i, Wi_comp=Wi_comp, Z_comp=Z_comp)
+                self.Mass_i_v[:,n+1] *= self.Mgas_v[n+1]/np.sum(self.Mass_i_v[:,n+1]) #!!!!!!! renorm numerical error propagation
             #self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
+        self.Mgas_i_v[-1] = np.sum(self.Mass_i_v[:,-1])
         self.Z_v[-1] = np.divide(np.sum(self.Mass_i_v[self.i_Z:,-1]), self.Mgas_v[-1])
         self.Xi_v[:,-1] = np.divide(self.Mass_i_v[:,-1], self.Mgas_v[-1]) 
 
+    def ini_setup(self, n):
+        self.Mass_i_v[:,n] = np.multiply(self.Mtot[n], self.models_BBN)
+        self.Mgas_v[n] = self.Mtot[n]
+        
     def Mgas_func(self, t_n, y_n, n, i=None):
         # Explicit general diff eq GCE function
         # Mgas(t)
         #print(f'{self.SFR_tn(n)==self.SFR_v[n]=}')
-        return self.Infall_rate[n] + np.sum([self.W_i_comp[ch][:,n] for ch in self.IN.include_channel]) - self.SFR_tn(n) #* np.sum(self.Xi_v[:,n])
+        return self.Infall_rate[n] + np.sum([self.W_i_comp[ch][:,n] for ch in self.IN.include_channel]) - self.SFR_v[n] #* np.sum(self.Xi_v[:,n])
     
     def Mstar_func(self, t_n, y_n, n, i=None):
         # Mstar(t)
-        return - np.sum([self.W_i_comp[ch][:,n] for ch in self.IN.include_channel]) + self.SFR_tn(n) #* np.sum(self.Xi_v[:,n])
+        return - np.sum([self.W_i_comp[ch][:,n] for ch in self.IN.include_channel]) + self.SFR_v[n] #* np.sum(self.Xi_v[:,n])
 
     def SFR_tn(self, timestep_n):
         '''
@@ -231,6 +235,9 @@ class OneZone(Setup):
     def phys_integral(self, n):
         '''Integral for the total physical quantities'''
         self.SFR_v[n] = self.SFR_tn(n)
+        self.Mgas_i_v[n] = np.sum(self.Mass_i_v[:,n])
+        self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
+        self.Z_v[n] = np.divide(np.sum(self.Mass_i_v[self.i_Z:,n]), self.Mgas_v[n])
         self.Mstar_v[n+1] = self.aux.RK4(self.Mstar_func, self.time_chosen[n], self.Mstar_v[n], n, self.IN.nTimeStep) 
         self.Mgas_v[n+1] = self.aux.RK4(self.Mgas_func, self.time_chosen[n], self.Mgas_v[n], n, self.IN.nTimeStep)    
 
@@ -258,6 +265,8 @@ class OneZone(Setup):
             for ch in self.IN.include_channel:
                 if ch == 'SNIa':
                     Wi_vals[ch] = self.Rate_SNIa[n] * self.yield_models['SNIa'][i] 
+                elif ch == 'MRSN':
+                    Wi_vals[ch] = self.IN.A_MRSN * self.Rate_MRSN[n] * self.yield_models['MRSN'][i] 
                 else:
                     if len(Wi_comps[ch]['birthtime_grid']) > 1.:
                         if not self.yield_models[ch][i].empty:
@@ -749,7 +758,7 @@ class Plots(Setup):
         Masses = np.log10(Mass_i[:,2:])
         phys = np.loadtxt(self._dir_out + 'phys.dat')
         W_i_comp = pickle.load(open(self._dir_out + 'W_i_comp.pkl','rb'))
-        #Mass_MRSN = np.log10(W_i_comp['MRSN'])
+        Mass_MRSN = np.log10(W_i_comp['MRSN'])
         Mass_BBN = np.log10(W_i_comp['BBN'])
         Mass_SNII = np.log10(W_i_comp['SNII'])
         Mass_AGB = np.log10(W_i_comp['LIMs'])
@@ -776,8 +785,8 @@ class Plots(Setup):
                 ax.plot(timex[:-1], Mass_SNII[i][:-1], color='#0034ff', linestyle='-.', linewidth=3, alpha=0.8, label='SNII')
                 ax.plot(timex[:-1], Mass_AGB[i][:-1], color='#ff00b3', linestyle='--', linewidth=3, alpha=0.8, label='LIMs')
                 ax.plot(timex[:-1], Mass_SNIa[i][:-1], color='#00b3ff', linestyle=':', linewidth=3, alpha=0.8, label='SNIa')
+                ax.plot(timex[:-1], Mass_MRSN[i][:-1], color='#000c3b', linestyle=':', linewidth=3, alpha=0.8, label='MRSN')
                 if not logAge:
-                    #ax.plot(timex[:-1], Mass_MRSN[i][:-1], color='#000c3b', linestyle='-', linewidth=3, alpha=0.8, label='MRSN')
                     ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
                     ax.tick_params(width=1, length=2, axis='x', which='minor', bottom=True, top=True, direction='in')
                     ax.xaxis.set_major_locator(ticker.MultipleLocator(base=5))
@@ -802,7 +811,7 @@ class Plots(Setup):
                     axs[i,j].set_xticklabels([])
                     
         #axs[nrow//2,0].set_ylabel(r'Masses [ $\log_{10}$($M_{\odot}$/yr)]', fontsize = 15)
-        axs[nrow//2,0].set_ylabel(r'Masses [ $\log_{10}$($M_{\odot}$)]', fontsize = 15)
+        axs[nrow//2,0].set_ylabel(r'Returned masses [ $\log_{10}$($M_{\odot}$)]', fontsize = 15)
         axs[0, ncol//2].legend(ncol=len(W_i_comp), loc='upper center', bbox_to_anchor=(0.5, 1.8), frameon=False, fontsize=12)
         if not logAge:
             xscale = '_lin'
@@ -1054,7 +1063,7 @@ class Plots(Setup):
         plt.savefig(self._dir_out_figs + 'elem_obs.pdf', bbox_inches='tight')
         return None
 
-    def observational_lelemZ(self, figsiz = (15,10), c=3, yrange='zoom'):
+    def observational_lelemZ(self, figsiz = (15,10), c=3, yrange='zoom', romano10=False):
         ''' yrange full to include all observational points'''
         print('Starting observational_lelemZ()')
         import glob
@@ -1126,6 +1135,17 @@ class Plots(Setup):
                      # '#03c03c', '#00009c', '#ccff00', '#673147', '#0f0f0f', '#324ab2',
                      # '#ffcc33', '#ffcccc', '#ff66ff', '#ff0033', '#ccff33', '#ccccff']
 
+        if romano10 == True:
+            r10_path = self._dir + r'/input/r10/'
+            abundb = np.loadtxt(r10_path+'abundb8h.mwgk09')
+            abundc = np.loadtxt(r10_path+'abundc8h.mwgk09')
+            r10_FeH = abundc[:,1]
+            r10_time_Gyr = abundc[:,0]
+            cu = np.loadtxt(r10_path+'cu.dat')
+            r10_labels = ['C', 'N', 'O', 'Na', 'Mg', 'Al', 'Si', 'S', 'K', 'Ca', 'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Co', 'Ni', 'Cu', 'Zn', '-']
+            r10_elem = [abundc[:,3], abundb[:,7], abundc[:,2], np.add(abundc[:,4], 1.5), abundc[:,5], abundc[:,9], abundb[:,6], abundc[:,6], abundc[:,11], abundb[:,8], abundb[:,5], abundb[:,9], abundb[:,10], abundb[:,11], abundb[:,12], abundc[:,10], abundb[:,4], cu[:,1], abundb[:,3], np.zeros(len(abundb[:,0]))]
+            r10_elem_dict = dict(zip(r10_labels, r10_elem))
+
         for i, ax in enumerate(axs.flat):
             colorlist = itertools.cycle(listcolors)
             markerlist =itertools.cycle(listmarkers)
@@ -1140,6 +1160,9 @@ class Plots(Setup):
                 #ax.plot(FeH, Masses[i], color='blue')
                 ax.plot(FeH, Masses2[ip], color='black', linewidth=2)
                 ax.annotate(f"{Z_list[ip]}{Z_symb_list[Z_list[ip]]}", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
+                if romano10 == True:
+                    if Z_symb_list[Z_list[ip]] in r10_labels:
+                        ax.plot(r10_FeH, r10_elem_dict[Z_symb_list[Z_list[ip]]], color='red', linewidth=2)
                 ax.set_ylim(-2.5, 2.5)
                 if yrange=='full': ax.set_ylim(-5.9, 5.9)
                 ax.set_xlim(-6.5, 1.5)
@@ -1168,7 +1191,7 @@ class Plots(Setup):
         return None
     
     def _obs_lZ(self, figsiz = (21,7), c=3):
-        print('Starting observational_lelemZ()')
+        print('Starting observational_lZ()')
         import glob
         import itertools
         from matplotlib import pyplot as plt

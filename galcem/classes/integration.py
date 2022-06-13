@@ -60,7 +60,6 @@ class Wi:
         self.SNII_birthtime_grid, self.SNII_lifetime_grid, self.SNII_mass_grid = self.Wi_grid_class.grids(self.IN.Ml_SNII, self.IN.Mu_SNII)
         self.LIMs_birthtime_grid, self.LIMs_lifetime_grid, self.LIMs_mass_grid = self.Wi_grid_class.grids(self.IN.Ml_LIMs, self.IN.Mu_LIMs) # !!!!!!! you should subtract SNIa fraction
         self.SNIa_birthtime_grid, self.SNIa_lifetime_grid, self.SNIa_mass_grid = self.Wi_grid_class.grids(self.IN.Ml_SNIa, self.IN.Mu_SNIa)
-        self.yield_load = None
         
     def grid_picker(self, channel_switch, grid_type):
         # Selects e.g. "self.LIMs_birthtime_grid"
@@ -182,8 +181,7 @@ class Wi:
             birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
             SFR_comp = self.SFR_component(birthtime_grid)
             SFR_comp[SFR_comp<0] = 0.
-            IMF_comp, mass_comp = self.mass_component(channel_switch, mass_grid, lifetime_grid)# 
-            #integrand = np.prod(np.vstack[SFR_comp, mass_comp, self.yield_load[i]])
+            IMF_comp, mass_comp = self.mass_component(channel_switch, mass_grid, lifetime_grid)
             integrand = np.prod(np.vstack([SFR_comp, mass_comp]), axis=0)
             #return integr.simps(integrand, x=birthtime_grid)
             return {'integrand': integrand, 'birthtime_grid': birthtime_grid, 'mass_grid': mass_grid}
