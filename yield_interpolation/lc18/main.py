@@ -1,4 +1,4 @@
-from yield_interpolation.galcem_interpolant import GalCemInterpolant,fit_isotope_interpolants_irv0
+from yield_interpolation.galcem_interpolant import GalCemInterpolant,fit_isotope_interpolants
 import numpy as np
 import pandas as pd
 import os
@@ -37,4 +37,11 @@ if __name__ == '__main__':
     root = os.path.abspath(os.path.dirname(__file__))
     df = parse_lc18_raw()
     df.to_csv(root+'/data.csv',index=False)
-    fit_isotope_interpolants_irv0(df,root)
+    df = df[df['irv']==0]
+    fit_isotope_interpolants(
+        df = df,
+        root = root,
+        tf_funs = {
+            'mass':lambda x:np.log10(x), 'mass_prime':lambda x:1/(x*np.log(10)),
+            'metallicity':lambda x:np.log10(x), 'metallicity_prime':lambda x:1/(x*np.log(10)),
+            'yield':lambda y:np.log10(y), 'yield_prime':lambda y:1/(y*np.log(10)), 'yield_inv':lambda y:10**y})
