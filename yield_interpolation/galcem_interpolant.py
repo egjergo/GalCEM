@@ -153,14 +153,15 @@ class GalCemInterpolant(object):
         y = df[self.ycol].to_numpy()
         yhat = self.__call__(df)
         eps_abs = np.abs(yhat-y)
-        eps_rel = np.abs(eps_abs/y)
-        metrics = {
-            'RMSE Abs': np.sqrt(np.mean(eps_abs**2)),
-            'MAE Abs': np.mean(eps_abs),
-            'Max Abs': eps_abs.max(),
-            'RMSE Rel': np.sqrt(np.mean(eps_rel**2)),
-            'MAE Rel:': np.mean(eps_rel),
-            'Max Rel': eps_rel.max()}
+        with np.errstate(all='ignore'):
+            eps_rel = np.abs(np.divide(eps_abs,y))
+            metrics = {
+                'RMSE Abs': np.sqrt(np.mean(eps_abs**2)),
+                'MAE Abs': np.mean(eps_abs),
+                'Max Abs': np.max(eps_abs),
+                'RMSE Rel': np.sqrt(np.mean(eps_rel**2)),
+                'MAE Rel:': np.mean(eps_rel),
+                'Max Rel': np.max(eps_rel)}
         return metrics
     
     def __repr__(self):
@@ -199,21 +200,17 @@ class SmootheSpline2D_GCI(GalCemInterpolant):
         return y
 
     
-def fit_isotope_interpolants_irv0(df,root):
+def fit_isotope_interpolants(df,root,tf_funs):
     # iterate over a,z pairs and save interpolants based on irv=0
     print('\n'+'~'*75+'\n')
     dfs = dict(tuple(df.groupby(['isotope','a','z'])))
     for ids,_df in dfs.items():
         name = 'z%d.a%d.irv0.%s'%(ids[2],ids[1],ids[0])
-        _df = _df[_df['irv']==0]
         # fit model
         interpolant = LinearAndNearestNeighbor_GCI(
             df = _df[['mass','metallicity','yield']],
             ycol = 'yield',
-            tf_funs = {
-                'mass':lambda x:np.log10(x), 'mass_prime':lambda x:1/(x*np.log(10)),
-                'metallicity':lambda x:np.log10(x), 'metallicity_prime':lambda x:1/(x*np.log(10)),
-                'yield':lambda y:np.log10(y), 'yield_prime':lambda y:1/(y*np.log(10)), 'yield_inv':lambda y:10**y},
+            tf_funs = tf_funs,
             name = name,
             plot = 'std',
             fig_root = root+'/figs/',
