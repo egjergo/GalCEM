@@ -469,32 +469,57 @@ class Plots(Setup):
     def lifetimeratio_test_plot(self,colormap='Paired'):
         print('Starting lifetimeratio_test_plot()')
         from matplotlib import pyplot as plt
+        from mpl_toolkits.axes_grid1 import make_axes_locatable
         #plt.style.use(self._dir+'/galcem.mplstyle')
-        fig, ax = plt.subplots(1,1, figsize=(7,5))
+        fig, ax = plt.subplots(2,2, figsize=(7,6), gridspec_kw={'width_ratios': [15, 1], 'height_ratios':[1,2]})
         divid05 = np.divide(self.IN.s_lifetimes_p98['Z05'], self.IN.s_lifetimes_p98['Z0004'])
         divid02 = np.divide(self.IN.s_lifetimes_p98['Z02'], self.IN.s_lifetimes_p98['Z0004'])
         divid008 = np.divide(self.IN.s_lifetimes_p98['Z008'], self.IN.s_lifetimes_p98['Z0004'])
-        ax.semilogx(self.IN.s_lifetimes_p98['M'], divid05, color='black', label='Z = 0.05')
-        ax.semilogx(self.IN.s_lifetimes_p98['M'], divid02, color='black', linestyle='--', label='Z = 0.02')
-        ax.semilogx(self.IN.s_lifetimes_p98['M'], divid008, color='black', linestyle=':', label='Z = 0.008')
-        ax.hlines(1, 0.6,120, color='orange', label='ratio=1')
-        ax.vlines(3, 0.6,2.6, color='red', label=r'$3 M_{\odot}$')
-        ax.vlines(6, 0.6,2.6, color='red', alpha=0.6, linestyle='--', label=r'$6 M_{\odot}$')
-        ax.vlines(9, 0.6,2.6, color='red', alpha=0.3, linestyle = ':', label=r'$9 M_{\odot}$')
+        ax[1,0].semilogx(self.IN.s_lifetimes_p98['M'], divid05, color='black', label='Z = 0.05')
+        ax[1,0].semilogx(self.IN.s_lifetimes_p98['M'], divid02, color='black', linestyle='--', label='Z = 0.02')
+        ax[1,0].semilogx(self.IN.s_lifetimes_p98['M'], divid008, color='black', linestyle=':', label='Z = 0.008')
+        ax[0,0].hlines(1, 0.6,120, color='white', label=' ', alpha=0.)
+        ax[0,0].vlines(3, 0.001,120, color='red', label=r'$3 M_{\odot}$')
+        ax[0,0].vlines(6, 0.001,120, color='red', alpha=0.6, linestyle='--', label=r'$6 M_{\odot}$')
+        ax[0,0].vlines(9, 0.001,120, color='red', alpha=0.3, linestyle = ':', label=r'$9 M_{\odot}$')
+        ax[1,0].vlines(3, 0.6,2.6, color='red', label=r'$3 M_{\odot}$')
+        ax[1,0].vlines(6, 0.6,2.6, color='red', alpha=0.6, linestyle='--', label=r'$6 M_{\odot}$')
+        ax[1,0].vlines(9, 0.6,2.6, color='red', alpha=0.3, linestyle = ':', label=r'$9 M_{\odot}$')
         cm = plt.cm.get_cmap(colormap)
-        sc=ax.scatter(self.IN.s_lifetimes_p98['M'], divid05, c=np.log10(self.IN.s_lifetimes_p98['Z05']), cmap=cm, s=50)
-        sc=ax.scatter(self.IN.s_lifetimes_p98['M'], divid02, c=np.log10(self.IN.s_lifetimes_p98['Z02']), cmap=cm, s=50)
-        sc=ax.scatter(self.IN.s_lifetimes_p98['M'], divid008, c=np.log10(self.IN.s_lifetimes_p98['Z008']), cmap=cm, s=50)
-        fig.colorbar(sc, label=r'$\tau(M_*)$')
-        ax.legend(loc='best', frameon=False, fontsize=13)
-        ax.set_ylabel(r'$\tau(X)/\tau(Z=0.0004)$', fontsize=15)
-        ax.set_xlabel('Mass', fontsize=15)
-        ax.set_ylim(0.6,1.95)
-        ax.set_xlim(0.6, 120)
+        sc=ax[1,0].scatter(self.IN.s_lifetimes_p98['M'], divid05, c=np.log10(self.IN.s_lifetimes_p98['Z05']), cmap=cm, s=50)
+        sc=ax[1,0].scatter(self.IN.s_lifetimes_p98['M'], divid02, c=np.log10(self.IN.s_lifetimes_p98['Z02']), cmap=cm, s=50)
+        sc=ax[1,0].scatter(self.IN.s_lifetimes_p98['M'], divid008, c=np.log10(self.IN.s_lifetimes_p98['Z008']), cmap=cm, s=50)
+        ax[1,0].legend(loc='best', ncol=2, frameon=False, fontsize=10)
+        ax[1,0].set_ylabel(r'$\tau(X)/\tau(Z=0.0004)$', fontsize=15)
+        ax[1,0].set_xlabel('Mass', fontsize=15)
+        ax[1,0].set_ylim(0.6,1.95)
+        ax[1,0].set_xlim(0.6, 120)
+        #divider = make_axes_locatable(ax[2])
+        #cax = divider.append_axes('right', size='5%', pad=0.05)
+        cbar = fig.colorbar(sc, cax=ax[1,1], label=r'$\tau(M_*)$')
+        cbar.ax.tick_params(labelsize=10) 
+        cbar.set_label(r'$\tau(M_*)$',fontsize=13)
+        ax[0,0].loglog(self.IN.s_lifetimes_p98['M'], self.IN.s_lifetimes_p98['Z05']/1e9, color='#ffbf00', label='Z = 0.05')
+        ax[0,0].loglog(self.IN.s_lifetimes_p98['M'], self.IN.s_lifetimes_p98['Z02']/1e9, color='#00ff80', linestyle='--', label='Z = 0.02')
+        ax[0,0].loglog(self.IN.s_lifetimes_p98['M'], self.IN.s_lifetimes_p98['Z008']/1e9, color='#4000ff', linestyle='-.', label='Z = 0.008')
+        ax[0,0].loglog(self.IN.s_lifetimes_p98['M'], self.IN.s_lifetimes_p98['Z0004']/1e9, color='black', linestyle=':', label='Z = 0.004')
+        ax[0,0].legend(loc='best', ncol=2, frameon=False, fontsize=11)
+        #labels=ax[0,0].get_label()
+        handles, labels = ax[0,0].get_legend_handles_labels()
+        ax[0,0].legend(reversed(handles), reversed(labels), ncol=2, frameon=False, fontsize=10)
+        handles, labels = ax[1,0].get_legend_handles_labels()
+        ax[1,0].legend(reversed(handles), reversed(labels), ncol=2, frameon=False, fontsize=10)
+        ax[0,0].set_ylabel(r'$\tau(M_*, Z)$', fontsize=15)
+        #ax[0,0].set_xlabel('Mass', fontsize=15)
+        ax[0,0].set_ylim(0.001,200)
+        ax[0,0].set_xlim(0.6, 120)
+        #divider = make_axes_locatable(ax[1])
+        #cax = divider.append_axes('right', size='5%', pad=0.05)
+        fig.delaxes(ax[0,1])
         fig.tight_layout()
         plt.savefig(self._dir_out_figs + 'tauratio.pdf', bbox_inches='tight')
      
-    def phys_integral_plot(self, logAge=False):
+    def phys_integral_plot(self, figsiz=(12,7), logAge=False): #(12,6)
         print('Starting phys_integral_plot()')
         # Requires running "phys_integral()" in onezone.py beforehand
         from matplotlib import pyplot as plt
@@ -514,7 +539,7 @@ class Plots(Setup):
         Rate_SNII = phys[:,9]
         Rate_SNIa = phys[:,10]
         Rate_LIMs = phys[:,11]
-        fig, axs = plt.subplots(1, 2, figsize=(12,7))
+        fig, axs = plt.subplots(1, 2, figsize=figsiz)
         axt = axs[1].twinx()
         time_plot = time_chosen
         xscale = '_lin'
@@ -825,6 +850,88 @@ class Plots(Setup):
         plt.tight_layout(rect = [0.03, 0.03, 1, .90])
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'iso_evolution_comp'+str(xscale)+'.pdf', bbox_inches='tight')
+
+    def iso_evolution_comp_lelemz(self, figsize=(12,15), logAge=True, ncol=10):
+        import math
+        import pickle
+        IN = pickle.load(open(self._dir_out + 'inputs.pkl','rb'))
+        print('Starting iso_evolution_comp()')
+        from matplotlib import pyplot as plt
+        plt.style.use(self._dir+'/galcem.mplstyle')
+        import matplotlib.ticker as ticker
+        Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
+        Masses = np.log10(Mass_i[:,2:])
+        phys = np.loadtxt(self._dir_out + 'phys.dat')
+        W_i_comp = pickle.load(open(self._dir_out + 'W_i_comp.pkl','rb'))
+        #Mass_MRSN = np.log10(W_i_comp['MRSN'])
+        yr_rate = IN.nTimeStep * 1e9
+        Mass_BBN = np.log10(W_i_comp['BBN'] / yr_rate)
+        Mass_SNII = np.log10(W_i_comp['SNII'] / yr_rate)
+        Mass_AGB = np.log10(W_i_comp['LIMs'] / yr_rate)
+        Mass_SNIa = np.log10(W_i_comp['SNIa'] / yr_rate)
+        timex = phys[:,0]
+        Z = self.ZA_sorted[:,0]
+        A = self.ZA_sorted[:,1]
+        if ncol==None: ncol = np.floor(np.sqrt(lenA)).astype('int')
+        nrow = 12# np.ceil(len(A)/ncol).astype('int')
+        #print('(# nuclides, nrow, ncol) = (%d, %d, %d)'%(len(Z), nrow, ncol))
+        fig, axs = plt.subplots(nrow, ncol, figsize=figsize)#, sharex=True)
+        for i, ax in enumerate(axs.flat):
+            if i < len(Z):
+                #print('i %d'%(i))
+                #print('%s(%d,%d)'%(self.ZA_symb_list.values[i],Z[i],A[i]))
+                ax.annotate('%d%s'%(A[i],self.ZA_symb_list.values[i]), xy=(0.5, 0.3), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=7, alpha=0.7)
+                #ax.set_ylim(-4.9, 10.9)
+                ax.set_ylim(-16.9, 5.9)
+                ax.set_xlim(0.01,13.8)
+                ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=1))
+                ax.tick_params(width=1, length=2, axis='y', which='minor', left=True, right=True, direction='in')
+                ax.yaxis.set_major_locator(ticker.MultipleLocator(base=5))
+                ax.tick_params(width=1, length=3, axis='y', which='major', left=True, right=True, direction='in')
+                ax.plot(timex[:-1], Mass_BBN[i][:-1], color='black', linestyle='-.', linewidth=3, alpha=0.8, label='BBN')
+                ax.plot(timex[:-1], Mass_SNII[i][:-1], color='#0034ff', linestyle='-.', linewidth=3, alpha=0.8, label='SNII')
+                ax.plot(timex[:-1], Mass_AGB[i][:-1], color='#ff00b3', linestyle='--', linewidth=3, alpha=0.8, label='LIMs')
+                ax.plot(timex[:-1], Mass_SNIa[i][:-1], color='#00b3ff', linestyle=':', linewidth=3, alpha=0.8, label='SNIa')
+                #ax.plot(timex[:-1], Mass_MRSN[i][:-1], color='#000c3b', linestyle=':', linewidth=3, alpha=0.8, label='MRSN')
+                if not logAge:
+                    ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
+                    ax.tick_params(width=1, length=2, axis='x', which='minor', bottom=True, top=True, direction='in')
+                    ax.xaxis.set_major_locator(ticker.MultipleLocator(base=5))
+                    ax.tick_params(width=1, length=3, axis='x', which='major', bottom=True, top=True, direction='in')
+                else:
+                    ax.set_xscale('log')
+                    #ax.set_xticks([0.01, 1])
+                    #ax.get_xaxis().set_major_formatter(ticker.ScalarFormatter())
+                    ax.xaxis.set_major_locator(ticker.LogLocator(base=100, numticks=3))
+                    ax.tick_params(width=1, length=3, axis='x', which='major', bottom=True, top=True, direction='in')
+                    ax.xaxis.set_minor_locator(ticker.LogLocator(base=10.0,subs=(0.2,0.4,0.6,0.8,1.),numticks=5))
+                    ax.xaxis.set_minor_formatter(ticker.NullFormatter())
+                    ax.tick_params(width=1, length=2, axis='x', which='minor', bottom=True, top=True, direction='in')
+            else:
+                fig.delaxes(ax)
+            last_idx =i
+        for i in range(nrow):
+            for j in range(ncol):
+                if j != 0:
+                    axs[i,j].set_yticklabels([])
+                if i < nrow-2:
+                    axs[i,j].set_xticklabels([])
+                    
+        #axs[nrow//2,0].set_ylabel(r'Masses [ $\log_{10}$($M_{\odot}$/yr)]', fontsize = 15)
+        axs[nrow//2,0].set_ylabel(r'Returned masses [ $\log_{10}$($M_{\odot}/$ yr)]', fontsize = 15)
+        axs[0, ncol//2].legend(ncol=len(W_i_comp), loc='upper center', bbox_to_anchor=(0.5, 1.8), frameon=False, fontsize=12)
+        if not logAge:
+            xscale = '_lin'
+            axs[nrow-1, ncol//2].set_xlabel('Age [Gyr]', fontsize = 15)
+            #axs.flat[last_idx].set_xlabel('Age [Gyr]', fontsize = 15)
+            #plt.xlabel('Age [Gyr]', fontsize = 15)
+        else:
+            xscale = '_log'
+            axs[nrow-1, ncol//2].set_xlabel('Log  Age [Gyr]', fontsize = 15)
+        plt.subplots_adjust(wspace=0., hspace=0.)
+        plt.tight_layout(rect = [0.03, 0.03, 1, .95])
+        plt.show(block=False)
+        plt.savefig(self._dir_out_figs + 'iso_evolution_comp_lz'+str(xscale)+'.pdf', bbox_inches='tight')
 
     def iso_abundance(self, figsize=(20,13), c=3): 
         print('Starting iso_abundance()')

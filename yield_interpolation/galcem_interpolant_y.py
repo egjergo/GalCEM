@@ -52,7 +52,7 @@ class GalCemInterpolant(object):
             colordots = np.array([s_lifetimes_p98[c].to_numpy() for c in s_lifetimes_p98.columns[1:]]).flatten()
             colordotstf = colordots#self.tf_funs[self.ycol](colordots)
         
-        fig = pyplot.figure(figsize=(23,20) if plot=='grad' else (23,15))
+        fig = pyplot.figure(figsize=(11,11) if plot=='grad' else (11,11))
         nticks = 64
         sepfrac = 0.1
         for i,dx in enumerate(dxs):
@@ -69,7 +69,7 @@ class GalCemInterpolant(object):
             ytf = self.eval_with_grad(x=np.vstack([x0tfmesh_flat,x1tfmesh_flat]).T,dx=dx)
             ytfmesh = ytf.reshape(x0tfmesh.shape)
             
-            ax = fig.add_subplot(3,4,4*i+1,projection='3d')
+            ax = fig.add_subplot(2,2,1*i+1,projection='3d')
             ax.plot_surface(x0tfmesh,x1tfmesh,ytfmesh,cmap=cm.Greys,alpha=.9,vmin=ytfmesh.min(),vmax=ytfmesh.max())
             if dx==[0,0]: ax.scatter(xtf[:,0],xtf[:,1],dftf[self.ycol].to_numpy(),c=colordotstf, cmap=cmdot)
             ax.set_xlabel(self.xcols[0])
@@ -78,7 +78,7 @@ class GalCemInterpolant(object):
             if dx!=[0,0]: ax.set_title('d(%s) / d(%s)'%(self.ycol,self.xcols[dx.index(1)]))
             ax.view_init(azim=fig_view_angle)
             
-            ax = fig.add_subplot(3,4,4*i+2)
+            ax = fig.add_subplot(2,2,1*i+2)
             contour = ax.contourf(x0tfmesh,x1tfmesh,ytfmesh,cmap=cm.Greys,alpha=.95,vmin=ytfmesh.min(),vmax=ytfmesh.max(),levels=64)
             xlim,ylim = ax.get_xlim(),ax.get_ylim()
             ax.set_aspect((xlim[1]-xlim[0])/(ylim[1]-ylim[0]))
@@ -100,7 +100,7 @@ class GalCemInterpolant(object):
             y = self.__call__(dfx=dfx,dwrt=dfw)
             ymesh = y.reshape(x0mesh.shape)
             
-            ax = fig.add_subplot(3,4,4*i+3,projection='3d')
+            ax = fig.add_subplot(2,2,1*i+3,projection='3d')
             ax.plot_surface(x0mesh,x1mesh,ymesh,cmap=cm.Greys,alpha=.9,vmin=ymesh.min(),vmax=ymesh.max())
             if dx==[0,0]: ax.scatter(x[:,0],x[:,1],df[self.ycol].to_numpy(),c=colordots, cmap=cmdot)
             ax.set_xlabel(self.xcols[0])
@@ -109,7 +109,7 @@ class GalCemInterpolant(object):
             if dx!=[0,0]: ax.set_title('d(%s) / d(%s)'%(self.ycol,self.xcols[dx.index(1)]))
             ax.view_init(azim=fig_view_angle)
             
-            ax = fig.add_subplot(3,4,4*i+4)
+            ax = fig.add_subplot(2,2,1*i+4)
             contour = ax.contourf(x0mesh,x1mesh,ymesh,cmap=cm.Greys,alpha=.95,vmin=ymesh.min(),vmax=ymesh.max(),levels=64)
             xlim,ylim = ax.get_xlim(),ax.get_ylim()
             ax.set_aspect((xlim[1]-xlim[0])/(ylim[1]-ylim[0]))
@@ -118,7 +118,7 @@ class GalCemInterpolant(object):
             ax.set_xlabel(self.xcols[0])
             ax.set_ylabel(self.xcols[1])
             if dx!=[0,0]: ax.set_title('d(%s) / d(%s)'%(self.ycol,self.xcols[dx.index(1)]))
-        fig.suptitle('%s\n%s by %s\nTransformed Domain (left) | Original Domain (right)'%(self.name,self.ycol,str(self.xcols)), fontsize=15)
+        fig.suptitle('%s\n%s by %s\nTransformed Domain (top) | Original Domain (bottom)'%(self.name,self.ycol,str(self.xcols)), fontsize=15)
         pyplot.subplots_adjust(left=0,bottom=0.1,right=1,top=0.9,wspace=0.2,hspace=0.2)
         #fig.tight_layout()
         fig.savefig('%s%s.pdf'%(fig_root,name),format='pdf',bbox_inches='tight')

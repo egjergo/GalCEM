@@ -146,6 +146,7 @@ runs/
 /galcem/input/yields/snia/k20/*
 /galcem/input/r10
 yield_interpolation/**/*.pdf
+yield_interpolation/**/*.png
 yield_interpolation/**/*.pkl
 !/galcem/input/observations/*/*
 !/galcem/input/observations/*

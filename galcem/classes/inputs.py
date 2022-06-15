@@ -52,8 +52,8 @@ class Inputs:
         self.Mu_LIMs = 9 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Ml_NSM = 9 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Mu_NSM = 50 # [Msun] !!!!!!! temporary. Import from yield tables
-        self.Ml_MRSN = 9 # [Msun] !!!!!!! temporary. Import from yield tables
-        self.Mu_MRSN = 50 # [Msun] !!!!!!! temporary. Import from yield tables
+        self.Ml_MRSN = 25 # [Msun] !!!!!!! temporary. Import from yield tables
+        self.Mu_MRSN = 100 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Ml_SNII = 10 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Mu_SNII = 120 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Ml_collapsars = 9 # [Msun] !!!!!!! temporary. Import from yield tables
