@@ -83,7 +83,7 @@ class Setup:
         self.yields_NSM_class.elemZ, self.yields_NSM_class.elemA = self.ZA_NSM[:,0], self.ZA_NSM[:,1] # !!!!!!! remove eventually
         self.ZA_MRSN = self.c_class.extract_ZA_pairs(self.yields_MRSN_class)
         self.yields_MRSN_class.elemZ, self.yields_MRSN_class.elemA = self.ZA_MRSN[:,0], self.ZA_MRSN[:,1] # !!!!!!! remove eventually
-        ZA_all = np.vstack((self.ZA_LIMs, self.ZA_SNIa, self.ZA_SNII, self.ZA_MRSN, self.ZA_NSM))
+        ZA_all = np.vstack((self.ZA_LIMs, self.ZA_SNIa, self.ZA_SNII))#, self.ZA_MRSN, self.ZA_NSM))
         
         self.Infall_rate = self.infall(self.time_chosen)
         self.ZA_sorted = self.c_class.ZA_sorted(ZA_all) # [Z, A] VERY IMPORTANT! 321 isotopes with yields_SNIa_option = 'km20', 192 isotopes for 'i99' 
@@ -102,8 +102,8 @@ class Setup:
         self.models_SNIa = self.yields_SNIa_class.yields
         #self.yields_NSM_class.construct_yields(self.ZA_sorted)
         #models_NSM = self.yields_NSM_class.yields
-        self.yields_MRSN_class.construct_yields(self.ZA_sorted)
-        self.models_MRSN = self.yields_MRSN_class.yields
+        #self.yields_MRSN_class.construct_yields(self.ZA_sorted)
+        #self.models_MRSN = self.yields_MRSN_class.yields
         self.yield_models = {ch: self.__dict__['models_'+ch] for ch in self.IN.include_channel}
         
         # Initialize Global tracked quantities
@@ -192,7 +192,8 @@ class OneZone(Setup):
             if n > 0.: 
                 Wi_class = Wi(n, self.IN, self.lifetime_class, self.time_chosen, self.Z_v, self.SFR_v, 
                               self.f_SNIa_v, self.IMF, self.ZA_sorted)
-                self.Rate_SNII[n], self.Rate_LIMs[n], self.Rate_SNIa[n], self.Rate_MRSN[n] = Wi_class.compute_rates()
+                #self.Rate_SNII[n], self.Rate_LIMs[n], self.Rate_SNIa[n], self.Rate_MRSN[n] = Wi_class.compute_rates()
+                self.Rate_SNII[n], self.Rate_LIMs[n], self.Rate_SNIa[n] = Wi_class.compute_rates()
                 Wi_comp = {ch: Wi_class.compute(ch) for ch in self.IN.include_channel}
                 Z_comp = {}
                 for ch in self.IN.include_channel:
@@ -230,7 +231,7 @@ class OneZone(Setup):
         Returns:
             [function]: [SFR as a function of Mgas]
         '''
-        return self.SFR_class.SFR(Mgas=self.Mgas_v, Mtot=self.Mtot, timestep_n=timestep_n) # Function: SFR(Mgas)
+        return (1 - self.IN.wind_efficiency) * self.SFR_class.SFR(Mgas=self.Mgas_v, Mtot=self.Mtot, timestep_n=timestep_n) # Function: SFR(Mgas)
     
     def phys_integral(self, n):
         '''Integral for the total physical quantities'''
@@ -475,10 +476,14 @@ class Plots(Setup):
         divid05 = np.divide(self.IN.s_lifetimes_p98['Z05'], self.IN.s_lifetimes_p98['Z0004'])
         divid02 = np.divide(self.IN.s_lifetimes_p98['Z02'], self.IN.s_lifetimes_p98['Z0004'])
         divid008 = np.divide(self.IN.s_lifetimes_p98['Z008'], self.IN.s_lifetimes_p98['Z0004'])
+        divid004 = np.divide(self.IN.s_lifetimes_p98['Z004'], self.IN.s_lifetimes_p98['Z0004'])
         ax[1,0].semilogx(self.IN.s_lifetimes_p98['M'], divid05, color='black', label='Z = 0.05')
         ax[1,0].semilogx(self.IN.s_lifetimes_p98['M'], divid02, color='black', linestyle='--', label='Z = 0.02')
-        ax[1,0].semilogx(self.IN.s_lifetimes_p98['M'], divid008, color='black', linestyle=':', label='Z = 0.008')
+        ax[1,0].semilogx(self.IN.s_lifetimes_p98['M'], divid008, color='black', linestyle='-.', label='Z = 0.008')
+        ax[1,0].semilogx(self.IN.s_lifetimes_p98['M'], divid004, color='black', linestyle=':', label='Z = 0.004')
         ax[0,0].hlines(1, 0.6,120, color='white', label=' ', alpha=0.)
+        ax[0,0].hlines(1, 0.6,120, color='white', label='  ', alpha=0.)
+        ax[1,0].hlines(1, 0.6,120, color='white', label='  ', alpha=0.)
         ax[0,0].vlines(3, 0.001,120, color='red', label=r'$3 M_{\odot}$')
         ax[0,0].vlines(6, 0.001,120, color='red', alpha=0.6, linestyle='--', label=r'$6 M_{\odot}$')
         ax[0,0].vlines(9, 0.001,120, color='red', alpha=0.3, linestyle = ':', label=r'$9 M_{\odot}$')
@@ -489,6 +494,7 @@ class Plots(Setup):
         sc=ax[1,0].scatter(self.IN.s_lifetimes_p98['M'], divid05, c=np.log10(self.IN.s_lifetimes_p98['Z05']), cmap=cm, s=50)
         sc=ax[1,0].scatter(self.IN.s_lifetimes_p98['M'], divid02, c=np.log10(self.IN.s_lifetimes_p98['Z02']), cmap=cm, s=50)
         sc=ax[1,0].scatter(self.IN.s_lifetimes_p98['M'], divid008, c=np.log10(self.IN.s_lifetimes_p98['Z008']), cmap=cm, s=50)
+        sc=ax[1,0].scatter(self.IN.s_lifetimes_p98['M'], divid004, c=np.log10(self.IN.s_lifetimes_p98['Z004']), cmap=cm, s=50)
         ax[1,0].legend(loc='best', ncol=2, frameon=False, fontsize=10)
         ax[1,0].set_ylabel(r'$\tau(X)/\tau(Z=0.0004)$', fontsize=15)
         ax[1,0].set_xlabel('Mass', fontsize=15)
@@ -501,8 +507,9 @@ class Plots(Setup):
         cbar.set_label(r'$\tau(M_*)$',fontsize=13)
         ax[0,0].loglog(self.IN.s_lifetimes_p98['M'], self.IN.s_lifetimes_p98['Z05']/1e9, color='#ffbf00', label='Z = 0.05')
         ax[0,0].loglog(self.IN.s_lifetimes_p98['M'], self.IN.s_lifetimes_p98['Z02']/1e9, color='#00ff80', linestyle='--', label='Z = 0.02')
-        ax[0,0].loglog(self.IN.s_lifetimes_p98['M'], self.IN.s_lifetimes_p98['Z008']/1e9, color='#4000ff', linestyle='-.', label='Z = 0.008')
-        ax[0,0].loglog(self.IN.s_lifetimes_p98['M'], self.IN.s_lifetimes_p98['Z0004']/1e9, color='black', linestyle=':', label='Z = 0.004')
+        ax[0,0].loglog(self.IN.s_lifetimes_p98['M'], self.IN.s_lifetimes_p98['Z008']/1e9, color='#ff4000', linestyle='-.', label='Z = 0.008')
+        ax[0,0].loglog(self.IN.s_lifetimes_p98['M'], self.IN.s_lifetimes_p98['Z004']/1e9, color='#4000ff', linestyle=':', label='Z = 0.004')
+        ax[0,0].loglog(self.IN.s_lifetimes_p98['M'], self.IN.s_lifetimes_p98['Z0004']/1e9, color='black', linestyle='-', label='Z = 0.0004')
         ax[0,0].legend(loc='best', ncol=2, frameon=False, fontsize=11)
         #labels=ax[0,0].get_label()
         handles, labels = ax[0,0].get_legend_handles_labels()
@@ -783,7 +790,7 @@ class Plots(Setup):
         Masses = np.log10(Mass_i[:,2:])
         phys = np.loadtxt(self._dir_out + 'phys.dat')
         W_i_comp = pickle.load(open(self._dir_out + 'W_i_comp.pkl','rb'))
-        Mass_MRSN = np.log10(W_i_comp['MRSN'])
+        #Mass_MRSN = np.log10(W_i_comp['MRSN'])
         Mass_BBN = np.log10(W_i_comp['BBN'])
         Mass_SNII = np.log10(W_i_comp['SNII'])
         Mass_AGB = np.log10(W_i_comp['LIMs'])
@@ -810,7 +817,7 @@ class Plots(Setup):
                 ax.plot(timex[:-1], Mass_SNII[i][:-1], color='#0034ff', linestyle='-.', linewidth=3, alpha=0.8, label='SNII')
                 ax.plot(timex[:-1], Mass_AGB[i][:-1], color='#ff00b3', linestyle='--', linewidth=3, alpha=0.8, label='LIMs')
                 ax.plot(timex[:-1], Mass_SNIa[i][:-1], color='#00b3ff', linestyle=':', linewidth=3, alpha=0.8, label='SNIa')
-                ax.plot(timex[:-1], Mass_MRSN[i][:-1], color='#000c3b', linestyle=':', linewidth=3, alpha=0.8, label='MRSN')
+                #ax.plot(timex[:-1], Mass_MRSN[i][:-1], color='#000c3b', linestyle=':', linewidth=3, alpha=0.8, label='MRSN')
                 if not logAge:
                     ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
                     ax.tick_params(width=1, length=2, axis='x', which='minor', bottom=True, top=True, direction='in')

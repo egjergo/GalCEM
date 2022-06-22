@@ -25,21 +25,22 @@ class Inputs:
         self.nTimeStep = 0.01 #0.002 #0.01 # Picked to smooth the mapping between stellar masses and lifetimes
         self.numTimeStep = 2000 # Like FM
         self.num_MassGrid = 200
-        self.include_channel = ['SNII', 'LIMs', 'SNIa', 'MRSN']
+        self.include_channel = ['SNII', 'LIMs', 'SNIa']#, 'MRSN']
         
         self.age_Galaxy = 13.8 # [Gyr]
         self.age_Sun = 4.6 # [Gyr]
         self.solar_metallicity = 0.0181 # Asplund et al. (2009, Table 4)
         self.r = 8 # [kpc] Compute around the solar neighborhood
         self.k_SFR = 1
-        self.wind_efficiency = 0 # override: no overflow #self.default_params('wind_efficiency', self.morphology)
-
+        
         self.morphology = 'spiral'
         self.M_inf = self.default_params('M_inf', self.morphology)
         self.Reff = self.default_params('Reff', self.morphology)
         self.tau_inf = self.default_params('tau_inf', self.morphology)
         self.nu = self.default_params('nu', self.morphology)
-        
+        self.wind_efficiency = self.default_params('wind_efficiency', self.morphology)
+        #self.wind_efficiency = 0 # override: no overflow #self.default_params('wind_efficiency', self.morphology)
+
         # Fraction of compact objects
         self.A_SNIa = 0.06 #0.35 # Fraction of white dwarfs that underwent a SNIa
         self.A_NSM = 0.03 #0.06 # Fraction of neutron star that coalesced
