@@ -187,7 +187,7 @@ class OneZone(Setup):
         for n in range(len(self.time_chosen[:self.idx_age_Galaxy])):
             print('time [Gyr] = %.2f'%self.time_chosen[n])
             self.file1.write('n = %d\n'%n)
-            self.phys_integral(n)        
+            self.total_evolution(n)        
             self.file1.write(' sum X_i at n %d= %.3f\n'%(n, np.sum(self.Xi_v[:,n])))
             if n > 0.: 
                 Wi_class = Wi(n, self.IN, self.lifetime_class, self.time_chosen, self.Z_v, self.SFR_v, 
@@ -202,7 +202,7 @@ class OneZone(Setup):
                     else:
                         Z_comp[ch] = pd.DataFrame(columns=['metallicity']) 
                 for i, _ in enumerate(self.ZA_sorted): 
-                    self.Mass_i_v[i, n+1] = self.aux.RK4(self.solve_integral, self.time_chosen[n], self.Mass_i_v[i,n], n, self.IN.nTimeStep, i=i, Wi_comp=Wi_comp, Z_comp=Z_comp)
+                    self.Mass_i_v[i, n+1] = self.aux.RK4(self.isotopes_evolution, self.time_chosen[n], self.Mass_i_v[i,n], n, self.IN.nTimeStep, i=i, Wi_comp=Wi_comp, Z_comp=Z_comp)
                 self.Mass_i_v[:,n+1] *= self.Mgas_v[n+1]/np.sum(self.Mass_i_v[:,n+1]) #!!!!!!! renorm numerical error propagation
             #self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
         self.Mgas_i_v[-1] = np.sum(self.Mass_i_v[:,-1])
@@ -233,7 +233,7 @@ class OneZone(Setup):
         '''
         return (1 - self.IN.wind_efficiency) * self.SFR_class.SFR(Mgas=self.Mgas_v, Mtot=self.Mtot, timestep_n=timestep_n) # Function: SFR(Mgas)
     
-    def phys_integral(self, n):
+    def total_evolution(self, n):
         '''Integral for the total physical quantities'''
         self.SFR_v[n] = self.SFR_tn(n)
         self.Mgas_i_v[n] = np.sum(self.Mass_i_v[:,n])
@@ -242,7 +242,7 @@ class OneZone(Setup):
         self.Mstar_v[n+1] = self.aux.RK4(self.Mstar_func, self.time_chosen[n], self.Mstar_v[n], n, self.IN.nTimeStep) 
         self.Mgas_v[n+1] = self.aux.RK4(self.Mgas_func, self.time_chosen[n], self.Mgas_v[n], n, self.IN.nTimeStep)    
 
-    def solve_integral(self, t_n, y_n, n, **kwargs):
+    def isotopes_evolution(self, t_n, y_n, n, **kwargs):
         '''
         Explicit general diff eq GCE function
         INPUT
@@ -304,8 +304,8 @@ class Plots(Setup):
         self.OH_evolution(logAge=True)
         self.FeH_evolution(logAge=False)
         self.OH_evolution(logAge=False)
-        self.phys_integral_plot(logAge=False)
-        self.phys_integral_plot(logAge=True)
+        self.total_evolution_plot(logAge=False)
+        self.total_evolution_plot(logAge=True)
         #self.DTD_plot()
         #self.iso_abundance()
         ## self.iso_evolution()
@@ -526,9 +526,8 @@ class Plots(Setup):
         fig.tight_layout()
         plt.savefig(self._dir_out_figs + 'tauratio.pdf', bbox_inches='tight')
      
-    def phys_integral_plot(self, figsiz=(12,7), logAge=False): #(12,6)
-        print('Starting phys_integral_plot()')
-        # Requires running "phys_integral()" in onezone.py beforehand
+    def total_evolution_plot(self, figsiz=(12,7), logAge=False): #(12,6)
+        print('Starting total_evolution_plot()')
         from matplotlib import pyplot as plt
         import matplotlib.ticker as ticker
         #plt.style.use(self._dir+'/galcem.mplstyle')
