@@ -193,7 +193,7 @@ class Yields_SNIa(Yields):
                          ('TypeII','<f8'), ('W7','<f8'), ('W70','<f8'), 
                          ('WDD1','<f8'), ('WDD2','<f8'), ('WDD3','<f8'), 
                          ('CDD1','<f8'), ('CDD2','<f8')])
-            self.yields_list = self.tables['W7'] 
+            self.yields_list = self.tables['WDD2'] 
             self.elemA = self.tables['elemA']
             self.elemZ = self.tables['elemZ']
             
