@@ -37,18 +37,20 @@ class GalCemInterpolant(object):
         self.train_metrics = self.get_metrics(df)
         # optional plotting in transformed space
         if plot is None: return
-        assert plot in ['std','grad']
-        dxs = [[0,0]] if plot=='std' else [[0,0],[1,0],[0,1]]
-        from matplotlib import pyplot,cm
+        dxs = plot
+        nrows = len(dxs)
+        from matplotlib import pyplot
+        cmap = pyplot.cm.get_cmap('copper')
+        rcount,ccount=82,82
         cmdot,colordots,colordotstf = 'r','r','r'
         if colormap:
             cmdot = pyplot.cm.get_cmap('Paired')
             s_lifetimes_p98 = pd.read_csv('galcem/input/starlifetime/portinari98table14.dat')
             s_lifetimes_p98.columns = [name.replace('#M','M').replace('Z=0.','Z') for name in s_lifetimes_p98.columns]
             colordots = np.array([s_lifetimes_p98[c].to_numpy() for c in s_lifetimes_p98.columns[1:]]).flatten()
-            colordotstf = colordots#self.tf_funs[self.ycol](colordots)
-        fig = pyplot.figure(figsize=(23,20) if plot=='grad' else (23,15))
-        nticks = 64
+            colordotstf = colordots
+        fig = pyplot.figure(figsize=(28,7*nrows))
+        nticks = 257
         sepfrac = 0.1
         for i,dx in enumerate(dxs):
             # transformed domain
@@ -63,16 +65,16 @@ class GalCemInterpolant(object):
             x0tfmesh_flat,x1tfmesh_flat = x0tfmesh.flatten(),x1tfmesh.flatten()
             ytf = self.eval_with_grad(x=np.vstack([x0tfmesh_flat,x1tfmesh_flat]).T,dx=dx)
             ytfmesh = ytf.reshape(x0tfmesh.shape)
-            ax = fig.add_subplot(3,4,4*i+1,projection='3d')
-            ax.plot_surface(x0tfmesh,x1tfmesh,ytfmesh,cmap=cm.Greys,alpha=.9,vmin=ytfmesh.min(),vmax=ytfmesh.max())
+            ax = fig.add_subplot(nrows,4,4*i+1,projection='3d')
+            ax.plot_surface(x0tfmesh,x1tfmesh,ytfmesh,cmap=cmap,alpha=.9,vmin=ytfmesh.min(),vmax=ytfmesh.max(),rcount=rcount,ccount=ccount)#,antialiased=True)
             if dx==[0,0]: ax.scatter(xtf[:,0],xtf[:,1],dftf[self.ycol].to_numpy(),c=colordotstf, cmap=cmdot)
             ax.set_xlabel(self.xcols[0])
             ax.set_ylabel(self.xcols[1])
             ax.set_zlabel(self.ycol)
             if dx!=[0,0]: ax.set_title('d(%s) / d(%s)'%(self.ycol,self.xcols[dx.index(1)]))
             ax.view_init(azim=fig_view_angle)
-            ax = fig.add_subplot(3,4,4*i+2)
-            contour = ax.contourf(x0tfmesh,x1tfmesh,ytfmesh,cmap=cm.Greys,alpha=.95,vmin=ytfmesh.min(),vmax=ytfmesh.max(),levels=64)
+            ax = fig.add_subplot(nrows,4,4*i+2)
+            contour = ax.contourf(x0tfmesh,x1tfmesh,ytfmesh,cmap=cmap,alpha=.95,vmin=ytfmesh.min(),vmax=ytfmesh.max(),levels=64)
             xlim,ylim = ax.get_xlim(),ax.get_ylim()
             ax.set_aspect((xlim[1]-xlim[0])/(ylim[1]-ylim[0]))
             fig.colorbar(contour,ax=None,shrink=0.5,aspect=5)
@@ -92,16 +94,16 @@ class GalCemInterpolant(object):
             dfw = None if dx==[0,0] else self.xcols[dx.index(1)]
             y = self.__call__(dfx=dfx,dwrt=dfw)
             ymesh = y.reshape(x0mesh.shape)
-            ax = fig.add_subplot(3,4,4*i+3,projection='3d')
-            ax.plot_surface(x0mesh,x1mesh,ymesh,cmap=cm.Greys,alpha=.9,vmin=ymesh.min(),vmax=ymesh.max())
+            ax = fig.add_subplot(nrows,4,4*i+3,projection='3d')
+            ax.plot_surface(x0mesh,x1mesh,ymesh,cmap=cmap,alpha=.9,vmin=ymesh.min(),vmax=ymesh.max(),rcount=rcount,ccount=ccount)#,antialiased=True)
             if dx==[0,0]: ax.scatter(x[:,0],x[:,1],df[self.ycol].to_numpy(),c=colordots, cmap=cmdot)
             ax.set_xlabel(self.xcols[0])
             ax.set_ylabel(self.xcols[1])
             ax.set_zlabel(self.ycol)
             if dx!=[0,0]: ax.set_title('d(%s) / d(%s)'%(self.ycol,self.xcols[dx.index(1)]))
             ax.view_init(azim=fig_view_angle)
-            ax = fig.add_subplot(3,4,4*i+4)
-            contour = ax.contourf(x0mesh,x1mesh,ymesh,cmap=cm.Greys,alpha=.95,vmin=ymesh.min(),vmax=ymesh.max(),levels=64)
+            ax = fig.add_subplot(nrows,4,4*i+4)
+            contour = ax.contourf(x0mesh,x1mesh,ymesh,cmap=cmap,alpha=.95,vmin=ymesh.min(),vmax=ymesh.max(),levels=64)
             xlim,ylim = ax.get_xlim(),ax.get_ylim()
             ax.set_aspect((xlim[1]-xlim[0])/(ylim[1]-ylim[0]))
             fig.colorbar(contour,ax=None,shrink=0.5,aspect=5)
@@ -112,7 +114,7 @@ class GalCemInterpolant(object):
         fig.suptitle('%s\n%s by %s\nTransformed Domain (left) | Original Domain (right)'%(self.name,self.ycol,str(self.xcols)), fontsize=15)
         pyplot.subplots_adjust(left=0,bottom=0.1,right=1,top=0.9,wspace=0.2,hspace=0.2)
         #fig.tight_layout()
-        fig.savefig('%s%s.pdf'%(fig_root,name),format='pdf',bbox_inches='tight')
+        fig.savefig('%s%s.pdf'%(fig_root,name),format='pdf',bbox_inches='tight',dpi=100,transparent=True)
         pyplot.close(fig)
     
     def fit(self, x, y): 
@@ -191,21 +193,22 @@ class SmootheSpline2D_GCI(GalCemInterpolant):
         return y
 
     
-def fit_isotope_interpolants(df,root,tf_funs):
+def fit_isotope_interpolants(df,root,tf_funs,fit_names=[],plot_names=[]):
     # iterate over a,z pairs and save interpolants based on irv=0
     print('\n'+'~'*75+'\n')
     dfs = dict(tuple(df.groupby(['isotope','a','z'])))
     for ids,_df in dfs.items():
         name = 'z%d.a%d.irv0.%s'%(ids[2],ids[1],ids[0])
+        if fit_names!='all' and name not in fit_names: continue
         # fit model
         interpolant = LinearAndNearestNeighbor_GCI(
-            df = _df[['mass','metallicity','yield']],
+            df = _df[['metallicity','mass','yield']],
             ycol = 'yield',
             tf_funs = tf_funs,
             name = name,
-            plot = 'std',
+            plot = [[0,0]] if plot_names=='all' or name in plot_names else None,
             fig_root = root+'/figs/',
-            fig_view_angle = -45,
+            fig_view_angle = 135,
             colormap=False)
         #   print model
         print(interpolant)
