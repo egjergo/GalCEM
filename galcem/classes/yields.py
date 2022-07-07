@@ -414,7 +414,7 @@ class Yields_NSM(Yields):
         self.option = self.IN.yields_NSM_option if option is None else option
         super().__init__()
         self.yd = self._dir + '/input/yields/nsm/' + self.option
-        self.ejectamass = 0.04 # Rastinejad+22
+        self.ejectamass = self.IN.NSM_ejectamass 
         
     def import_yields(self):
         #''''''
@@ -423,16 +423,16 @@ class Yields_NSM(Yields):
             self.elemA = self.tables['elemA']
             self.elemZ = self.tables['elemZ']
             self.massFrac = self.tables['massFrac']
-            self.yields = np.multiply(self.ejectamass, self.massFrac)  
-                       
-    def construct_yields(self, ZA_sorted, model_number=2):
+            self.yields_list = np.multiply(self.ejectamass, self.massFrac)  
+             
+    def construct_yields(self, ZA_sorted):
         yields = []
         for i,val in enumerate(ZA_sorted):
             select_idz = np.where(self.elemZ == val[0])[0]
             select_ida = np.where(self.elemA == val[1])[0]
             select_id = np.intersect1d(select_idz,select_ida)
             if len(select_id) > 0.:
-                yields.append(self.yields_list[model_number, select_id[0]])
+                yields.append(self.yields_list[select_id[0]])
             else:
                 yields.append(0.)
         self.yields = yields

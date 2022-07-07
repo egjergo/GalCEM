@@ -25,7 +25,7 @@ class Inputs:
         self.nTimeStep = 0.01 #0.002 #0.01 # Picked to smooth the mapping between stellar masses and lifetimes
         self.numTimeStep = 2000 # Like FM
         self.num_MassGrid = 200
-        self.include_channel = ['SNII', 'LIMs', 'SNIa']#, 'MRSN']
+        self.include_channel = ['SNII', 'LIMs', 'SNIa', 'MRSN', 'NSM']
         
         self.age_Galaxy = 13.8 # [Gyr]
         self.age_Sun = 4.6 # [Gyr]
@@ -44,6 +44,7 @@ class Inputs:
         # Fraction of compact objects
         self.A_SNIa = 0.06 #0.35 # Fraction of white dwarfs that underwent a SNIa
         self.A_NSM = 0.03 #0.06 # Fraction of neutron star that coalesced
+        self.NSM_ejectamass = 0.04  # Rastinejad+22 # Fraction of the ejecta mass that experiences r-process enrichment
         self.A_MRSN = 0.01 #0.06 # Fraction of the IMF that underwent a MRSN
 
         # Mass limits

@@ -100,10 +100,10 @@ class Setup:
         self.models_LIMs = self.yields_LIMs_class.yields
         self.yields_SNIa_class.construct_yields(self.ZA_sorted)
         self.models_SNIa = self.yields_SNIa_class.yields
-        #self.yields_NSM_class.construct_yields(self.ZA_sorted)
-        #models_NSM = self.yields_NSM_class.yields
-        #self.yields_MRSN_class.construct_yields(self.ZA_sorted)
-        #self.models_MRSN = self.yields_MRSN_class.yields
+        self.yields_NSM_class.construct_yields(self.ZA_sorted)
+        self.models_NSM = self.yields_NSM_class.yields
+        self.yields_MRSN_class.construct_yields(self.ZA_sorted)
+        self.models_MRSN = self.yields_MRSN_class.yields
         self.yield_models = {ch: self.__dict__['models_'+ch] for ch in self.IN.include_channel}
         
         # Initialize Global tracked quantities
@@ -193,7 +193,7 @@ class OneZone(Setup):
                 Wi_class = Wi(n, self.IN, self.lifetime_class, self.time_chosen, self.Z_v, self.SFR_v, 
                               self.f_SNIa_v, self.IMF, self.ZA_sorted)
                 #self.Rate_SNII[n], self.Rate_LIMs[n], self.Rate_SNIa[n], self.Rate_MRSN[n] = Wi_class.compute_rates()
-                self.Rate_SNII[n], self.Rate_LIMs[n], self.Rate_SNIa[n] = Wi_class.compute_rates()
+                self.Rate_SNII[n], self.Rate_LIMs[n], self.Rate_SNIa[n] = Wi_class.compute_rates() # !!!!!!! make adaptive rate dictionary
                 Wi_comp = {ch: Wi_class.compute(ch) for ch in self.IN.include_channel}
                 Z_comp = {}
                 for ch in self.IN.include_channel:
