@@ -423,7 +423,7 @@ class Yields_NSM(Yields):
             self.elemA = self.tables['elemA']
             self.elemZ = self.tables['elemZ']
             self.massFrac = self.tables['massFrac']
-            self.yields = np.multiply(self.ejectamass, self.massFrac)  
+            self.yields_list = np.multiply(self.ejectamass, self.massFrac)  
                        
     def construct_yields(self, ZA_sorted, model_number=2):
         yields = []

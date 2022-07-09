@@ -70,7 +70,7 @@ class Setup:
         self.yields_BBN_class = Yields_BBN(self.IN)
         self.yields_BBN_class.import_yields()
         
-        # Initialize ZA_all
+        # Initialize isotope list
         self.c_class = Concentrations(self.IN)
         self.ZA_BBN = self.c_class.extract_ZA_pairs(self.yields_BBN_class)
         self.ZA_LIMs = self.c_class.extract_ZA_pairs(self.yields_LIMs_class) #self.c_class.extract_ZA_pairs_LIMs(self.yields_LIMs_class)
@@ -100,10 +100,10 @@ class Setup:
         self.models_LIMs = self.yields_LIMs_class.yields
         self.yields_SNIa_class.construct_yields(self.ZA_sorted)
         self.models_SNIa = self.yields_SNIa_class.yields
-        #self.yields_NSM_class.construct_yields(self.ZA_sorted)
-        #models_NSM = self.yields_NSM_class.yields
-        #self.yields_MRSN_class.construct_yields(self.ZA_sorted)
-        #self.models_MRSN = self.yields_MRSN_class.yields
+        self.yields_NSM_class.construct_yields(self.ZA_sorted)
+        self.models_NSM = self.yields_NSM_class.yields
+        self.yields_MRSN_class.construct_yields(self.ZA_sorted)
+        self.models_MRSN = self.yields_MRSN_class.yields
         self.yield_models = {ch: self.__dict__['models_'+ch] for ch in self.IN.include_channel}
         
         # Initialize Global tracked quantities
@@ -1289,8 +1289,8 @@ class Plots(Setup):
 
         if romano10 == True:
             r10_path = self._dir + r'/input/r10/'
-            abundb = np.loadtxt(r10_path+'abundb8h.mwgk09')
-            abundc = np.loadtxt(r10_path+'abundc8h.mwgk09')
+            abundb = np.loadtxt(r10_path+'romano10b.dat')
+            abundc = np.loadtxt(r10_path+'romano10c.dat')
             r10_FeH = abundc[:,1]
             r10_time_Gyr = abundc[:,0]
             cu = np.loadtxt(r10_path+'cu.dat')
@@ -1473,6 +1473,145 @@ class Plots(Setup):
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'elem_obs_lelemZ.pdf', bbox_inches='tight')
         return None
+    
+    def extract_comparison(self, dir_val, select_elemZ_idx, solar_norm_Fe, Z_list):
+        directory = 'runs/'+dir_val+'/'
+        Mass_i = np.loadtxt(directory+'Mass_i.dat')
+        Masses_i = []
+        Fe = np.sum(Mass_i[self.select_elemZ_idx(26), c+2:], axis=0)
+        H = np.sum(Mass_i[self.select_elemZ_idx(1), c+2:], axis=0)
+        FeH = np.log10(np.divide(Fe, H)) - solar_norm_H[26]
+        for i,val in enumerate(Z_list):
+            mass = np.sum(Mass1_i[self.select_elemZ_idx(val), c+2:], axis=0)
+            Masses_i.append(np.log10(np.divide(mass,Fe)) - solar_norm_Fe[val])
+        Masses = np.array(Masses_i) 
+        return FeH, Masses
+    
+    def observational_helemZ_dir_comparison(self, figsiz = (15,10), c=3, yrange='full', 
+                                            romano10=False, directories={'SMBH zap':'20220623_zap_2Myr','MRSN':'20220614_MRSN_massrange_2Myr'},
+                                            Z_list=[26,38,39,40,41,42,44,45,46,47,56,57,58,
+                                                    59,60,62,63,64,66,67,68,70,72,76,77,79,82]):
+        ''' yrange full to include all observational points'''
+        print('observational_helemZ_dir_comparison()')
+        import glob
+        import itertools
+        from matplotlib import pyplot as plt
+        import matplotlib.ticker as ticker
+        #plt.style.use(self._dir+'/galcem.mplstyle')
+        #Z_list = np.unique(self.ZA_sorted[:,0])
+        Z_list = np.array(Z_list)
+        Z_symb_list = self.IN.periodic['elemSymb'][Z_list] # name of elements for all isotopes
+        solar_norm_H = self.c_class.solarA09_vs_H_bymass[Z_list]
+        solar_norm_Fe = self.c_class.solarA09_vs_Fe_bymass[Z_list]
+        plot_pairs = {}
+        for d in directories:
+            plot_pairs[d] = self.extract_comparison(directories[d], self.select_elemZ_idx, solar_norm_Fe, Z_list)
+
+        path = self._dir + r'/input/observations/abund' # use your path
+        all_files = glob.glob(path + "/*.txt")
+        all_files = sorted(all_files, key=len)#list(np.sort(all_files))
+
+        li = []
+        linames = []
+        elemZmin = 12
+        elemZmax = 12
+
+        for filename in all_files:
+            df = pd.read_table(filename, sep=',')
+            elemZmin0 = np.min(df.iloc[:,0])
+            elemZmax0 = np.max(df.iloc[:,0])
+            elemZmin = np.min([elemZmin0, elemZmin])
+            elemZmax = np.max([elemZmax0, elemZmax])
+            li.append(df)
+            linames.append(df['paperName'][0])
+
+        lenlist = len(li)
+        listmarkers = [r"$\mathcal{A}$",  r"$\mathcal{B}$",  r"$\mathcal{C}$",
+                                    r"$\mathcal{D}$", r"$\mathcal{E}$", r"$\mathcal{F}$",
+                                    r"$\mathcal{G}$", r"$\mathcal{H}$", r"$\mathcal{I}$",
+                                    r"$\mathcal{J}$", r"$\mathcal{K}$", r"$\mathcal{L}$",
+                                    r"$\mathcal{M}$", r"$\mathcal{N}$", r"$\mathcal{O}$",
+                                    r"$\mathcal{P}$", r"$\mathcal{Q}$", r"$\mathcal{R}$",
+                                    r"$\mathcal{S}$", r"$\mathcal{T}$", r"$\mathcal{U}$",
+                                    r"$\mathcal{V}$", r"$\mathcal{X}$", r"$\mathcal{Y}$",
+                                    "$1$", "$2$", "$3$", "$4$", "$5$", "$6$", 
+                                    "$7$", "$8$", "$9$", "$f$", "$\u266B$",
+                                    r"$\frac{1}{2}$",  'o', '+', 'x', 'v', '^', '<', '>',
+                                    'P', '*', 'd', 'X',  "_", '|']
+        listcolors = ['#cc6c00', '#ff8800', '#ffbb33', '#ffe564', '#2c4c00', '#436500',
+        '#669900', '#99cc00', '#d2fe4c', '#3c1451', '#6b238e', '#9933cc',
+        '#aa66cc', '#bc93d1', '#004c66', '#007299', '#0099cc', '#33b5e5',
+        '#8ed5f0', '#660033', '#b20058', '#e50072', '#ff3298', '#ff7fbf',
+        '#252525', '#525252', '#737373', '#969696', '#bdbdbd', '#d9d9d9',
+        '#7f0000', '#cc0000', '#ff4444', '#ff7f7f', '#ffb2b2', '#995100']
+
+        if romano10 == True:
+            r10_path = self._dir + r'/input/r10/'
+            abundb = np.loadtxt(r10_path+'abundb8h.mwgk09')
+            abundc = np.loadtxt(r10_path+'abundc8h.mwgk09')
+            r10_FeH = abundc[:,1]
+            r10_time_Gyr = abundc[:,0]
+            cu = np.loadtxt(r10_path+'cu.dat')
+            r10_labels = ['C', 'N', 'O', 'Na', 'Mg', 'Al', 'Si', 'S', 'K', 'Ca', 'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Co', 'Ni', 'Cu', 'Zn', '-']
+            r10_elem = [abundc[:,3], abundb[:,7], abundc[:,2], np.add(abundc[:,4], 1.5), abundc[:,5], abundc[:,9], abundb[:,6], abundc[:,6], abundc[:,11], abundb[:,8], abundb[:,5], abundb[:,9], abundb[:,10], abundb[:,11], abundb[:,12], abundc[:,10], abundb[:,4], cu[:,1], abundb[:,3], np.zeros(len(abundb[:,0]))]
+            r10_elem_dict = dict(zip(r10_labels, r10_elem))
+
+        nrow = 5
+        ncol = 6
+        fig, axs = plt.subplots(nrow, ncol, figsize =figsiz)#, sharex=True)
+        
+        for i, ax in enumerate(axs.flat):
+            colorlist = itertools.cycle(listcolors)
+            markerlist =itertools.cycle(listmarkers)
+            print(f'{FeH1==FeH2}')
+            for j, ll in enumerate(li):
+                if i < len(Z_list):
+                    ip = Z_list[i]#+2 # Shift to skip H and He
+                    idx_obs = np.where(ll.iloc[:,0] == ip)[0]
+                    ax.scatter(ll.iloc[idx_obs,1], ll.iloc[idx_obs,2], label=linames[j], alpha=0.3, marker=next(markerlist), c=next(colorlist), s=20)
+            if i == 0:
+                    ax.legend(ncol=7, loc='lower left', bbox_to_anchor=(-.2, 1.), frameon=False, fontsize=9)
+            if i < len(Z_list):
+                ip = i#+2 # Shift to skip H and He
+                for d in dictionaries:
+                    ax.plot(plot_pairs[d][0], plot_pairs[d][1], color='black', linewidth=2, linestyle=tools.cylcle(['-','--',':','-.']), label=d)
+                ax.plot(FeH2, Masses2[ip], color='black', linewidth=2)
+                ax.plot(FeH1, Masses1[ip], color='black', linewidth=2, linestyle='--')
+                ax.fill_between(FeH1, Masses1[ip], Masses2[ip], where=(Masses1[ip] > Masses2[ip]), color='blue', alpha=0.2,
+                 interpolate=True)
+                ax.fill_between(FeH1, Masses1[ip], Masses2[ip], where=(Masses1[ip] <= Masses2[ip]), color='red', alpha=0.2,
+                 interpolate=True)
+                ax.annotate(f"{Z_list[ip]}{Z_symb_list[Z_list[ip]]}", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
+                if romano10 == True:
+                    if Z_symb_list[Z_list[ip]] in r10_labels:
+                        ax.plot(r10_FeH, r10_elem_dict[Z_symb_list[Z_list[ip]]], color='red', linewidth=2)
+                ax.set_ylim(-2.5, 2.5)
+                if yrange=='full': ax.set_ylim(-5.9, 5.9)
+                ax.set_xlim(-6.5, 1.5)
+                ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=.5))
+                ax.tick_params(width=1, length = 5, axis='x', which='minor', bottom=True, top=True, direction='in')
+                ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=.5))
+                ax.tick_params(width=1, length = 5, axis='y', which='minor', left = True, right = True, direction='in')
+                ax.xaxis.set_major_locator(ticker.MultipleLocator(base=2))
+                ax.tick_params(width=1, length = 7, axis='x', which='major', bottom=True, top=True, direction='in')
+                ax.yaxis.set_major_locator(ticker.MultipleLocator(base=2))
+                ax.tick_params(width=1, length = 7, axis='y', which='major', left = True, right = True, direction='in')
+            else:
+                fig.delaxes(ax)
+        for i in range(nrow):
+            for j in range(ncol):
+                if j != 0:
+                    axs[i,j].set_yticklabels([])
+                if i != nrow-1:
+                    axs[i,j].set_xticklabels([])
+        axs[nrow//2,0].set_ylabel('[X/Fe]', fontsize = 15)
+        axs[nrow-1, ncol//2].set_xlabel(f'[Fe/H]', fontsize = 15)
+        fig.tight_layout(rect=[0., 0, 1, .9])
+        fig.subplots_adjust(wspace=0., hspace=0.)
+        plt.show(block=False)
+        plt.savefig(self._dir_out_figs + 'elem_obs_helemZ_dir_comparison.pdf', bbox_inches='tight')
+        return None
+    
     
     def _obs_lZ(self, figsiz = (21,7), c=3):
         print('Starting observational_lZ()')
