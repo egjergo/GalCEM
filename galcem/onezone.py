@@ -142,15 +142,15 @@ class OneZone(Setup):
     def __init__(self, IN, outdir = 'runs/mygcrun/'):
         self.tic = []
         super().__init__(IN, outdir=outdir)
-        self.tic.append(time.process_time())
+        self.tic.append(time.perf_counter())
         # Record load time
-        self.tic.append(time.process_time())
+        self.tic.append(time.perf_counter())
         package_loading_time = self.tic[-1]
         print('Package lodaded in %.1e seconds.'%package_loading_time)   
     
     def main(self):
         ''' Run the OneZone program '''
-        self.tic.append(time.process_time())
+        self.tic.append(time.perf_counter())
         self.file1 = open(self._dir_out + "Terminal_output.txt", "w")
         pickle.dump(self.IN,open(self._dir_out + 'inputs.pkl','wb'))
         with open(self._dir_out + 'inputs.txt', 'w') as f: 
@@ -193,7 +193,9 @@ class OneZone(Setup):
                 Wi_class = Wi(n, self.IN, self.lifetime_class, self.time_chosen, self.Z_v, self.SFR_v, 
                               self.f_SNIa_v, self.IMF, self.ZA_sorted)
                 #self.Rate_SNII[n], self.Rate_LIMs[n], self.Rate_SNIa[n], self.Rate_MRSN[n] = Wi_class.compute_rates()
-                self.Rate_SNII[n], self.Rate_LIMs[n], self.Rate_SNIa[n] = Wi_class.compute_rates()
+                rates = Wi_class.compute_rates()
+                for i,r in enumerate(rates):
+                    self.__dict__['Rate_'+self.IN.include_channel[i]][n] = r
                 Wi_comp = {ch: Wi_class.compute(ch) for ch in self.IN.include_channel}
                 Z_comp = {}
                 for ch in self.IN.include_channel:
@@ -268,6 +270,8 @@ class OneZone(Setup):
                     Wi_vals[ch] = self.Rate_SNIa[n] * self.yield_models['SNIa'][i] 
                 elif ch == 'MRSN':
                     Wi_vals[ch] = self.IN.A_MRSN * self.Rate_MRSN[n] * self.yield_models['MRSN'][i] 
+                elif ch == 'NSM':
+                    Wi_vals[ch] = self.IN.A_NSM * self.Rate_NSM[n] * self.yield_models['NSM'][i]
                 else:
                     if len(Wi_comps[ch]['birthtime_grid']) > 1.:
                         if not self.yield_models[ch][i].empty:
@@ -291,19 +295,19 @@ class Plots(Setup):
         self.tic = []
         IN = pickle.load(open(outdir + 'inputs.pkl','rb'))
         super().__init__(IN, outdir=outdir)
-        self.tic.append(time.process_time())
+        self.tic.append(time.perf_counter())
         # Record load time
-        self.tic.append(time.process_time())
+        self.tic.append(time.perf_counter())
         package_loading_time = self.tic[-1]
         print('Lodaded the plotting class in %.1e seconds.'%package_loading_time)   
         
     def plots(self):
-        self.tic.append(time.process_time())
+        self.tic.append(time.perf_counter())
         print('Starting to plot')
-        self.FeH_evolution(logAge=True)
-        self.OH_evolution(logAge=True)
-        self.FeH_evolution(logAge=False)
-        self.OH_evolution(logAge=False)
+        ###self.FeH_evolution(logAge=True)
+        ###self.Z_evolution(logAge=True)
+        ###self.FeH_evolution(logAge=False)
+        ###self.Z_evolution(logAge=False)
         self.total_evolution_plot(logAge=False)
         self.total_evolution_plot(logAge=True)
         #self.DTD_plot()
@@ -455,7 +459,7 @@ class Plots(Setup):
         from matplotlib import pyplot as plt
         #plt.style.use(self._dir+'/galcem.mplstyle')
         phys = np.loadtxt(self._dir_out + 'phys.dat')
-        time = phys[:-1,0]
+        gal_time = phys[:-1,0]
         DTD_SNIa = phys[:-1,12]
         fig, ax = plt.subplots(1,1, figsize=(7,5))
         ax.loglog(time, DTD_SNIa, color='blue', label='SNIa')
@@ -626,7 +630,7 @@ class Plots(Setup):
         #plt.style.use(self._dir+'/galcem.mplstyle')
         Z_list = np.unique(self.ZA_sorted[:,0])
         phys = np.loadtxt(self._dir_out + 'phys.dat')
-        time = phys[c:,0]
+        gal_time = phys[c:,0]
         solar_norm_H = self.c_class.solarA09_vs_H_bymass[Z_list]
         solar_norm_Fe = self.c_class.solarA09_vs_Fe_bymass[Z_list]
         Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
@@ -637,7 +641,7 @@ class Plots(Setup):
         H = np.sum(Mass_i[self.select_elemZ_idx(1), c+2:], axis=0)
         FeH = np.log10(np.divide(Fe, H)) - solar_norm_H[elemZ]
         fig, ax = plt.subplots(1,1, figsize=(7,5))
-        ax.plot(time, FeH, color='black', label='[Fe/H]', linewidth=3) 
+        #ax.plot(time, FeH, color='black', label='[Fe/H]', linewidth=3) 
         ax.axvline(x=self.IN.age_Galaxy-self.IN.age_Sun, linewidth=2, color='orange', label=r'Age$_{\odot}$')
         ax.plot(self.IN.age_Galaxy +0.5 - FeH_age, a*FeH_age+b, color='red', alpha=1, linewidth=3, label='linear fit on [Fe/H]')
         ax.scatter(self.IN.age_Galaxy +0.5 - FeH_age, FeH_value, color='red', marker='*', alpha=0.3, label='Silva Aguirre et al. (2018)')
@@ -657,29 +661,29 @@ class Plots(Setup):
         fig.tight_layout()
         plt.savefig(self._dir_out_figs + 'FeH_evolution'+str(xscale)+'.pdf', bbox_inches='tight')
 
-    def OH_evolution(self, c=2, elemZ=8, logAge=False):
-        print('Starting OH_evolution()')
+    def Z_evolution(self, c=2, elemZ=8, logAge=False):
+        print('Starting Z_evolution()')
         from matplotlib import pyplot as plt
         #plt.style.use(self._dir+'/galcem.mplstyle')
         Z_list = np.unique(self.ZA_sorted[:,0])
         phys = np.loadtxt(self._dir_out + 'phys.dat')
-        time = phys[c:,0]
+        gal_time = phys[c:,0]
         _, _, metallicity_value, metallicity_age = self.age_observations()
         a, b = np.polyfit(metallicity_age, metallicity_value, 1)
         solar_norm_H = self.c_class.solarA09_vs_H_bymass[Z_list]
         Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
-        O = np.sum(Mass_i[self.select_elemZ_idx(elemZ), c+2:], axis=0)
+        Z = np.sum(Mass_i[self.i_Z:, c+2:], axis=0)
         H = np.sum(Mass_i[self.select_elemZ_idx(1), c+2:], axis=0)
-        OH = np.log10(np.divide(O, H)) - solar_norm_H[elemZ]
+        ZH = np.log10(np.divide(Z, H)) - solar_norm_H[elemZ] - 1
         fig, ax = plt.subplots(1,1, figsize=(7,5))
-        ax.plot(time, OH, color='blue', label='[O/H]', linewidth=3)
+        ax.plot(time, ZH, color='blue', label='Z', linewidth=3)
         ax.axvline(x=self.IN.age_Galaxy-self.IN.age_Sun, linewidth=2, color='orange', label=r'Age$_{\odot}$')
         ax.axhline(y=0, linewidth=1, color='orange', linestyle='--')
         ax.plot(self.IN.age_Galaxy +0.5 - metallicity_age, a*metallicity_age+b, color='red', alpha=1, linewidth=3, label='linear fit on [M/H]')
         ax.scatter(self.IN.age_Galaxy +0.5 - metallicity_age, metallicity_value, color='red', marker='*', alpha=0.3, label='Silva Aguirre et al. (2018)')
         #ax.errorbar(self.IN.age_Galaxy - observ['age'], observ['FeH'], yerr=observ['FeHerr'], marker='s', label='Meusinger+91', mfc='gray', ecolor='gray', ls='none')
         ax.legend(loc='lower right', frameon=False, fontsize=17)
-        ax.set_ylabel(r'['+np.unique(self.ZA_symb_list[elemZ].values)[0]+'/H]', fontsize=20)
+        ax.set_ylabel(r'metallicity', fontsize=20)
         ax.set_xlabel('Galaxy Age [Gyr]', fontsize=20)
         ax.set_ylim(-2,1)
         xscale = '_lin'
@@ -690,7 +694,7 @@ class Plots(Setup):
             xscale = '_log'
         #ax.set_xlim(1e-2, 1.9e1)
         fig.tight_layout()
-        plt.savefig(self._dir_out_figs + 'OH_evolution'+str(xscale)+'.pdf', bbox_inches='tight')
+        plt.savefig(self._dir_out_figs + 'Z_evolution'+str(xscale)+'.pdf', bbox_inches='tight')
         
     def ind_evolution(self, c=5, elemZ=8, logAge=False):
         elemZ1 = 7
@@ -700,7 +704,7 @@ class Plots(Setup):
         #plt.style.use(self._dir+'/galcem.mplstyle')
         Z_list = np.unique(self.ZA_sorted[:,0])
         phys = np.loadtxt(self._dir_out + 'phys.dat')
-        time = phys[c:,0]
+        gal_time = phys[c:,0]
        # _, _, metallicity_value, metallicity_age = self.age_observations()
         #a, b = np.polyfit(metallicity_age, metallicity_value, 1)
         solar_norm_Fe = self.c_class.solarA09_vs_Fe_bymass[Z_list]
@@ -1474,7 +1478,7 @@ class Plots(Setup):
         plt.savefig(self._dir_out_figs + 'elem_obs_lelemZ.pdf', bbox_inches='tight')
         return None
     
-    def extract_comparison(self, dir_val, select_elemZ_idx, solar_norm_Fe, Z_list):
+    def extract_comparison(self, dir_val, select_elemZ_idx, solar_norm_H, solar_norm_Fe, Z_list, c):
         directory = 'runs/'+dir_val+'/'
         Mass_i = np.loadtxt(directory+'Mass_i.dat')
         Masses_i = []
@@ -1482,15 +1486,15 @@ class Plots(Setup):
         H = np.sum(Mass_i[self.select_elemZ_idx(1), c+2:], axis=0)
         FeH = np.log10(np.divide(Fe, H)) - solar_norm_H[26]
         for i,val in enumerate(Z_list):
-            mass = np.sum(Mass1_i[self.select_elemZ_idx(val), c+2:], axis=0)
+            mass = np.sum(Mass_i[self.select_elemZ_idx(val), c+2:], axis=0)
             Masses_i.append(np.log10(np.divide(mass,Fe)) - solar_norm_Fe[val])
         Masses = np.array(Masses_i) 
         return FeH, Masses
     
     def observational_helemZ_dir_comparison(self, figsiz = (15,10), c=3, yrange='full', 
                                             romano10=False, directories={'SMBH zap':'20220623_zap_2Myr','MRSN':'20220614_MRSN_massrange_2Myr'},
-                                            Z_list=[26,38,39,40,41,42,44,45,46,47,56,57,58,
-                                                    59,60,62,63,64,66,67,68,70,72,76,77,79,82]):
+                                            Z_list=[26,38,39,40,41,42,44,46,47,56,57,58,59,
+                                                    60,62,63,64,66,67,68,70,72,76,77,79,82]):
         ''' yrange full to include all observational points'''
         print('observational_helemZ_dir_comparison()')
         import glob
@@ -1505,7 +1509,7 @@ class Plots(Setup):
         solar_norm_Fe = self.c_class.solarA09_vs_Fe_bymass[Z_list]
         plot_pairs = {}
         for d in directories:
-            plot_pairs[d] = self.extract_comparison(directories[d], self.select_elemZ_idx, solar_norm_Fe, Z_list)
+            plot_pairs[d] = self.extract_comparison(directories[d], self.select_elemZ_idx, solar_norm_H, solar_norm_Fe, Z_list, c)
 
         path = self._dir + r'/input/observations/abund' # use your path
         all_files = glob.glob(path + "/*.txt")
@@ -1562,8 +1566,8 @@ class Plots(Setup):
         
         for i, ax in enumerate(axs.flat):
             colorlist = itertools.cycle(listcolors)
-            markerlist =itertools.cycle(listmarkers)
-            print(f'{FeH1==FeH2}')
+            markerlist = itertools.cycle(listmarkers)
+            linestylelist = itertools.cycle(['-','--',':','-.']) 
             for j, ll in enumerate(li):
                 if i < len(Z_list):
                     ip = Z_list[i]#+2 # Shift to skip H and He
@@ -1573,14 +1577,12 @@ class Plots(Setup):
                     ax.legend(ncol=7, loc='lower left', bbox_to_anchor=(-.2, 1.), frameon=False, fontsize=9)
             if i < len(Z_list):
                 ip = i#+2 # Shift to skip H and He
-                for d in dictionaries:
-                    ax.plot(plot_pairs[d][0], plot_pairs[d][1], color='black', linewidth=2, linestyle=tools.cylcle(['-','--',':','-.']), label=d)
-                ax.plot(FeH2, Masses2[ip], color='black', linewidth=2)
-                ax.plot(FeH1, Masses1[ip], color='black', linewidth=2, linestyle='--')
-                ax.fill_between(FeH1, Masses1[ip], Masses2[ip], where=(Masses1[ip] > Masses2[ip]), color='blue', alpha=0.2,
-                 interpolate=True)
-                ax.fill_between(FeH1, Masses1[ip], Masses2[ip], where=(Masses1[ip] <= Masses2[ip]), color='red', alpha=0.2,
-                 interpolate=True)
+                for d in directories:
+                    ax.plot(plot_pairs[d][0], plot_pairs[d][1][ip,:], color='black', linewidth=2, linestyle=next(linestylelist), label=d)
+                #ax.fill_between(FeH1, Masses1[ip], Masses2[ip], where=(Masses1[ip] > Masses2[ip]), color='blue', alpha=0.2,
+                # interpolate=True)
+                #ax.fill_between(FeH1, Masses1[ip], Masses2[ip], where=(Masses1[ip] <= Masses2[ip]), color='red', alpha=0.2,
+                # interpolate=True)
                 ax.annotate(f"{Z_list[ip]}{Z_symb_list[Z_list[ip]]}", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
                 if romano10 == True:
                     if Z_symb_list[Z_list[ip]] in r10_labels:

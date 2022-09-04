@@ -432,7 +432,7 @@ class Yields_NSM(Yields):
             select_ida = np.where(self.elemA == val[1])[0]
             select_id = np.intersect1d(select_idz,select_ida)
             if len(select_id) > 0.:
-                yields.append(self.yields_list[model_number, select_id[0]])
+                yields.append(self.yields_list[select_id[0]])
             else:
                 yields.append(0.)
         self.yields = yields
