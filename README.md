@@ -4,6 +4,9 @@ Eda Gjergo (Wuhan University) <GalacticCEM@gmail.com>
 
 ![GalCEM flowchart](/docs/figs/GalCEMdiagram.jpg "GalCEM flowchart")
 
+[![DOI](https://zenodo.org/badge/403336891.svg)](https://zenodo.org/badge/latestdoi/403336891)
+
+
 ## TODO
 
 - build interpolation models based on `galcem/input/yields/lims/c15/...dat` and the corresponding .txt files
