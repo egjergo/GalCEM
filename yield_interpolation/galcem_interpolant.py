@@ -42,9 +42,9 @@ class GalCemInterpolant(object):
         # optional plotting in transformed space
         if plot is None: return
         dxs = plot
-        nrows = 2 # len(dxs) * 2
+        nrows = len(dxs) * 2
         from matplotlib import pyplot
-        cmap = pyplot.cm.get_cmap('copper')
+        cmap = pyplot.cm.get_cmap('copper') #pyplot.cm.get_cmap('binary')
         rcount,ccount=82,82
         cmdot,colordots,colordotstf = 'r','r','r'
         if colormap:
@@ -69,7 +69,7 @@ class GalCemInterpolant(object):
             x0tfmesh_flat,x1tfmesh_flat = x0tfmesh.flatten(),x1tfmesh.flatten()
             ytf = self.eval_with_grad(x=np.vstack([x0tfmesh_flat,x1tfmesh_flat]).T,dx=dx)
             ytfmesh = ytf.reshape(x0tfmesh.shape)
-            ax = fig.add_subplot(nrows,2,1*i+1,projection='3d')
+            ax = fig.add_subplot(nrows,2,4*i+1,projection='3d')
             ax.plot_surface(x0tfmesh,x1tfmesh,ytfmesh,cmap=cmap,alpha=.9,vmin=ytfmesh.min(),vmax=ytfmesh.max(),rcount=rcount,ccount=ccount)#,antialiased=True)
             if dx==[0,0]: ax.scatter(xtf[:,0],xtf[:,1],dftf[self.ycol].to_numpy(),c=colordotstf, cmap=cmdot)
             ax.set_xlabel(self.xcols[0], fontsize=12)
@@ -77,11 +77,12 @@ class GalCemInterpolant(object):
             ax.set_zlabel(self.ycol, fontsize=12)
             if dx!=[0,0]: ax.set_title('d(%s) / d(%s)'%(self.ycol,self.xcols[dx.index(1)]))
             ax.view_init(azim=fig_view_angle)
-            ax = fig.add_subplot(nrows,2,0*i+2)
+            ax = fig.add_subplot(nrows,2,4*i+2)
             contour = ax.contourf(x0tfmesh,x1tfmesh,ytfmesh,cmap=cmap,alpha=.95,vmin=ytfmesh.min(),vmax=ytfmesh.max(),levels=64)
             xlim,ylim = ax.get_xlim(),ax.get_ylim()
             ax.set_aspect((xlim[1]-xlim[0])/(ylim[1]-ylim[0]))
-            fig.colorbar(contour,ax=None,shrink=0.5,aspect=5)
+            cbar = fig.colorbar(contour,ax=None,shrink=0.5,aspect=5)
+            cbar.set_label(self.ycol, fontsize=12)
             ax.scatter(xtf[:,0],xtf[:,1],c=colordotstf, cmap=cmdot)
             ax.set_xlabel(self.xcols[0], fontsize=12)
             ax.set_ylabel(self.xcols[1], fontsize=12)
@@ -98,7 +99,7 @@ class GalCemInterpolant(object):
             dfw = None if dx==[0,0] else self.xcols[dx.index(1)]
             y = self.__call__(dfx=dfx,dwrt=dfw)
             ymesh = y.reshape(x0mesh.shape)
-            ax = fig.add_subplot(nrows,2,0*i+3,projection='3d')
+            ax = fig.add_subplot(nrows,2,4*i+3,projection='3d')
             ax.plot_surface(x0mesh,x1mesh,ymesh,cmap=cmap,alpha=.9,vmin=ymesh.min(),vmax=ymesh.max(),rcount=rcount,ccount=ccount)#,antialiased=True)
             if dx==[0,0]: ax.scatter(x[:,0],x[:,1],df[self.ycol].to_numpy(),c=colordots, cmap=cmdot)
             ax.set_xlabel(self.xcols[0], fontsize=12)
@@ -106,16 +107,17 @@ class GalCemInterpolant(object):
             ax.set_zlabel(self.ycol, fontsize=12)
             if dx!=[0,0]: ax.set_title('d(%s) / d(%s)'%(self.ycol,self.xcols[dx.index(1)]))
             ax.view_init(azim=fig_view_angle)
-            ax = fig.add_subplot(nrows,2,0*i+4)
+            ax = fig.add_subplot(nrows,2,4*i+4)
             contour = ax.contourf(x0mesh,x1mesh,ymesh,cmap=cmap,alpha=.95,vmin=ymesh.min(),vmax=ymesh.max(),levels=64)
             xlim,ylim = ax.get_xlim(),ax.get_ylim()
             ax.set_aspect((xlim[1]-xlim[0])/(ylim[1]-ylim[0]))
-            fig.colorbar(contour,ax=None,shrink=0.5,aspect=5)
+            cbar = fig.colorbar(contour,ax=None,shrink=0.5,aspect=5)
+            cbar.set_label(self.ycol, fontsize=12)
             ax.scatter(x[:,0],x[:,1],c=colordots, cmap=cmdot)
             ax.set_xlabel(self.xcols[0], fontsize=12)
             ax.set_ylabel(self.xcols[1], fontsize=12)
             if dx!=[0,0]: ax.set_title('d(%s) / d(%s)'%(self.ycol,self.xcols[dx.index(1)]))
-        fig.suptitle('%s\n%s by %s\nTransformed Domain (top) | Original Domain (bottom)'%(self.name,self.ycol,str(self.xcols)), fontsize=15)
+        fig.suptitle('%s\n%s by %s\nTransformed Domain (odd rows) | Original Domain (even rows)'%(self.name,self.ycol,str(self.xcols)), fontsize=15)
         pyplot.subplots_adjust(left=0,bottom=0.1,right=1,top=0.9,wspace=0.2,hspace=0.2)
         #fig.tight_layout()
         fig.savefig('%s%s.pdf'%(fig_root,name),format='pdf',bbox_inches='tight')
