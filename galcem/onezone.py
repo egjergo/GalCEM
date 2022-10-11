@@ -304,10 +304,10 @@ class Plots(Setup):
     def plots(self):
         self.tic.append(time.perf_counter())
         print('Starting to plot')
-        ###self.FeH_evolution(logAge=True)
-        ###self.Z_evolution(logAge=True)
-        ###self.FeH_evolution(logAge=False)
-        ###self.Z_evolution(logAge=False)
+        self.FeH_evolution(logAge=True)
+        self.Z_evolution(logAge=True)
+        self.FeH_evolution(logAge=False)
+        self.Z_evolution(logAge=False)
         self.total_evolution_plot(logAge=False)
         self.total_evolution_plot(logAge=True)
         #self.DTD_plot()
@@ -676,7 +676,7 @@ class Plots(Setup):
         H = np.sum(Mass_i[self.select_elemZ_idx(1), c+2:], axis=0)
         ZH = np.log10(np.divide(Z, H)) - solar_norm_H[elemZ] - 1
         fig, ax = plt.subplots(1,1, figsize=(7,5))
-        ax.plot(time, ZH, color='blue', label='Z', linewidth=3)
+        ax.plot(gal_time, ZH, color='blue', label='Z', linewidth=3)
         ax.axvline(x=self.IN.age_Galaxy-self.IN.age_Sun, linewidth=2, color='orange', label=r'Age$_{\odot}$')
         ax.axhline(y=0, linewidth=1, color='orange', linestyle='--')
         ax.plot(self.IN.age_Galaxy +0.5 - metallicity_age, a*metallicity_age+b, color='red', alpha=1, linewidth=3, label='linear fit on [M/H]')

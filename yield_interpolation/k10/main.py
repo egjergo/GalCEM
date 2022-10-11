@@ -34,4 +34,5 @@ if __name__ == '__main__':
             #'yield':lambda y:np.log10(y), 'yield_prime':lambda y:1/(y*np.log(10)), 'yield_inv':lambda y:10**y
         },
         fit_names = 'all',#['z8.a16.irv0.o16'],
-        plot_names = ['z8.a16.irv0.o16']) # 'all'
+        plot_names = 'all' #['z8.a16.irv0.o16']
+        ) 

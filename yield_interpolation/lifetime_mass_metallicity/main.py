@@ -15,18 +15,17 @@ def parse_lifetime_mass_metallicity_raw():
     return df
 
 def fit_lifetime_mass_metallicity_interpolants(df,root):
-    import numpy as np
     # lifetime by mass, metallicity
     #   fit model
     lifetime_by_mass_metallicity = SmootheSpline2D_GCI(
         df = df,
         ycol = 'lifetime_Gyr',
         tf_funs = {
-            'mass':lambda x: np.log10(x), 'mass_prime':lambda x:1/(x*np.log(10)),
-            'metallicity':lambda x: np.sqrt(x), 'metallicity_prime':lambda x:1/(2*np.sqrt(x)),
-            'lifetime_Gyr':lambda y: np.log10(y), 'lifetime_Gyr_prime':lambda y:1/(y*np.log(10)), 'lifetime_Gyr_inv':lambda y:10**y},
+            'mass':lambda x:np.log10(x), 'mass_prime':lambda x:1/(x*np.log(10)),
+            'metallicity':lambda x:np.sqrt(x), 'metallicity_prime':lambda x:1/(2*np.sqrt(x)),
+            'lifetime_Gyr':lambda y:np.log10(y), 'lifetime_Gyr_prime':lambda y:1/(y*np.log(10)), 'lifetime_Gyr_inv':lambda y:10**y},
         name = 'LifetimeInterpolant',
-        plot = [[0,0],[1,0]],
+        plot = 'grad',
         fig_root = root+'/figs/',
         fig_view_angle = 45,
         colormap = True)
@@ -49,7 +48,7 @@ def fit_lifetime_mass_metallicity_interpolants(df,root):
             'metallicity':lambda x:np.sqrt(x), 'metallicity_prime':lambda x:1/(2*np.sqrt(x)),
             'mass':lambda y:np.log10(y), 'mass_prime':lambda y:1/(y*np.log(10)), 'mass_inv':lambda y:10**y},
         name = 'MassInterpolant',
-        plot = [[0,0],[1,0]],
+        plot = 'grad',
         fig_root = root+'/figs/',
         fig_view_angle = 45,
         colormap = True)

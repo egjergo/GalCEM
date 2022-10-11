@@ -1,6 +1,6 @@
 import math
 import time
-import dill
+import pickle
 import os
 import numpy as np
 import scipy.integrate as integr
@@ -112,8 +112,8 @@ class Stellar_Lifetimes:
         self.IN = IN
         s_mlz_root = os.path.dirname(__file__)+'/../../yield_interpolation/lifetime_mass_metallicity/'
         self.s_mass = self.IN.s_lifetimes_p98['M'].values
-        self.lifetime_by_mass_metallicity_loaded = dill.load(open(s_mlz_root+'models/lifetime_by_mass_metallicity.pkl','rb'))
-        self.mass_by_lifetime_metallicity_loaded = dill.load(open(s_mlz_root+'models/mass_by_lifetime_metallicity.pkl','rb'))
+        self.lifetime_by_mass_metallicity_loaded = pickle.load(open(s_mlz_root+'models/lifetime_by_mass_metallicity.pkl','rb'))
+        self.mass_by_lifetime_metallicity_loaded = pickle.load(open(s_mlz_root+'models/mass_by_lifetime_metallicity.pkl','rb'))
     
     def interp_stellar_lifetimes(self, mz):
         '''Picks the tau(M) interpolation at the appropriate metallicity'''
