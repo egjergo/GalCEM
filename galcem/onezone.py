@@ -7,8 +7,8 @@ from scipy.interpolate import *
 import os
 import pickle
 
-from .classes.morphology import Auxiliary,Stellar_Lifetimes,Infall,Star_Formation_Rate,Initial_Mass_Function, DTD
-from .classes.yields import Isotopes,Concentrations,Yields_BBN,Yields_SNIa,Yields_SNII,Yields_LIMs,Yields_MRSN,Yields_NSM
+from .classes import morphology as morph
+from .classes import yields as yi
 from .classes.integration import Wi
 
 """"""""""""""""""""""""""""""""""""""""""""""""
@@ -35,8 +35,8 @@ class Setup:
         os.makedirs(self._dir_out,exist_ok=True)
         os.makedirs(self._dir_out_figs,exist_ok=True)
         self.IN = IN
-        self.aux = Auxiliary()
-        self.lifetime_class = Stellar_Lifetimes(IN)
+        self.aux = morph.Auxiliary()
+        self.lifetime_class = morph.Stellar_Lifetimes(IN)
         
         # Setup
         Ml = self.lifetime_class.s_mass[0] # Lower limit stellar masses [Msun] 
@@ -49,29 +49,29 @@ class Setup:
         self.idx_age_Galaxy = self.aux.find_nearest(self.time_chosen, self.IN.age_Galaxy)
         # Surface density for the disk. The bulge goes as an inverse square law
         surf_density_Galaxy = self.IN.sd / np.exp(self.IN.r / self.IN.Reff) #sigma(t_G) before eq(7) not used so far !!!!!!!
-        infall_class = Infall(self.IN, morphology=self.IN.morphology, time=self.time_chosen)
+        infall_class = morph.Infall(self.IN, morphology=self.IN.morphology, time=self.time_chosen)
         self.infall = infall_class.inf()
-        self.SFR_class = Star_Formation_Rate(self.IN, self.IN.SFR_option, self.IN.custom_SFR)
-        IMF_class = Initial_Mass_Function(Ml, Mu, self.IN, self.IN.IMF_option, self.IN.custom_IMF)
+        self.SFR_class = morph.Star_Formation_Rate(self.IN, self.IN.SFR_option, self.IN.custom_SFR)
+        IMF_class = morph.Initial_Mass_Function(Ml, Mu, self.IN, self.IN.IMF_option, self.IN.custom_IMF)
         self.IMF = IMF_class.IMF() #() # Function @ input stellar mass
         
         # Initialize Yields
-        isotope_class = Isotopes(self.IN)
-        self.yields_MRSN_class = Yields_MRSN(self.IN)
+        isotope_class = yi.Isotopes(self.IN)
+        self.yields_MRSN_class = yi.Yields_MRSN(self.IN)
         self.yields_MRSN_class.import_yields()
-        self.yields_NSM_class = Yields_NSM(self.IN)
+        self.yields_NSM_class = yi.Yields_NSM(self.IN)
         self.yields_NSM_class.import_yields()
-        self.yields_LIMs_class = Yields_LIMs(self.IN)
+        self.yields_LIMs_class = yi.Yields_LIMs(self.IN)
         self.yields_LIMs_class.import_yields()
-        self.yields_SNII_class = Yields_SNII(self.IN)
+        self.yields_SNII_class = yi.Yields_SNII(self.IN)
         self.yields_SNII_class.import_yields()
-        self.yields_SNIa_class = Yields_SNIa(self.IN)
+        self.yields_SNIa_class = yi.Yields_SNIa(self.IN)
         self.yields_SNIa_class.import_yields()
-        self.yields_BBN_class = Yields_BBN(self.IN)
+        self.yields_BBN_class = yi.Yields_BBN(self.IN)
         self.yields_BBN_class.import_yields()
         
         # Initialize isotope list
-        self.c_class = Concentrations(self.IN)
+        self.c_class = yi.Concentrations(self.IN)
         self.ZA_BBN = self.c_class.extract_ZA_pairs(self.yields_BBN_class)
         self.ZA_LIMs = self.c_class.extract_ZA_pairs(self.yields_LIMs_class) #self.c_class.extract_ZA_pairs_LIMs(self.yields_LIMs_class)
         self.yields_LIMs_class.elemZ, self.yields_LIMs_class.elemA = self.ZA_LIMs[:,0], self.ZA_LIMs[:,1] # !!!!!!! remove eventually
@@ -276,6 +276,7 @@ class OneZone(Setup):
                             yield_grid['mass'] = Wi_comps[ch]['mass_grid']
                             Wi_vals[ch] = integr.simps(np.multiply(Wi_comps[ch]['integrand'], self.yield_models[ch][i](yield_grid)), x=Wi_comps[ch]['mass_grid'])
                         else:
+                            #print(f'The yields in channel {ch} for isotope {self.ZA_sorted[i]} are empty. {self.yield_models[ch][i]=}')
                             Wi_vals[ch] = 0.
                     else:
                         Wi_vals[ch] = 0.
