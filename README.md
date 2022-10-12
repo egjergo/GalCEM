@@ -9,8 +9,6 @@ Eda Gjergo (Wuhan University) <GalacticCEM@gmail.com>
 
 ## TODO
 
-- build interpolation models based on `galcem/input/yields/lims/c15/...dat` and the corresponding .txt files
-- delete/merge code from `_scratch/`
 - update docs using `docs/index.rst` and `docs/components.rst` and in-code docstrings
 - compile pkl files when init is first called instead of distributing with MANIFEST.in
 - remove `pandas` req
