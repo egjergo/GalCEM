@@ -92,9 +92,6 @@ color_names = [name for hsv, name in by_hsv]
 color_list = [  0, 18, 24, 
 			   79, 69,102, 
 			  113,120,130]
-#color_listh = np.flip(['#ff0066', '#ff4400', '#ff9900',
-#			  '#bbff00', '#66ff00', '#00ffee',
-#			  '#00bbff', '#0066ff', '#000000'])
 color_listh = np.flip(['#ff0066', '#ff0066', '#ff0066',
 			  		   '#0066ff', '#0066ff', '#0066ff',
 			  		   '#000000', '#000000', '#000000'])

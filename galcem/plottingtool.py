@@ -666,7 +666,7 @@ class Plots(Setup):
                 ax.scatter(ll.iloc[idx_obs,1], ll.iloc[idx_obs,2], label=linames[j], alpha=0.3, marker=next(markerlist), c=next(colorlist), s=20)
             if i == len(Z_list)-3:
                     ax.legend(ncol=7, loc='upper left', bbox_to_anchor=(1, 1), frameon=False, fontsize=7)
-                    ax.set_xlabel(f'[Fe/H]', fontsize = 15)
+                    ax.set_xlabel('[Fe/H]', fontsize = 15)
             if i < len(Z_list)-2:
                 ip = i+2 # Shift to skip H and He
                 ax.plot(FeH, Masses2[ip], color='black', linewidth=2)
@@ -809,7 +809,7 @@ class Plots(Setup):
                 if i != nrow-1:
                     axs[i,j].set_xticklabels([])
         axs[nrow//2,0].set_ylabel('[X/Fe]', fontsize = 15)
-        axs[nrow-1, ncol//2].set_xlabel(f'[Fe/H]', fontsize = 15)
+        axs[nrow-1, ncol//2].set_xlabel('[Fe/H]', fontsize = 15)
         fig.tight_layout(rect=[0., 0, 1, .9])
         fig.subplots_adjust(wspace=0., hspace=0.)
         plt.show(block=False)
@@ -944,7 +944,7 @@ class Plots(Setup):
                 if i != nrow-1:
                     axs[i,j].set_xticklabels([])
         axs[nrow//2,0].set_ylabel('[X/Fe]', fontsize = 15)
-        axs[nrow-1, ncol//2].set_xlabel(f'[Fe/H]', fontsize = 15)
+        axs[nrow-1, ncol//2].set_xlabel('[Fe/H]', fontsize = 15)
         fig.tight_layout(rect=[0., 0, 1, .9])
         fig.subplots_adjust(wspace=0., hspace=0.)
         plt.show(block=False)
@@ -1049,7 +1049,7 @@ class Plots(Setup):
                 if i != nrow-1:
                     axs[i,j].set_xticklabels([])
         axs[nrow//2,0].set_ylabel('[X/Fe]', fontsize=15, loc='top')
-        axs[nrow-1, ncol//2].set_xlabel(f'[Fe/H]', fontsize=15, loc='center')
+        axs[nrow-1, ncol//2].set_xlabel('[Fe/H]', fontsize=15, loc='center')
         fig.tight_layout(rect=[0.0, 0, 1, .8])
         fig.subplots_adjust(wspace=0., hspace=0.)
         plt.show(block=False)
