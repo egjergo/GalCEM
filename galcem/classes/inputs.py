@@ -25,11 +25,11 @@ class Inputs:
         self.nTimeStep = 0.01 #0.002 #0.01 # Picked to smooth the mapping between stellar masses and lifetimes
         self.numTimeStep = 2000 # Like FM
         self.num_MassGrid = 200
-        self.include_channel = ['SNII', 'LIMs', 'SNIa']#, 'NSM', 'MRSN']
+        self.include_channel = ['SNII', 'LIMs', 'SNIa']#, 'MRSN', 'NSM']
         
         self.age_Galaxy = 13.8 # [Gyr]
         self.age_Sun = 4.6 # [Gyr]
-        self.solar_metallicity = 0.0134 # Asplund et al. (2009, Table 4)
+        self.solar_metallicity = 0.0142 # Asplund et al. (2009, Table 4)
         self.r = 8 # [kpc] Compute around the solar neighborhood
         self.k_SFR = 1
         

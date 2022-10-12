@@ -260,7 +260,7 @@ class Yields_SNII(Yields):
             self.elemA = lc18['a'].values #np.unique(lc18['a'].values)
             self.elemZ = lc18['z'].values #np.unique(lc18['z'].values)
             self.yields_list = glob.glob(lc18_yield_dir+'*.pkl')
-            patternz = "/z(.*?).a"
+            patternz = "/lc18_z(.*?).a"
             z_list = [re.search(patternz, yl).group(1) for yl in self.yields_list]
             searcha = [".a",".irv0"]
             a_list = [yl[yl.find(searcha[0])+len(searcha[0]):yl.find(searcha[1])] for yl in self.yields_list]
@@ -340,7 +340,7 @@ class Yields_LIMs(Yields):
             self.elemA = c15['a'].values #np.unique(c15['a'].values)
             self.elemZ = c15['z'].values #np.unique(c15['z'].values)
             self.yields_list = glob.glob(c15_yield_dir+'*.pkl')
-            patternz = "/z(.*?).a"
+            patternz = "/c15_z(.*?).a"
             z_list = [re.search(patternz, yl).group(1) for yl in self.yields_list]
             searcha = [".a",".irv0"]
             a_list = [yl[yl.find(searcha[0])+len(searcha[0]):yl.find(searcha[1])] for yl in self.yields_list]

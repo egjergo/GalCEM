@@ -12,9 +12,7 @@ Eda Gjergo (Wuhan University) <GalacticCEM@gmail.com>
 - build interpolation models based on `galcem/input/yields/lims/c15/...dat` and the corresponding .txt files
 - delete/merge code from `_scratch/`
 - update docs using `docs/index.rst` and `docs/components.rst` and in-code docstrings
-- update `yield_interpolation/` files
 - compile pkl files when init is first called instead of distributing with MANIFEST.in
-- use `'%d'%my_num` format instead of `f'...'` format
 - remove `pandas` req
 - refine `MANIFEST.IN`
 - make `verbose` option for printing output
