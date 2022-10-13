@@ -245,9 +245,11 @@ class Plots(Setup):
         ages = observ_SA['Age']
         FeH_value = observ_P14_2['FeH'][id_match2[1]]
         FeH_age = observ_SA['Age'][id_match2[2]]
+        FeH_id_sort = np.argsort(FeH_age)
         metallicity_value = observ_P14_5['MH2'][id_match5[1]]
         metallicity_age = observ_SA['Age'][id_match5[2]]
-        return FeH_value, FeH_age, metallicity_value, metallicity_age
+        Z_id_sort = np.argsort(metallicity_age)
+        return FeH_value[FeH_id_sort], FeH_age[FeH_id_sort], metallicity_value[Z_id_sort], metallicity_age[Z_id_sort]
         
     def FeH_evolution_plot(self, c=2, elemZ=26, logAge=True):
         print('Starting FeH_evolution()')
@@ -265,7 +267,7 @@ class Plots(Setup):
         H = np.sum(Mass_i[self._select_elemZ_idx(1), c+2:], axis=0)
         FeH = np.log10(np.divide(Fe, H)) - solar_norm_H[elemZ]
         fig, ax = plt.subplots(1,1, figsize=(7,5))
-        #ax.plot(time, FeH, color='black', label='[Fe/H]', linewidth=3) 
+        ax.plot(gal_time, FeH, color='black', label='[Fe/H]', linewidth=3) 
         ax.axvline(x=self.IN.age_Galaxy-self.IN.age_Sun, linewidth=2, color='orange', label=r'Age$_{\odot}$')
         ax.plot(self.IN.age_Galaxy +0.5 - FeH_age, a*FeH_age+b, color='red', alpha=1, linewidth=3, label='linear fit on [Fe/H]')
         ax.scatter(self.IN.age_Galaxy +0.5 - FeH_age, FeH_value, color='red', marker='*', alpha=0.3, label='Silva Aguirre et al. (2018)')
@@ -274,7 +276,7 @@ class Plots(Setup):
         ax.legend(loc='lower right', frameon=False, fontsize=17)
         ax.set_ylabel(r'['+np.unique(self.ZA_symb_list[elemZ].values)[0]+'/H]', fontsize=20)
         ax.set_xlabel('Galaxy Age [Gyr]', fontsize=20)
-        ax.set_ylim(-2,1)
+        #ax.set_ylim(-2,1)
         xscale = '_lin'
         if not logAge:
             ax.set_xlim(0,self.IN.age_Galaxy)
@@ -285,7 +287,7 @@ class Plots(Setup):
         fig.tight_layout()
         plt.savefig(self._dir_out_figs + 'FeH_evolution'+str(xscale)+'.pdf', bbox_inches='tight')
 
-    def Z_evolution_plot(self, c=2, elemZ=8, logAge=False):
+    def Z_evolution_plot(self, c=2, logAge=False):
         print('Starting Z_evolution()')
         from matplotlib import pyplot as plt
         #plt.style.use(self._dir+'/galcem.mplstyle')
@@ -298,7 +300,7 @@ class Plots(Setup):
         Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
         Z = np.sum(Mass_i[self.i_Z:, c+2:], axis=0)
         H = np.sum(Mass_i[self._select_elemZ_idx(1), c+2:], axis=0)
-        ZH = np.log10(np.divide(Z, H)) - solar_norm_H[elemZ] - 1
+        ZH = np.log10(np.divide(Z, H)) - self.IN.solar_metallicity #- 1
         fig, ax = plt.subplots(1,1, figsize=(7,5))
         ax.plot(gal_time, ZH, color='blue', label='Z', linewidth=3)
         ax.axvline(x=self.IN.age_Galaxy-self.IN.age_Sun, linewidth=2, color='orange', label=r'Age$_{\odot}$')
@@ -386,7 +388,7 @@ class Plots(Setup):
             if i < len(Z):
                 #print('i %d'%(i))
                 #print('%s(%d,%d)'%(self.ZA_symb_list.values[i],Z[i],A[i]))
-                ax.annotate('%d%s'%(A[i],self.ZA_symb_list.values[i]), xy=(0.5, 0.3), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=7, alpha=0.7)
+                ax.annotate('%d%s(%d)'%(Z[i],self.ZA_symb_list.values[i],A[i]), xy=(0.5, 0.3), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=7, alpha=0.7)
                 ax.set_ylim(-4.9, 10.9)
                 ax.set_xlim(0.01,13.8)
                 ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=1))
@@ -464,7 +466,7 @@ class Plots(Setup):
             if i < len(Z):
                 #print('i %d'%(i))
                 #print('%s(%d,%d)'%(self.ZA_symb_list.values[i],Z[i],A[i]))
-                ax.annotate('%d%s'%(A[i],self.ZA_symb_list.values[i]), xy=(0.5, 0.3), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=7, alpha=0.7)
+                ax.annotate('%d%s(%d)'%(Z[i],self.ZA_symb_list.values[i],A[i]), xy=(0.5, 0.3), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=7, alpha=0.7)
                 ax.set_ylim(-16.9, 5.9)
                 ax.set_xlim(0.01,13.8)
                 ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=1))
