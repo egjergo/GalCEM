@@ -300,7 +300,7 @@ class Plots(Setup):
         Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
         Z = np.sum(Mass_i[self.i_Z:, c+2:], axis=0)
         H = np.sum(Mass_i[self._select_elemZ_idx(1), c+2:], axis=0)
-        ZH = np.log10(np.divide(Z, H)) - self.IN.solar_metallicity #- 1
+        ZH = np.log10(np.divide(Z, H)/self.IN.solar_metallicity)
         fig, ax = plt.subplots(1,1, figsize=(7,5))
         ax.plot(gal_time, ZH, color='blue', label='Z', linewidth=3)
         ax.axvline(x=self.IN.age_Galaxy-self.IN.age_Sun, linewidth=2, color='orange', label=r'Age$_{\odot}$')

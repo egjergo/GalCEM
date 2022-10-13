@@ -238,31 +238,28 @@ class Initial_Mass_Function:
         self.option = self.IN.IMF_option if option is None else option
         self.custom = self.IN.custom_IMF if custom_IMF is None else custom_IMF
     
+    def powerlaw(self, Mstar, alpha=2.3):
+        return Mstar**(-alpha)
+    
     def Salpeter55(self, plaw=None):
         plaw = self.IN.Salpeter_IMF_Plaw if plaw is None else plaw
-        return lambda Mstar: Mstar ** (-(1 + plaw))
+        return lambda Mstar: self.powerlaw(Mstar, alpha=plaw)
         
-    def canonical_IMF(self, Mstar):
-        if Mstar <= 0.5:
-            plaw = -0.3
-        elif self.mass <= 1.0:
-            plaw = 1.2
-        else:
-            plaw = 1.7
-        return Mstar **(-(1 + plaw))
-        
-    def Kroupa93(self):#, C = 0.31): #if m <= 0.5: lambda m: 0.58 * (m ** -0.30)/m
-        '''
-        Kroupa, Tout & Gilmore (1993)
-        '''
-        return lambda Mstar: self.canonical_IMF(Mstar)
+    def Kroupa01(self, alpha1=1.3, alpha2=2.3, alpha3=2.3):
+        return lambda Mstar: np.piecewise(Mstar, 
+                            [np.logical_or(Mstar < 0.08, Mstar >= 150.),
+                             np.logical_and(Mstar >= 0.08, Mstar < 0.5),
+                             np.logical_and(Mstar >= 0.5, Mstar < 1.),
+                             np.logical_and(Mstar >= 1., Mstar < 150)],
+                            [0., 
+                             lambda M: self.powerlaw(M, alpha=alpha1), 
+                             lambda M: self.powerlaw(M, alpha=alpha2), 
+                             lambda M: self.powerlaw(M, alpha=alpha3)])
         
     def IMF_select(self):
         if not self.custom:
-            if self.option == 'Salpeter55':
-                    return self.Salpeter55()
-            if self.option == 'Kroupa03':
-                    return self.Kroupa03()
+            if self.option == 'Salpeter55': return self.Salpeter55()
+            if self.option == 'Kroupa01' or self.option == 'canonical': return self.Kroupa01()
         if self.custom:
             return self.custom
     
@@ -272,8 +269,9 @@ class Initial_Mass_Function:
     def normalization(self): 
         return np.reciprocal(integr.quad(self.integrand, self.Ml, self.Mu)[0])
 
-    def IMF(self): #!!!!!!!! might not be efficient with the IGIMF
-        return lambda Mstar: self.integrand(Mstar) * self.normalization()
+    def IMF(self): #!!!!!!!! it is missing the time dependence (for the IGIMF or custom IMFs)
+        #return lambda Mstar: self.IMF_select()(Mstar) * self.normalization()
+        return lambda Mstar: self.IMF_select()(Mstar) * self.normalization()
         
     def IMF_test(self):
         '''
@@ -302,7 +300,6 @@ class Star_Formation_Rate:
         k = self.IN.k_SFR if k is None else k
         f_g = Mgas[timestep_n] / Mtot[timestep_n]
         return self.IN.nu  * (Mgas[timestep_n]) * f_g**(k-1) * self.IN.SFR_rescaling
-    
     
     def SFR_G(self, k=None, G=[], Mtot=[], timestep_n=0): 
         ''' Talbot & Arnett (1975)'''

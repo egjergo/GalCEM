@@ -42,9 +42,9 @@ class Setup:
         Ml = self.lifetime_class.s_mass[0] # Lower limit stellar masses [Msun] 
         Mu = self.lifetime_class.s_mass[-1] # Upper limit stellar masses [Msun]
         self.mass_uniform = np.linspace(Ml, Mu, num = self.IN.num_MassGrid)
-        self.time_logspace = np.logspace(np.log10(IN.time_start), np.log10(IN.time_end), num=IN.numTimeStep)
+        #self.time_logspace = np.logspace(np.log10(IN.time_start), np.log10(IN.time_end), num=IN.numTimeStep)
+        #self.time_logspace = np.logspace(np.log10(self.IN.time_start), np.log10(self.IN.age_Galaxy), num=self.IN.numTimeStep)
         self.time_uniform = np.arange(self.IN.time_start, self.IN.age_Galaxy, self.IN.nTimeStep) # np.arange(IN.time_start, IN.time_end, IN.nTimeStep)
-        self.time_logspace = np.logspace(np.log10(self.IN.time_start), np.log10(self.IN.age_Galaxy), num=self.IN.numTimeStep)
         self.time_chosen = self.time_uniform
         self.idx_age_Galaxy = self.aux.find_nearest(self.time_chosen, self.IN.age_Galaxy)
         # Surface density for the disk. The bulge goes as an inverse square law

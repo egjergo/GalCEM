@@ -22,16 +22,16 @@ class Inputs:
     def __init__(self):
         '''	applies to the thick disk at 8 kpc '''        
         # Time parameters
-        self.nTimeStep = 0.01 #0.002 #0.01 # Picked to smooth the mapping between stellar masses and lifetimes
-        self.numTimeStep = 2000 # Like FM
+        self.nTimeStep = 0.002 #0.01 # Picked to smooth the mapping between stellar masses and lifetimes
+        self.numTimeStep = 2000 # if time_logspace
         self.num_MassGrid = 200
         self.include_channel = ['SNII', 'LIMs', 'SNIa']#, 'MRSN', 'NSM']
         
         self.age_Galaxy = 13.8 # [Gyr]
         self.age_Sun = 4.6 # [Gyr]
-        self.solar_metallicity = 0.0142 # Asplund et al. (2009, Table 4)
+        self.solar_metallicity = 0.0142 # Asplund et al. (2009)
         self.r = 8 # [kpc] Compute around the solar neighborhood
-        self.k_SFR = 1
+        self.k_SFR = 1 # power of the SFR
         
         self.morphology = 'spiral'
         self.M_inf = self.default_params('M_inf', self.morphology)
@@ -42,20 +42,20 @@ class Inputs:
         #self.wind_efficiency = 0 # override: no overflow #self.default_params('wind_efficiency', self.morphology)
 
         # Fraction of compact objects
-        self.A_SNIa = 0.06 #0.35 # Fraction of white dwarfs that underwent a SNIa
-        self.A_NSM = 0.03 #0.06 # Fraction of neutron star that coalesced
-        self.A_MRSN = 0.01 #0.06 # Fraction of the IMF that underwent a MRSN
+        self.A_SNIa = 0.35 # Fraction of white dwarfs that underwent a SNIa
+        self.A_NSM = 0.03 # Fraction of neutron star that coalesced
+        self.A_MRSN = 0.01 # Fraction of the IMF that underwent a MRSN
 
         # Mass limits
-        self.Ml_SNIa = 3./2 # Lower limit for total binary mass for SNIae [Msun]
-        self.Mu_SNIa = 12 # Upper limit for total binary mass for SNIae [Msun]
+        self.Ml_SNIa = 3. # Lower limit for total binary mass for SNIae [Msun]
+        self.Mu_SNIa = 16 # Upper limit for total binary mass for SNIae [Msun]
         self.Ml_LIMs = 0.07 # [Msun] !!!!!!! temporary. Import from yield tables
-        self.Mu_LIMs = 9 # [Msun] !!!!!!! temporary. Import from yield tables
+        self.Mu_LIMs = 6 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Ml_NSM = 9 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Mu_NSM = 50 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Ml_MRSN = 25 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Mu_MRSN = 100 # [Msun] !!!!!!! temporary. Import from yield tables
-        self.Ml_SNII = 10 # [Msun] !!!!!!! temporary. Import from yield tables
+        self.Ml_SNII = 13 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Mu_SNII = 120 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Ml_collapsars = 9 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Mu_collapsars = 120 # [Msun] !!!!!!! temporary. Import from yield tables
@@ -64,14 +64,14 @@ class Inputs:
         self.MW_SFR = 1.9 #+-0.4 [Msun/yr] from Chomiuk & Povich (2011) Galactic SFR (z=0)
         self.MW_RSNIa = np.divide([1699.5622597959612, 2348.4781118615615, 1013.0199016364531], 1e6/2.8) # 1.4*2 Msun, average SNIa mass
         self.MW_RSNII = np.divide([7446.483293967046, 10430.201123624402, 4367.610510548821], 1e6/15) # 15 Msun, IMF-averaged mass
-        self.Salpeter_IMF_Plaw = 1.35 # IMF Salpeter power law
+        self.Salpeter_IMF_Plaw = 1+1.35 # IMF Salpeter power law
 
         self.custom_IMF = None
         self.custom_SFR = None
         self.custom_SNIaDTD = None
 
         self.inf_option = None # or 'two-infall'
-        self.IMF_option = 'Salpeter55' #'Kroupa03' #'Kroupa01'  
+        self.IMF_option = 'Kroupa01' #'Salpeter55'  
         self.SFR_option = 'SFRgal' # or 'CSFR'
         self.CSFR_option = None # e.g., 'md14'. 
         self.SNIaDTD_option = 'GreggioRenzini83' # 'RuizMannucci01'
