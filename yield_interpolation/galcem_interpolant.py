@@ -205,7 +205,8 @@ def fit_isotope_interpolants(df,root,tf_funs,fit_names=[],plot_names=[]):
     print('\n'+'~'*75+'\n')
     dirname = os.path.basename(root)
     dfs = dict(tuple(df.groupby(['isotope','a','z'])))
-    for ids,_df in dfs.items():
+    itotal = len(dfs)
+    for i,(ids,_df) in enumerate(dfs.items()):
         name = '%s_z%d.a%d.irv0.%s'%(dirname,ids[2],ids[1],ids[0])
         if fit_names!='all' and name not in fit_names: continue
         # fit model
@@ -219,6 +220,7 @@ def fit_isotope_interpolants(df,root,tf_funs,fit_names=[],plot_names=[]):
             fig_view_angle = 135,
             colormap=False)
         #   print model
+        print('%d of %d'%(i+1,itotal))
         print(interpolant)
         #   save model
         dill.dump(interpolant,open(root+'/models/%s.pkl'%name,'wb'))
