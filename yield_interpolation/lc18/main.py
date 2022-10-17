@@ -35,6 +35,9 @@ def parse_lc18_raw():
 
 if __name__ == '__main__':
     root = os.path.abspath(os.path.dirname(__file__))
+    for dirs in ['models', 'figs']:
+        if not os.path.exists(root+dirs):
+                os.makedirs(root+dirs)
     df = parse_lc18_raw()
     df.to_csv(root+'/data.csv',index=False)
     df = df[df['irv']==0]

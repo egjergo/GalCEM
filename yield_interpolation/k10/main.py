@@ -23,6 +23,9 @@ def parse_k10_raw():
 
 if __name__ == '__main__':
     root = os.path.abspath(os.path.dirname(__file__))
+    for dirs in ['models', 'figs']:
+        if not os.path.exists(root+dirs):
+                os.makedirs(root+dirs)
     df = parse_k10_raw()
     df.to_csv(root+'/data.csv',index=False)
     fit_isotope_interpolants(
