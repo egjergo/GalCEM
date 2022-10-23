@@ -1033,7 +1033,7 @@ class Plots(Setup):
                 ax.plot(FeH, Masses2[ip], color='black', linewidth=2)
                 ax.annotate(f"{Z_list[ip]}{Z_symb_list[Z_list[ip]]}", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
                 ax.set_ylim(-4.9, 4.9)
-                ax.set_xlim(-6.5, 0.5)
+                ax.set_xlim(-6.5, 1.5)
                 ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=.5))
                 ax.tick_params(width=1, length=2, axis='x', which='minor', bottom=True, top=True, direction='in')
                 ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=.5))

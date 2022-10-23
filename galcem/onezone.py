@@ -201,7 +201,9 @@ class OneZone(Setup):
                     else:
                         Z_comp[ch] = pd.DataFrame(columns=['metallicity']) 
                 for i, _ in enumerate(self.ZA_sorted): 
-                    self.Mass_i_v[i, n+1] = self.aux.RK4(self.isotopes_evolution, self.time_chosen[n], self.Mass_i_v[i,n], n, self.IN.nTimeStep, i=i, Wi_comp=Wi_comp, Z_comp=Z_comp)
+                    self.Mass_i_v[i, n+1] = self.aux.RK4(self.isotopes_evolution, self.time_chosen[n], 
+                                                         self.Mass_i_v[i,n], n, self.IN.nTimeStep, i=i, 
+                                                         Wi_comp=Wi_comp, Z_comp=Z_comp)
                 self.Mass_i_v[:,n+1] *= self.Mgas_v[n+1]/np.sum(self.Mass_i_v[:,n+1]) #!!!!!!! renorm numerical error propagation
             #self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
         self.Mgas_i_v[-1] = np.sum(self.Mass_i_v[:,-1])

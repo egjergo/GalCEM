@@ -23,15 +23,15 @@ class Inputs:
         '''	applies to the thick disk at 8 kpc '''        
         # Time parameters
         self.nTimeStep = 0.002 #0.01 # Picked to smooth the mapping between stellar masses and lifetimes
-        self.numTimeStep = 2000 # if time_logspace
-        self.num_MassGrid = 200
+        self.numTimeStep = 1500 # if time_logspace
+        self.num_MassGrid = 50
         self.include_channel = ['SNII', 'LIMs', 'SNIa']#, 'MRSN', 'NSM']
         
         self.age_Galaxy = 13.8 # [Gyr]
         self.age_Sun = 4.6 # [Gyr]
         self.solar_metallicity = 0.0142 # Asplund et al. (2009)
         self.r = 8 # [kpc] Compute around the solar neighborhood
-        self.k_SFR = 1 # power of the SFR
+        self.k_SFR = 1.4 # power of the SFR
         
         self.morphology = 'spiral'
         self.M_inf = self.default_params('M_inf', self.morphology)
@@ -42,13 +42,13 @@ class Inputs:
         #self.wind_efficiency = 0 # override: no overflow #self.default_params('wind_efficiency', self.morphology)
 
         # Fraction of compact objects
-        self.A_SNIa = 0.35 # Fraction of white dwarfs that underwent a SNIa
+        self.A_SNIa = 0.07 # Fraction of white dwarfs that underwent a SNIa
         self.A_NSM = 0.03 # Fraction of neutron star that coalesced
         self.A_MRSN = 0.01 # Fraction of the IMF that underwent a MRSN
 
         # Mass limits
-        self.Ml_SNIa = 3. # Lower limit for total binary mass for SNIae [Msun]
-        self.Mu_SNIa = 16 # Upper limit for total binary mass for SNIae [Msun]
+        self.Ml_SNIa = 3 # Lower limit for total binary mass for SNIae (He-WD precursors from Greggio+Renzini, 1983) [Msun]
+        self.Mu_SNIa = 16 # Upper limit for total binary mass for SNIae (two CO WD) [Msun]
         self.Ml_LIMs = 0.07 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Mu_LIMs = 6 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Ml_NSM = 9 # [Msun] !!!!!!! temporary. Import from yield tables

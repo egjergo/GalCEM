@@ -18,6 +18,7 @@ import scipy.misc as sm
 "    __        Auxiliary                       "
 "    __        Stellar_Lifetimes               "
 "    __        Infall                          "
+"    __        DTD                             "
 "    __        Initial_Mass_Function           "
 "    __        Star_Formation_Rate             "
 "                                              "
@@ -211,6 +212,7 @@ class DTD:
                     return self.MaozMannucci12()
         if self.custom:
             return self.custom
+  
         
 class Initial_Mass_Function:
     '''
@@ -229,7 +231,7 @@ class Initial_Mass_Function:
         normalized IMF by calling .IMF() onto the instantiated class
     
     Accepts a custom function 'func'
-    Defaults options are 'Salpeter55', 'Kroupa03', [...]
+    Defaults options are 'Salpeter55', 'Kroupa01', [...]
     '''
     def __init__(self, Ml, Mu, IN, option=None, custom_IMF=None):
         self.Ml = Ml
@@ -247,10 +249,10 @@ class Initial_Mass_Function:
         
     def Kroupa01(self, alpha1=1.3, alpha2=2.3, alpha3=2.3):
         return lambda Mstar: np.piecewise(Mstar, 
-                            [np.logical_or(Mstar < 0.08, Mstar >= 150.),
-                             np.logical_and(Mstar >= 0.08, Mstar < 0.5),
+                            [np.logical_or(Mstar < self.IN.Ml_LIMs, Mstar >=  self.IN.Mu_SNII),
+                             np.logical_and(Mstar >=  self.IN.Ml_LIMs, Mstar < 0.5),
                              np.logical_and(Mstar >= 0.5, Mstar < 1.),
-                             np.logical_and(Mstar >= 1., Mstar < 150)],
+                             np.logical_and(Mstar >= 1., Mstar < self.IN.Mu_SNII)],
                             [0., 
                              lambda M: self.powerlaw(M, alpha=alpha1), 
                              lambda M: self.powerlaw(M, alpha=alpha2), 
