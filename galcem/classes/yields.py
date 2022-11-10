@@ -68,14 +68,13 @@ class Concentrations:
     '''
     def __init__(self, IN):
         self.IN = IN
-        self.concentration = None
         self.solarA09_photospheric = self.IN.asplund1['photospheric']
         self.solarA09_meteoric = self.IN.asplund1['meteoric']
         id_A09nan = np.where(np.isnan(self.solarA09_photospheric)==True)[0]
-        self.solarA09 = self.solarA09_photospheric
+        self.solarA09 = self.solarA09_photospheric.copy()
         idx_Ap_intersect = np.intersect1d(self.IN.periodic['elemZ'].values, 
-                                          self.IN.asplund1['elemZ'].values, return_indices=True)[1] # selects idx for periodic
-        self.select_periodic = self.IN.periodic.iloc[idx_Ap_intersect, :]
+                                          self.IN.asplund1['elemZ'].values, return_indices=True)[1][1:] # selects idx for periodic
+        self.select_periodic = self.IN.periodic.iloc[idx_Ap_intersect, 1:]
         self.solarA09[id_A09nan] = self.solarA09_meteoric[id_A09nan]
         self.solarA09_vs_H_bynumb = (self.solarA09 - self.solarA09[1])
         self.solarA09_vs_Fe_bynumb = (self.solarA09 - self.solarA09[26])

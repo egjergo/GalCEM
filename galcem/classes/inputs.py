@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import os
+import pickle
 
 """"""""""""""""""""""""""""""""""""""""""""""""
 "                                              "
@@ -23,8 +24,8 @@ class Inputs:
         '''	applies to the thick disk at 8 kpc '''        
         # Time parameters
         self.nTimeStep = 0.002 #0.01 # Picked to smooth the mapping between stellar masses and lifetimes
-        self.numTimeStep = 1500 # if time_logspace
-        self.num_MassGrid = 50
+        self.numTimeStep = 2000 # if time_logspace
+        self.num_MassGrid = 200
         self.include_channel = ['SNII', 'LIMs', 'SNIa']#, 'MRSN', 'NSM']
         
         self.age_Galaxy = 13.8 # [Gyr]
@@ -39,24 +40,24 @@ class Inputs:
         self.tau_inf = self.default_params('tau_inf', self.morphology)
         self.nu = self.default_params('nu', self.morphology)
         self.wind_efficiency = self.default_params('wind_efficiency', self.morphology)
-        #self.wind_efficiency = 0 # override: no overflow #self.default_params('wind_efficiency', self.morphology)
+        self.wind_efficiency = 0 # override: no overflow #self.default_params('wind_efficiency', self.morphology)
 
         # Fraction of compact objects
-        self.A_SNIa = 0.07 # Fraction of white dwarfs that underwent a SNIa
+        self.A_SNIa = 0.06 # Fraction of white dwarfs that underwent a SNIa
         self.A_NSM = 0.03 # Fraction of neutron star that coalesced
         self.A_MRSN = 0.01 # Fraction of the IMF that underwent a MRSN
 
         # Mass limits
+        self.Ml_LIMs = 0.08 # [Msun] !!!!!!! temporary. Import from yield tables
+        self.Mu_LIMs = 10 # [Msun] !!!!!!! temporary. Import from yield tables
+        self.Ml_SNII = 10 # [Msun] !!!!!!! temporary. Import from yield tables
+        self.Mu_SNII = 120 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Ml_SNIa = 3 # Lower limit for total binary mass for SNIae (He-WD precursors from Greggio+Renzini, 1983) [Msun]
         self.Mu_SNIa = 16 # Upper limit for total binary mass for SNIae (two CO WD) [Msun]
-        self.Ml_LIMs = 0.07 # [Msun] !!!!!!! temporary. Import from yield tables
-        self.Mu_LIMs = 6 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Ml_NSM = 9 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Mu_NSM = 50 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Ml_MRSN = 25 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Mu_MRSN = 100 # [Msun] !!!!!!! temporary. Import from yield tables
-        self.Ml_SNII = 13 # [Msun] !!!!!!! temporary. Import from yield tables
-        self.Mu_SNII = 120 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Ml_collapsars = 9 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Mu_collapsars = 120 # [Msun] !!!!!!! temporary. Import from yield tables
 
@@ -68,7 +69,8 @@ class Inputs:
 
         self.custom_IMF = None
         self.custom_SFR = None
-        self.custom_SNIaDTD = None
+        self.custom_SNIaDTD = pickle.load(open('galcem/input/physics/rates/SNIafunc.pkl','rb'))
+        
 
         self.inf_option = None # or 'two-infall'
         self.IMF_option = 'Kroupa01' #'Salpeter55'  
@@ -101,7 +103,7 @@ class Inputs:
         p98_t14_df['lifetimes_Gyr'] = p98_t14_df['lifetimes_yr']/1e9
         s_lifetimes_p98 = pd.read_csv(_dir+'/input/starlifetime/portinari98table14.dat')
         s_lifetimes_p98.columns = [name.replace('#M','M').replace('Z=0.','Z') for name in s_lifetimes_p98.columns]
-        self.time_start = np.min([s_lifetimes_p98[Z] for Z in ['Z0004', 'Z008', 'Z02', 'Z05']]) / 1e9 # [Gyr]
+        self.time_start = 0.#np.min([s_lifetimes_p98[Z] for Z in ['Z0004', 'Z008', 'Z02', 'Z05']]) / 1e9 # [Gyr]
         self.time_end = np.max([s_lifetimes_p98[Z] for Z in ['Z0004', 'Z008', 'Z02', 'Z05']]) / 1e9 # [Gyr]
         self.s_lifetimes_p98 = s_lifetimes_p98
         self.p98_t14_df = p98_t14_df

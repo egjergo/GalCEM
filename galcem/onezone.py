@@ -1,4 +1,3 @@
-# I only achieve simplicity with enormous effort (Clarice Lispector)
 import time
 import numpy as np
 import pandas as pd
@@ -39,8 +38,8 @@ class Setup:
         self.lifetime_class = morph.Stellar_Lifetimes(IN)
         
         # Setup
-        Ml = self.lifetime_class.s_mass[0] # Lower limit stellar masses [Msun] 
-        Mu = self.lifetime_class.s_mass[-1] # Upper limit stellar masses [Msun]
+        Ml = self.IN.Ml_LIMs # Lower limit stellar masses [Msun] 
+        Mu = self.IN.Mu_SNII # Upper limit stellar masses [Msun]
         self.mass_uniform = np.linspace(Ml, Mu, num = self.IN.num_MassGrid)
         #self.time_logspace = np.logspace(np.log10(IN.time_start), np.log10(IN.time_end), num=IN.numTimeStep)
         #self.time_logspace = np.logspace(np.log10(self.IN.time_start), np.log10(self.IN.age_Galaxy), num=self.IN.numTimeStep)
@@ -49,11 +48,11 @@ class Setup:
         self.idx_age_Galaxy = self.aux.find_nearest(self.time_chosen, self.IN.age_Galaxy)
         # Surface density for the disk. The bulge goes as an inverse square law
         surf_density_Galaxy = self.IN.sd / np.exp(self.IN.r / self.IN.Reff) #sigma(t_G) before eq(7) not used so far !!!!!!!
-        infall_class = morph.Infall(self.IN, morphology=self.IN.morphology, time=self.time_chosen)
-        self.infall = infall_class.inf()
+        self.infall_class = morph.Infall(self.IN, morphology=self.IN.morphology, time=self.time_chosen)
+        self.infall = self.infall_class.inf()
         self.SFR_class = morph.Star_Formation_Rate(self.IN, self.IN.SFR_option, self.IN.custom_SFR)
-        IMF_class = morph.Initial_Mass_Function(Ml, Mu, self.IN, self.IN.IMF_option, self.IN.custom_IMF)
-        self.IMF = IMF_class.IMF() #() # Function @ input stellar mass
+        self.IMF_class = morph.Initial_Mass_Function(Ml, Mu, self.IN, self.IN.IMF_option, self.IN.custom_IMF)
+        self.IMF = self.IMF_class.IMF() #() # Function @ input stellar mass
         
         # Initialize Yields
         isotope_class = yi.Isotopes(self.IN)
@@ -85,7 +84,8 @@ class Setup:
         self.yields_MRSN_class.elemZ, self.yields_MRSN_class.elemA = self.ZA_MRSN[:,0], self.ZA_MRSN[:,1] # !!!!!!! remove eventually
         ZA_all = np.vstack((self.ZA_LIMs, self.ZA_SNIa, self.ZA_SNII))#, self.ZA_MRSN, self.ZA_NSM))
         
-        self.Infall_rate = self.infall(self.time_chosen)
+        #self.Infall_rate = self.infall(self.time_chosen)
+        self.Infall_rate = np.array([self.infall(t) for t in self.time_chosen])
         self.ZA_sorted = self.c_class.ZA_sorted(ZA_all) # [Z, A] VERY IMPORTANT! 321 isotopes with yields_SNIa_option = 'km20', 192 isotopes for 'i99' 
         #self.ZA_sorted = self.ZA_sorted[1:,:]
         self.ZA_symb_list = self.IN.periodic['elemSymb'][self.ZA_sorted[:,0]] # name of elements for all isotopes
@@ -111,12 +111,13 @@ class Setup:
         #self.ZA_symb_iso_list = np.asarray([ str(A) for A in self.IN.periodic['elemA'][self.ZA_sorted]])  # name of elements for all isotopes
         self.i_Z = np.where(self.ZA_sorted[:,0]>2)[0][0] #  starting idx (int) that excludes H and He for the metallicity selection
         self.Mtot = np.insert(np.cumsum((self.Infall_rate[1:] + self.Infall_rate[:-1]) * self.IN.nTimeStep / 2), 0, self.IN.epsilon) # The total baryonic mass (i.e. the infall mass) is computed right away
-        #Mtot_quad = [quad(infall, self.time_chosen[0], i)[0] for i in range(1,len(self.time_chosen)-1)] # slow loop, deprecate!!!!!!!
+        #self.Mtot = np.array([integr.quad(self.infall, 0, t)[0] for t in self.time_chosen])
         self.Mstar_v = self.IN.epsilon * np.ones(len(self.time_chosen)) 
         self.Mgas_v = self.IN.epsilon * np.ones(len(self.time_chosen)) 
         self.Mgas_i_v = self.IN.epsilon * np.ones(len(self.time_chosen)) 
         self.SFR_v = self.IN.epsilon * np.ones(len(self.time_chosen)) #
-        self.f_SNIa_v = self.IN.epsilon * np.ones(len(self.time_chosen))
+        self.f_SNIa = lambda t: morph.Greggio05(t).f_SD_Ia
+        self.f_SNIa_v =  np.array([morph.Greggio05(t).f_SD_Ia for t in self.time_chosen])
         self.Mass_i_v = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)))    # Gass mass (i,j) where the i rows are the isotopes and j are the timesteps, [:,j] follows the timesteps
         self.W_i_comp = {ch: self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)), dtype=float) for ch in self.IN.include_channel}#dtype=object   # Gass mass (i,j) where the i rows are the isotopes and j are the timesteps, [:,j] follows the timesteps
         self.W_i_comp['BBN'] = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)), dtype=float)
@@ -188,8 +189,8 @@ class OneZone(Setup):
             self.total_evolution(n)        
             self.file1.write(' sum X_i at n %d= %.3f\n'%(n, np.sum(self.Xi_v[:,n])))
             if n > 0.: 
-                Wi_class = Wi(n, self.IN, self.lifetime_class, self.time_chosen, self.Z_v, self.SFR_v, 
-                              self.f_SNIa_v, self.IMF, self.ZA_sorted)
+                Wi_class = Wi(n, self.IN, self.lifetime_class, self.time_chosen, self.Z_v, 
+                              self.SFR_v, self.IMF, self.ZA_sorted, self.f_SNIa)
                 rates = Wi_class.compute_rates()
                 for i,r in enumerate(rates):
                     self.__dict__['Rate_'+self.IN.include_channel[i]][n] = r

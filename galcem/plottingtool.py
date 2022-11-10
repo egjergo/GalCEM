@@ -25,13 +25,13 @@ class Plots(Setup):
         self.Z_evolution_plot(logAge=False)
         self.total_evolution_plot(logAge=False)
         self.total_evolution_plot(logAge=True)
-        self.iso_evolution_comp_plot(logAge=False)
-        self.iso_evolution_comp_plot(logAge=True)
+        self.lifetimeratio_test_plot()
+        self.tracked_elements_3D_plot()
         self.observational_plot()
         self.observational_lelemZ_plot()
         self.obs_lZ_plot()
-        self.lifetimeratio_test_plot()
-        self.tracked_elements_3D_plot()
+        self.iso_evolution_comp_plot(logAge=False)
+        self.iso_evolution_comp_plot(logAge=True)
         self.iso_evolution_comp_lelemz_plot()
         self.obs_table()
         #self.ind_evolution()
@@ -81,7 +81,7 @@ class Plots(Setup):
         ax3.set_ylabel(r'Atomic Number $Z$', fontsize=8, labelpad=0)
         ax3.set_xlabel(r'Atomic Mass $A$', fontsize=8, labelpad=0)
         #ax3.set_zticklabels([])
-        plt.tight_layout()
+        #plt.tight_layout()
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'tracked_elements.pdf', bbox_inches='tight')
    
@@ -276,7 +276,7 @@ class Plots(Setup):
         ax.legend(loc='lower right', frameon=False, fontsize=17)
         ax.set_ylabel(r'['+np.unique(self.ZA_symb_list[elemZ].values)[0]+'/H]', fontsize=20)
         ax.set_xlabel('Galaxy Age [Gyr]', fontsize=20)
-        #ax.set_ylim(-2,1)
+        ax.set_ylim(-2,1)
         xscale = '_lin'
         if not logAge:
             ax.set_xlim(0,self.IN.age_Galaxy)
@@ -369,14 +369,14 @@ class Plots(Setup):
         plt.style.use(self._dir+'/galcem.mplstyle')
         import matplotlib.ticker as ticker
         Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
-        Masses = np.log10(Mass_i[:,2:])
+        Masses = np.log10(Mass_i[:,2:], where=Mass_i[:,2:]>0.)
         phys = np.loadtxt(self._dir_out + 'phys.dat')
         W_i_comp = pickle.load(open(self._dir_out + 'W_i_comp.pkl','rb'))
         #Mass_MRSN = np.log10(W_i_comp['MRSN'])
-        Mass_BBN = np.log10(W_i_comp['BBN'])
-        Mass_SNII = np.log10(W_i_comp['SNII'])
-        Mass_AGB = np.log10(W_i_comp['LIMs'])
-        Mass_SNIa = np.log10(W_i_comp['SNIa'])
+        Mass_BBN = np.log10(W_i_comp['BBN'], where=W_i_comp['BBN']>0.)
+        Mass_SNII = np.log10(W_i_comp['SNII'], where=W_i_comp['SNII']>0.)
+        Mass_AGB = np.log10(W_i_comp['LIMs'], where=W_i_comp['LIMs']>0.)
+        Mass_SNIa = np.log10(W_i_comp['SNIa'], where=W_i_comp['SNIa']>0.)
         timex = phys[:,0]
         Z = self.ZA_sorted[:,0]
         A = self.ZA_sorted[:,1]
@@ -433,7 +433,7 @@ class Plots(Setup):
             xscale = '_log'
             axs[nrow-2, ncol//2].set_xlabel('Log  Age [Gyr]', fontsize = 15)
         plt.subplots_adjust(wspace=0., hspace=0.)
-        plt.tight_layout(rect = [0.03, 0.03, 1, .90])
+        #plt.tight_layout(rect = [0.03, 0.03, 1, .90])
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'iso_evolution_comp'+str(xscale)+'.pdf', bbox_inches='tight')
 
@@ -441,20 +441,20 @@ class Plots(Setup):
         import math
         import pickle
         IN = pickle.load(open(self._dir_out + 'inputs.pkl','rb'))
-        print('Starting iso_evolution_comp()')
+        print('Starting iso_evolution_comp_lelemz()')
         from matplotlib import pyplot as plt
         plt.style.use(self._dir+'/galcem.mplstyle')
         import matplotlib.ticker as ticker
         Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
-        Masses = np.log10(Mass_i[:,2:])
+        Masses = np.log10(Mass_i[:,2:], where=Mass_i[:,2:]>0.)
         phys = np.loadtxt(self._dir_out + 'phys.dat')
         W_i_comp = pickle.load(open(self._dir_out + 'W_i_comp.pkl','rb'))
-        #Mass_MRSN = np.log10(W_i_comp['MRSN'])
+        #Mass_MRSN = np.log10(W_i_comp['MRSN'], where=W_i_comp['MRSN']>0.)
         yr_rate = IN.nTimeStep * 1e9
-        Mass_BBN = np.log10(W_i_comp['BBN'] / yr_rate)
-        Mass_SNII = np.log10(W_i_comp['SNII'] / yr_rate)
-        Mass_AGB = np.log10(W_i_comp['LIMs'] / yr_rate)
-        Mass_SNIa = np.log10(W_i_comp['SNIa'] / yr_rate)
+        Mass_BBN = np.log10(W_i_comp['BBN']/yr_rate, where=W_i_comp['BBN']>0., out=np.zeros((W_i_comp['BBN']).shape))
+        Mass_SNII = np.log10(W_i_comp['SNII']/yr_rate, where=W_i_comp['SNII']>0., out=np.zeros((W_i_comp['SNII']).shape))
+        Mass_AGB = np.log10(W_i_comp['LIMs']/yr_rate, where=W_i_comp['LIMs']>0., out=np.zeros((W_i_comp['LIMs']).shape))
+        Mass_SNIa = np.log10(W_i_comp['SNIa']/yr_rate, where=W_i_comp['SNIa']>0., out=np.zeros((W_i_comp['SNIa']).shape))
         timex = phys[:,0]
         Z = self.ZA_sorted[:,0]
         A = self.ZA_sorted[:,1]
@@ -511,7 +511,7 @@ class Plots(Setup):
             xscale = '_log'
             axs[nrow-1, ncol//2].set_xlabel('Log  Age [Gyr]', fontsize = 15)
         plt.subplots_adjust(wspace=0., hspace=0.)
-        plt.tight_layout(rect = [0.03, 0.03, 1, .95])
+        #plt.tight_layout(rect = [0.03, 0.03, 1, .95])
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'iso_evolution_comp_lz'+str(xscale)+'.pdf', bbox_inches='tight')
 
@@ -692,7 +692,7 @@ class Plots(Setup):
                 if i != nrow-1:
                     axs[i,j].set_xticklabels([])
         axs[nrow//2,0].set_ylabel('[X/Fe]', fontsize = 15)
-        fig.tight_layout(rect = [0.03, 0, 1, 1])
+        #fig.tight_layout(rect = [0.03, 0, 1, 1])
         fig.subplots_adjust(wspace=0., hspace=0.)
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'elem_obs.pdf', bbox_inches='tight')
@@ -812,7 +812,7 @@ class Plots(Setup):
                     axs[i,j].set_xticklabels([])
         axs[nrow//2,0].set_ylabel('[X/Fe]', fontsize = 15)
         axs[nrow-1, ncol//2].set_xlabel('[Fe/H]', fontsize = 15)
-        fig.tight_layout(rect=[0., 0, 1, .9])
+        #fig.tight_layout(rect=[0., 0, 1, .9])
         fig.subplots_adjust(wspace=0., hspace=0.)
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'elem_obs_lelemZ.pdf', bbox_inches='tight')
@@ -1052,7 +1052,7 @@ class Plots(Setup):
                     axs[i,j].set_xticklabels([])
         axs[nrow//2,0].set_ylabel('[X/Fe]', fontsize=15, loc='top')
         axs[nrow-1, ncol//2].set_xlabel('[Fe/H]', fontsize=15, loc='center')
-        fig.tight_layout(rect=[0.0, 0, 1, .8])
+        #fig.tight_layout(rect=[0.0, 0, 1, .8])
         fig.subplots_adjust(wspace=0., hspace=0.)
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'elem_obs_lZ.pdf', bbox_inches='tight')

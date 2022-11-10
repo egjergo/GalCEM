@@ -64,7 +64,10 @@ def fit_lifetime_mass_metallicity_interpolants(df,root):
     dyquery_dmetallicity = mass_by_lifetime_metallicity_loaded(df,dwrt='metallicity')
 
 if __name__ == '__main__':
-    root = os.path.abspath(os.path.dirname(__file__))
+    root = os.path.abspath(os.path.dirname(__file__))    
+    for dirs in ['models', 'figs']:
+        if not os.path.exists(root+'/'+dirs):
+                os.makedirs(root+'/'+dirs)
     df = parse_lifetime_mass_metallicity_raw()
     df.to_csv(root+'/data.csv',index=False)
     fit_lifetime_mass_metallicity_interpolants(df,root)

@@ -18,7 +18,7 @@ import scipy.misc as sm
 "    __        Auxiliary                       "
 "    __        Stellar_Lifetimes               "
 "    __        Infall                          "
-"    __        DTD                             "
+"    __        Greggio05                       "
 "    __        Initial_Mass_Function           "
 "    __        Star_Formation_Rate             "
 "                                              "
@@ -34,7 +34,8 @@ class Auxiliary:
             return "monotone increasing" 
         elif all(arr[i] >= arr[i + 1] for i in range(len(arr) - 1)):
             return "monotone decreasing"
-        return "not monotonic array"
+        else:
+            return "not monotonic array"
     
     def find_nearest(self, array, value):
         '''Returns the index in array s.t. array[idx] is closest to value(float)'''
@@ -156,8 +157,8 @@ class Infall:
         Analytical implicit function of an exponentially decaying infall.
         Only depends on time (in Gyr)
         '''
-        return lambda t: np.exp(-t / self.IN.tau_inf)
-        
+        return lambda t: np.piecewise(t, [t==0., t > 0.], [self.IN.epsilon, np.exp(-t / self.IN.tau_inf)])
+
     def two_infall(self):
         '''
         My version of Chiappini+01
@@ -182,14 +183,77 @@ class Infall:
             inf() and SFR()
         """
         return np.divide(self.IN.M_inf, integr.quad(self.infall_func(),
-                             self.time[0], self.IN.age_Galaxy)[0])
+                             0., self.IN.age_Galaxy)[0])
 
     def inf(self):
         '''
         Returns the infall array
         '''
         return lambda t: self.aInf() * self.infall_func()(t)
+
     
+class Greggio05:
+    '''Greggio (2005, A&A 441, 1055G) Single degenerate
+    https://ui.adsabs.harvard.edu/abs/2005A%26A...441.1055G/abstract 
+    
+    tauMS in Gyr'''
+    def __init__(self, tauMS):
+        self.tauMS = tauMS
+        self.K = 0.86 # Valid for Kroupa01, alpha=2.35, gamma=1 of Eq. (16)
+        self.k_alpha = 1.55 # For Kroupa01, 2.83 for Salpeter55
+        self.A_Ia = 1e-3 # For Kroupa01, 5e-4 for Salpeter55
+        self.alpha = 2.35
+        self.gamma = 1
+        self.epsilon = 1 # Represented as solid and dashed lines in Fig. 2 for 1 and 0.5 respectively
+        self.m2 = self.Girardi00_secondary_lifetime()
+        self.m2c = self.m2c_func()
+        self.m2e = self.m2e_func()
+        self.mWDn = self.mWDn_func()
+        self.m1n = self.m1n_func()
+        self.m1i = self.m1i_func()
+        self.n_SD = self.SD_n_m2()
+        self.deriv_m2_abs = self.abs_deriv_m2()
+        self.f_SD_Ia = 10**self.K * self.n_SD * self.deriv_m2_abs
+
+    def Girardi00_secondary_lifetime(self):
+        '''Eq. (12) returns m2'''
+        logtauMS = np.log10(self.tauMS*1e9, where=self.tauMS>0.)
+        #if np.logical_and(self.tauMS> 0.04, self.tauMS< 25):
+        return np.piecewise(logtauMS, [logtauMS==0., logtauMS > 0.], 
+                            [1e-32, 10**(0.0471*logtauMS**2 - 1.2*logtauMS + 7.3)])
+        #else:
+        #    return 1e-32
+        
+    def SD_n_m2(self):
+        '''Distribution function of the secondaries in SNIa progenitor systems
+        obtained by summing over all possible primaries, ranging from 
+        a minimum value (m_{1,i}) to 8 Msun
+        Eq. (16)'''
+        exponent = self.alpha + self.gamma
+        return self.m2**(-self.alpha) * ((self.m2/self.m1i)**exponent - (self.m2/8)**exponent)
+    
+    def m1i_func(self):
+        return np.amax([self.m2, self.m1n])
+    
+    def m1n_func(self):
+        '''Eq. (19)'''
+        return np.amax([2., 2. + 10.*(self.mWDn - 0.6)])
+    
+    def mWDn_func(self):
+        '''Eq. (17)'''
+        return 1.4 - self.epsilon * self.m2e
+    
+    def m2e_func(self):
+        '''right after Eq. (18)'''
+        return self.m2 - self.m2c
+    
+    def m2c_func(self):
+        '''Eq. (18)'''
+        return np.amax([0.3, 0.3 + 0.1*(self.m2-2), 0.15*(self.m2-4)])
+    
+    def abs_deriv_m2(self):
+        return np.power(self.tauMS,-1.44, where=self.tauMS>0.)
+      
         
 class DTD:
     '''
@@ -254,7 +318,7 @@ class Initial_Mass_Function:
                              np.logical_and(Mstar >= 0.5, Mstar < 1.),
                              np.logical_and(Mstar >= 1., Mstar < self.IN.Mu_SNII)],
                             [0., 
-                             lambda M: self.powerlaw(M, alpha=alpha1), 
+                             lambda M: 2 * self.powerlaw(M, alpha=alpha1), 
                              lambda M: self.powerlaw(M, alpha=alpha2), 
                              lambda M: self.powerlaw(M, alpha=alpha3)])
         
