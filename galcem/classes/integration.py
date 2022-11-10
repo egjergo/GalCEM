@@ -106,8 +106,8 @@ class Wi:
         SFR_comp = self.SFR_component(birthtime_grid)
         SFR_comp[SFR_comp<0] = 0.
         if channel_switch == 'SNIa':
-            IMF_comp = self.DTD_SNIa(lifetime_grid)
-            integrand = np.multiply(SFR_comp, IMF_comp)
+            DTD_comp = self.DTD_SNIa(lifetime_grid)
+            integrand = np.multiply(SFR_comp, DTD_comp)
             return integr.simps(integrand, x=lifetime_grid)
         if channel_switch == 'NSM':
             print('Insert NSM rate')

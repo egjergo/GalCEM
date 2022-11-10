@@ -55,7 +55,7 @@ class Setup:
         self.IMF = self.IMF_class.IMF() #() # Function @ input stellar mass
         
         # Initialize Yields
-        isotope_class = yi.Isotopes(self.IN)
+        self.isotope_class = yi.Isotopes(self.IN)
         self.yields_MRSN_class = yi.Yields_MRSN(self.IN)
         self.yields_MRSN_class.import_yields()
         self.yields_NSM_class = yi.Yields_NSM(self.IN)
@@ -108,16 +108,15 @@ class Setup:
         
         # Initialize Global tracked quantities
         self.asplund3_percent = self.c_class.abund_percentage(self.ZA_sorted)
-        #self.ZA_symb_iso_list = np.asarray([ str(A) for A in self.IN.periodic['elemA'][self.ZA_sorted]])  # name of elements for all isotopes
         self.i_Z = np.where(self.ZA_sorted[:,0]>2)[0][0] #  starting idx (int) that excludes H and He for the metallicity selection
         self.Mtot = np.insert(np.cumsum((self.Infall_rate[1:] + self.Infall_rate[:-1]) * self.IN.nTimeStep / 2), 0, self.IN.epsilon) # The total baryonic mass (i.e. the infall mass) is computed right away
         #self.Mtot = np.array([integr.quad(self.infall, 0, t)[0] for t in self.time_chosen])
-        self.Mstar_v = self.IN.epsilon * np.ones(len(self.time_chosen)) 
-        self.Mgas_v = self.IN.epsilon * np.ones(len(self.time_chosen)) 
-        self.Mgas_i_v = self.IN.epsilon * np.ones(len(self.time_chosen)) 
         self.SFR_v = self.IN.epsilon * np.ones(len(self.time_chosen)) #
         self.f_SNIa = lambda t: morph.Greggio05(t).f_SD_Ia
         self.f_SNIa_v =  np.array([morph.Greggio05(t).f_SD_Ia for t in self.time_chosen])
+        self.Mstar_v = self.IN.epsilon * np.ones(len(self.time_chosen)) 
+        self.Mgas_v = self.IN.epsilon * np.ones(len(self.time_chosen)) 
+        self.Mgas_i_v = self.IN.epsilon * np.ones(len(self.time_chosen)) 
         self.Mass_i_v = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)))    # Gass mass (i,j) where the i rows are the isotopes and j are the timesteps, [:,j] follows the timesteps
         self.W_i_comp = {ch: self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)), dtype=float) for ch in self.IN.include_channel}#dtype=object   # Gass mass (i,j) where the i rows are the isotopes and j are the timesteps, [:,j] follows the timesteps
         self.W_i_comp['BBN'] = self.IN.epsilon * np.ones((len(self.ZA_sorted), len(self.time_chosen)), dtype=float)
@@ -150,8 +149,10 @@ class OneZone(Setup):
     def main(self):
         ''' Run the OneZone program '''
         self.tic.append(time.perf_counter())
+        
+        # Write files and setup
         self.file1 = open(self._dir_out + "Terminal_output.txt", "w")
-        pickle.dump(self.IN,open(self._dir_out + 'inputs.pkl','wb'))
+        pickle.dump(self.IN, open(self._dir_out + 'inputs.pkl','wb')) #!!!!!!! pickle of the setup?
         with open(self._dir_out + 'inputs.txt', 'w') as f: 
             for key, value in self.IN.__dict__.items(): 
                 if type(value) is not pd.DataFrame:
@@ -162,7 +163,11 @@ class OneZone(Setup):
                     with open(self._dir_out + 'inputs.txt', 'a') as ff:
                         ff.write('\n %s:\n'%(key))
                     value.to_csv(self._dir_out + 'inputs.txt', mode='a', sep='\t', index=True, header=True)
+        
+        # Run
         self.evolve()
+        
+        # Write the closing files
         self.aux.tic_count(string="Computation time", tic=self.tic)
         G_v = np.divide(self.Mgas_v, self.Mtot)
         S_v = 1 - G_v
@@ -179,8 +184,6 @@ class OneZone(Setup):
     
     def evolve(self):
         '''Evolution routine'''
-        #self.file1.write('A list of the proton/isotope number pairs for all the nuclides included in this run.\n ZA_sorted =\n\n')
-        #self.file1.write(self.ZA_sorted)
         self.ini_setup(0)
         self.ini_setup(1)
         for n in range(len(self.time_chosen[:self.idx_age_Galaxy])):
@@ -198,7 +201,7 @@ class OneZone(Setup):
                 Z_comp = {}
                 for ch in self.IN.include_channel:
                     if len(Wi_comp[ch]['birthtime_grid']) > 1.:
-                        Z_comp[ch] = pd.DataFrame(Wi_class.Z_component(Wi_comp[ch]['birthtime_grid']), columns=['metallicity']) 
+                        Z_comp[ch] = pd.DataFrame(Wi_class.Z_component(Wi_comp[ch]['mass_grid']), columns=['metallicity']) 
                     else:
                         Z_comp[ch] = pd.DataFrame(columns=['metallicity']) 
                 for i, _ in enumerate(self.ZA_sorted): 
@@ -219,11 +222,11 @@ class OneZone(Setup):
         # Explicit general diff eq GCE function
         # Mgas(t)
         #print(f'{self.SFR_tn(n)==self.SFR_v[n]=}')
-        return self.Infall_rate[n] + np.sum([self.W_i_comp[ch][:,n] for ch in self.IN.include_channel]) - self.SFR_v[n] #* np.sum(self.Xi_v[:,n])
+        return self.Infall_rate[n] - self.SFR_v[n]  + np.sum([self.W_i_comp[ch][:,n] for ch in self.IN.include_channel])#* np.sum(self.Xi_v[:,n])
     
     def Mstar_func(self, t_n, y_n, n, i=None):
         # Mstar(t)
-        return - np.sum([self.W_i_comp[ch][:,n] for ch in self.IN.include_channel]) + self.SFR_v[n] #* np.sum(self.Xi_v[:,n])
+        return self.SFR_v[n] - np.sum([self.W_i_comp[ch][:,n] for ch in self.IN.include_channel]) #* np.sum(self.Xi_v[:,n])
 
     def SFR_tn(self, timestep_n):
         '''
@@ -233,7 +236,7 @@ class OneZone(Setup):
         Returns:
             [function]: [SFR as a function of Mgas]
         '''
-        return (1 - self.IN.wind_efficiency) * self.SFR_class.SFR(Mgas=self.Mgas_v, Mtot=self.Mtot, timestep_n=timestep_n) # Function: SFR(Mgas)
+        return (1 - self.IN.wind_efficiency) * self.SFR_class.SFR(Mgas=self.Mgas_v, Mtot=self.Mtot, timestep_n=timestep_n)
     
     def total_evolution(self, n):
         '''Integral for the total physical quantities'''
@@ -241,8 +244,8 @@ class OneZone(Setup):
         self.Mgas_i_v[n] = np.sum(self.Mass_i_v[:,n])
         self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
         self.Z_v[n] = np.divide(np.sum(self.Mass_i_v[self.i_Z:,n]), self.Mgas_v[n])
-        self.Mstar_v[n+1] = self.aux.RK4(self.Mstar_func, self.time_chosen[n], self.Mstar_v[n], n, self.IN.nTimeStep) 
         self.Mgas_v[n+1] = self.aux.RK4(self.Mgas_func, self.time_chosen[n], self.Mgas_v[n], n, self.IN.nTimeStep)    
+        self.Mstar_v[n+1] = self.aux.RK4(self.Mstar_func, self.time_chosen[n], self.Mstar_v[n], n, self.IN.nTimeStep) 
 
     def isotopes_evolution(self, t_n, y_n, n, **kwargs):
         '''
