@@ -193,7 +193,7 @@ class OneZone(Setup):
             self.file1.write(' sum X_i at n %d= %.3f\n'%(n, np.sum(self.Xi_v[:,n])))
             if n > 0.: 
                 Wi_class = Wi(n, self.IN, self.lifetime_class, self.time_chosen, self.Z_v, self.SFR_v, 
-                              self.f_SNIa_v, self.IMF, self.ZA_sorted)
+                              self.Xi_v, self.f_SNIa_v, self.IMF, self.ZA_sorted)
                 self.Rate_SNII[n], self.Rate_LIMs[n], self.Rate_SNIa[n] = Wi_class.compute_rates()
                 Wi_comp = {ch: Wi_class.compute(ch) for ch in self.IN.include_channel}
                 Z_comp = {}
@@ -203,7 +203,7 @@ class OneZone(Setup):
                     else:
                         Z_comp[ch] = pd.DataFrame(columns=['metallicity']) 
                 for i, _ in enumerate(self.ZA_sorted): 
-                    self.Mass_i_v[i, n+1] = self.aux.RK4(self.solve_integral, self.time_chosen[n], self.Mass_i_v[i,n], n, self.IN.nTimeStep, i=i, Wi_comp=Wi_comp, Z_comp=Z_comp)
+                    self.Mass_i_v[i, n+1] = self.aux.RK4(self.solve_integral, self.time_chosen[n], self.Mass_i_v[i,n], n, self.IN.nTimeStep, i=i, Wi_comp=Wi_comp, Z_comp=Z_comp, Wi_class=Wi_class)
             #self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
         self.Z_v[-1] = np.divide(np.sum(self.Mass_i_v[self.i_Z:,-1]), self.Mgas_v[-1])
         self.Xi_v[:,-1] = np.divide(self.Mass_i_v[:,-1], self.Mgas_v[-1]) 
@@ -247,6 +247,7 @@ class OneZone(Setup):
         '''
         i = kwargs['i']
         Wi_comps = kwargs['Wi_comp'] 
+        Wi_class = kwargs['Wi_class']
         Z_comps = kwargs['Z_comp'] 
         infall_comp = self.Infall_rate[n] * self.models_BBN[i]
         self.W_i_comp['BBN'][i,n] = infall_comp
@@ -263,7 +264,9 @@ class OneZone(Setup):
                         if not self.yield_models[ch][i].empty:
                             yield_grid = Z_comps[ch]
                             yield_grid['mass'] = Wi_comps[ch]['mass_grid']
-                            Wi_vals[ch] = integr.simps(np.multiply(Wi_comps[ch]['integrand'], self.yield_models[ch][i](yield_grid)), x=Wi_comps[ch]['mass_grid'])
+                            #RiM = self.yield_models[ch][i](yield_grid)
+                            RiM = Wi_class * self.yield_models[ch][i](yield_grid) #!!!!!!!
+                            Wi_vals[ch] = integr.simps(np.multiply(Wi_comps[ch]['integrand'], RiM), x=Wi_comps[ch]['mass_grid'])
                         else:
                             Wi_vals[ch] = 0.
                     else:

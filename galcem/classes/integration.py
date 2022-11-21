@@ -11,6 +11,7 @@ import scipy.integrate as integr
 " LIST OF CLASSES:                             "
 "    __        Wi_grid                         "
 "    __        Wi                              "
+"    __        Qmatrix                         "
 "                                              "
 """"""""""""""""""""""""""""""""""""""""""""""""
 
@@ -41,12 +42,13 @@ class Wi:
     birthtime (t')     is the stellar birthtime
     lifetime (tau)    is the stellar lifetime
     '''
-    def __init__(self, age_idx, IN, lifetime_class, time_chosen, Z_v, SFR_v, f_SNIa_v, IMF, ZA_sorted):
+    def __init__(self, age_idx, IN, lifetime_class, time_chosen, Z_v, SFR_v, Xi_v, f_SNIa_v, IMF, ZA_sorted):
         self.IN = IN
         self.lifetime_class = lifetime_class
         self.time_chosen = time_chosen
         self.Z_v = Z_v
         self.SFR_v = SFR_v
+        self.Xi_v = Xi_v
         self.f_SNIa_v = f_SNIa_v
         self.IMF = IMF
         self.ZA_sorted = ZA_sorted
@@ -66,18 +68,25 @@ class Wi:
         # grid_type:            can be 'birthtime', 'lifetime', 'mass' 
         return self.__dict__[channel_switch+'_'+grid_type+'_grid']
     
+    def interp_component_func(self, birthtime_grid, func_v):
+        """ Returns the interpolated vectorized function computed at the birthtime grids """
+        _interp = interp.interp1d(self.time_chosen[:self.age_idx+1], func_v[:self.age_idx+1], fill_value='extrapolate')
+        return _interp(birthtime_grid) # Linear metallicity
+    
     def Z_component(self, birthtime_grid):
-        # Returns the interpolated SFR vector computed at the birthtime grids
-        _Z_interp = interp.interp1d(self.time_chosen[:self.age_idx+1], self.Z_v[:self.age_idx+1], fill_value='extrapolate')
-        return _Z_interp(birthtime_grid) # Linear metallicity
+        """ Returns the interpolated SFR vector computed at the birthtime grids """
+        return self.interp_component_func(birthtime_grid, self.Z_v)
+    
+    def Xi_component(self, birthtime_grid, i):
+        """ Returns the interpolated X_i(t) vector for species i computed at the birthtime grids """
+        return self.interp_component_func(birthtime_grid, self.Xi_v[i,:])
     
     def SFR_component(self, birthtime_grid):
-        # Returns the interpolated SFR vector computed at the birthtime grids
-        SFR_interp = interp.interp1d(self.time_chosen[:self.age_idx+1], self.SFR_v[:self.age_idx+1], fill_value='extrapolate')
-        return SFR_interp(birthtime_grid)
-
+        """ Returns the interpolated SFR vector computed at the birthtime grids """
+        return self.interp_component_func(birthtime_grid, self.SFR_v)
+    
     def IMF_component(self, mass_grid):
-        # Returns the IMF vector computed at the mass grids
+        """ Returns the IMF vector computed at the mass grids """
         return self.IMF(mass_grid)
     
     def dMdtauM_component(self, lifetime_grid, derlog=None): #!!!!!!!
@@ -88,11 +97,17 @@ class Wi:
         if derlog == True:
             return 1   
 
-    def yield_component(self, channel_switch, mass_grid, birthtime_grid, vel_idx=None):
+    def yield_component(self, channel_switch, mass_grid, birthtime_grid, i, vel_idx=None):
+        Qmatrix_class = []
+        for k,M in enumerate(mass_grid):
+            Qmatrix_class.append(pd.DataFrame(Qmatrix(M=M, Mr=None, Xi0=self.Xi_component(birthtime_grid[k], i), Mej_i=None, 
+                 Ej_H=None, Ej_He=None, Ej_C13s=None, Ej_C13p=None, EjNs=None, EjNp=None,
+                 X1=None, X2=None,  XN14=None,
+                 XC=None, XC13=None, XO=None)))
         return interpolation(mass_grid, metallicity(birthtime_grid))
     
     def mass_component(self, channel_switch, mass_grid, lifetime_grid): #
-        # Portinari+98, page 22, last eq. first column
+        """ Portinari+98, page 22, last eq. first column """
         birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
         IMF_comp = self.IMF_component(mass_grid) # overwrite continuously in __init__
         return IMF_comp, IMF_comp * self.dMdtauM_component(np.log10(lifetime_grid)) 
@@ -185,3 +200,98 @@ class Wi:
             integrand = np.prod(np.vstack([SFR_comp, mass_comp]), axis=0)
             #return integr.simps(integrand, x=birthtime_grid)
             return {'integrand': integrand, 'birthtime_grid': birthtime_grid, 'mass_grid': mass_grid}
+        
+class Qmatrix:
+    "   Talbot & Arnett (1973) and Portinari et al. (1998)"
+    def __init__(self, M=None, Mr=None, Xi0=None, Mej_i=None, 
+                 Ej_H=None, Ej_He=None, Ej_C13s=None, Ej_C13p=None, EjNs=None, EjNp=None,
+                 X1=None, X2=None,  XN14=None,
+                 XC=None, XC13=None, XO=None):
+        self.H_He_burning_list = [[10,20], [12,24], [14,28], [16,32], [20,40], [26,56]]
+        self.M = M
+        self.Mr = Mr
+        self.Xi0 = Xi0
+        self.MpiM = Mej_i
+        self.EH = Ej_H
+        self.EHe = Ej_He
+        self.ENs = EjNs
+        self.ENp = EjNp
+        self.EC13s = Ej_C13s
+        self.EC13p = Ej_C13p
+        self.X = X1
+        self.Y = X2
+        self.XC = XC
+        self.XC13 = XC13
+        self.XO = XO
+        self.XN = XN14
+        
+        self.Mej = self.M - self.Mr
+        self.X_plus_Y = self.X + self.Y
+        self.CNO_frac = self.XC + self.XC13 + self.XO
+        self.EiM = self.EiM_func()
+        self.d = self.d_func()
+        self.q4 = self.q4_func()
+        self.qC = self.qC_func()
+        self.wC = self.qC - self.d
+        self.qNs = self.qNs_func()
+        self.qC13s = self.qC13s_func()
+        self.Chi_O = self.Chi_O_func()
+        self.Chi_i = self.Chi_i_func()
+        return None
+    
+    def EiM_func(self):
+        """Eq. 2"""
+        return self.Mej * self.Xi0 + self.MpiM
+    
+    def d_func(self):
+        """Appendix C eq. 1"""
+        return self.Mr/self.M
+    
+    def q4_func(self):
+        """Appendix C eq. 2"""
+        return 1 - self.EH/(self.X * self.M) 
+    
+    def qC_func(self):
+        """Appendix C eq. 3"""
+        return (self.q4 * self.X + self.Y - self.EHe/self.M)/self.X_plus_Y
+    
+    def qNs_func(self):
+        """Appendix C eq. 5"""
+        return (self.ENs / (self.M * self.CNO_frac) - 
+                (1-self.qC) * self.XN / self.CNO_frac + self.qC)
+    
+    def qC13s_func(self):
+        """Appendix C eq. 6"""
+        return (self.EC13s / (self.M * self.XC) 
+                - (1 - self.qNs) * self.XC13 / self.Xc + self.qNs)
+    
+    def Chi_ratio(self, Ei):
+        """auxiliary"""
+        return Ei / (self.X_plus_Y * self.M * self.wC)
+    
+    def Chi_func(self, Ei, Xi, mass_frac):
+        """auxiliary"""
+        return (self.Chi_ratio(Ei) - 
+                ((1 - mass_frac) * Xi)/(self.wC * self.X_plus_Y))
+    
+    def Chi_N_func(self):
+        """Appendix C eq. 7"""
+        return self.Chi_ratio(self.ENp)
+    
+    def Chi_C13_func(self):
+        """Appendix C eq. 8"""
+        return self.Chi_ratio(self.EC13p)
+    
+    def Chi_C_func(self):
+        """Appendix C eq. 9"""
+        return self.Chi_func(self.EC, self.XC, self.qC13s)
+    
+    def Chi_O_func(self):
+        """Appendix C eq. 10"""
+        return self.Chi_func(self.EO, self.XO, self.qNs)
+    
+    def Chi_i_func(self):
+        """Appendix C eq. 11"""
+        return self.Chi_func(self.EiM, self.Xi0, self.d)
+      
+          
