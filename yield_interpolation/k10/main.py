@@ -8,16 +8,18 @@ def parse_k10_raw():
     dfs = []
     for metallicity in ['.0001','.02','.004','.008']:
         df = pd.read_csv(root_k10_raw_data+'Z0%s.dat'%metallicity,comment='#',header=None)
-        df.columns = ['mass_ini','Z_ini','mass','isotope','z','a','net_yield','Mi_windloss','Mi_ini','Xi_avg','Xi_ini','ProdFact']
+        df.columns = ['mass','Z_ini','mass_fin','isotope','z','a','net_yield','Mi_windloss','Mi_ini','Xi_avg','Xi_ini','ProdFact']
         df['metallicity'] = float(metallicity)
         dfs.append(df)
     df = pd.concat(dfs,axis=0)
-    df['yield'] = df['net_yield']+df['Xi_ini']*(df['mass_ini']-df['mass'])
+    df['mass_ej'] = df['mass']-df['mass_fin']
+    df['tot_yield'] = df['net_yield']+df['Xi_ini']*df['mass_ej']
+    df['yield'] = df['net_yield']
+    df['mass_fraction'] = df['yield']/df['mass_ej']
     df['isotope'] = df['isotope'].str.strip()
     df.loc[df['isotope']=='al-6','isotope'] = 'al26'
     df = df[df['isotope']!='al*6']
     df = df[['isotope','a','z','yield','mass','metallicity']]
-    #df.loc[df['yield']<=0,'yield'] = df.loc[df['yield']>0,'yield'].min()
     df.loc[df['yield']<0,'yield'] = 0
     return df
 
@@ -37,5 +39,5 @@ if __name__ == '__main__':
             #'yield':lambda y:np.log10(y), 'yield_prime':lambda y:1/(y*np.log(10)), 'yield_inv':lambda y:10**y
         },
         fit_names = 'all', # 'all', ['k10_z8.a16.irv0.o16'],
-        plot_names = [], # [], 'all', ['k10_z8.a16.irv0.o16']
+        plot_names = 'all', # [], 'all', ['k10_z8.a16.irv0.o16']
         ) 
