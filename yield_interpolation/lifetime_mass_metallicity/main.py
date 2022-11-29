@@ -1,4 +1,4 @@
-from yield_interpolation.galcem_interpolant import SmootheSpline2D_GCI
+from FriendlyInterpolants.friendly_interpolants import SmootheSpline2D_GCI
 import pandas as pd
 import numpy as np
 import dill

@@ -1,4 +1,4 @@
-from yield_interpolation.galcem_interpolant import GalCemInterpolant,fit_isotope_interpolants
+from FriendlyInterpolants.friendly_interpolants import GalCemInterpolant,fit_isotope_interpolants
 import numpy as np
 import pandas as pd
 import galcem as gc
