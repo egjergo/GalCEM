@@ -1,8 +1,8 @@
-from FriendlyInterpolants.friendly_interpolants import GalCemInterpolant,fit_isotope_interpolants
 import numpy as np
 import pandas as pd
 import galcem as gc
 import os
+from yield_interpolation.fit_isotope_interpolants import fit_isotope_interpolants
 
 def parse_lc18_raw():
     yield_eps = 1e-13
@@ -48,9 +48,9 @@ if __name__ == '__main__':
         df = df,
         root = root,
         tf_funs = {
-            'mass':lambda x:np.log10(x), 'mass_prime':lambda x:1/(x*np.log(10)),
-            'metallicity':lambda x:np.log10(x), 'metallicity_prime':lambda x:1/(x*np.log(10)),
-            'yield':lambda y:np.log10(y), 'yield_prime':lambda y:1/(y*np.log(10)), 'yield_inv':lambda y:10**y},
+            'mass':lambda x:np.log10(x), 'mass.prime':lambda x:1/(x*np.log(10)),
+            'metallicity':lambda x:np.log10(x), 'metallicity.prime':lambda x:1/(x*np.log(10)),
+            'yield':lambda y:np.log10(y), 'yield.prime':lambda y:1/(y*np.log(10)), 'yield.inv':lambda y:10**y},
         fit_names = 'all', # 'all', ['lc18_z8.a16.irv0.O16'],
         plot_names = [] # [], 'all', ['lc18_z8.a16.irv0.O16']
         ) 

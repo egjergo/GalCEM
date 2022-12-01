@@ -1,6 +1,6 @@
 import os
 import dill
-from ..FriendlyInterpolants import LinearAndNearestNeighbor_GCI
+from .FriendlyInterpolants import LinearAndNearestNeighbor_FI
 
 def fit_isotope_interpolants(df,root,tf_funs,fit_names=[],plot_names=[]):
     # iterate over a,z pairs and save interpolants based on irv=0
@@ -12,15 +12,14 @@ def fit_isotope_interpolants(df,root,tf_funs,fit_names=[],plot_names=[]):
         name = '%s_z%d.a%d.irv0.%s'%(dirname,ids[2],ids[1],ids[0])
         if fit_names!='all' and name not in fit_names: continue
         # fit model
-        interpolant = LinearAndNearestNeighbor_GCI(
+        interpolant = LinearAndNearestNeighbor_FI(
             df = _df[['metallicity','mass','yield']],
             ycol = 'yield',
             tf_funs = tf_funs,
             name = name,
-            plot = [[0,0]] if plot_names=='all' or name in plot_names else None,
+            plot = True if plot_names=='all' or name in plot_names else False,
             fig_root = root+'/figs/',
-            fig_view_angle = 135,
-            colormap=False)
+            plot_ops = {'view_init_azim':135,'sepfl':0,'sepfr':0,'sepfb':0,'sepft':0})
         #   print model
         print('%d of %d'%(i+1,itotal))
         print(interpolant)
