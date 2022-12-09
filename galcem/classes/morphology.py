@@ -22,7 +22,9 @@ import scipy.stats as ss
 """"""""""""""""""""""""""""""""""""""""""""""""
 
 class Auxiliary:
-    def varname(self, var, dir=locals()):
+    def varname(self, var, dir=locals()): 
+        '''Returns a string with the name of a variable.
+        dir can be a class dictionary'''
         return [ key for key, val in dir.items() if id( val) == id( var)][0]
 
     def is_monotonic(self, arr):
@@ -40,7 +42,7 @@ class Auxiliary:
         return idx
     
     def deriv(self, func, x, n=1):
-        ''' Returns the nth order derivative of a function '''
+        '''Returns the nth order derivative of a function'''
         return sm.derivative(func, x)
 
     def tic_count(self, string="Computation time", tic=None):
@@ -48,6 +50,19 @@ class Auxiliary:
         m = math.floor((tic[-1] - tic[-2])/60.)
         s = ((tic[-1] - tic[-2])%60.)
         print('%s = %d minutes and %d seconds'%(string,m,s))
+
+    def asvoid(self, arr):
+        """View the array as dtype np.void (bytes)
+        This collapses ND-arrays to 1D-arrays, 
+        so you can perform 1D operations on them.
+        https://stackoverflow.com/a/16216866/190597 (Jaime)"""    
+        arr = np.ascontiguousarray(arr)
+        return arr.view(np.dtype((np.void, arr.dtype.itemsize * arr.shape[-1])))
+
+    def find_index(self, arr, x):
+        arr_as1d = self.asvoid(arr)
+        x = self.asvoid(x)
+        return np.nonzero(arr_as1d == x)[0]
 
     def pick_ZA_sorted_idx(self, ZA_sorted, Z=1,A=1):
         return np.intersect1d(np.where(ZA_sorted[:,0]==Z), np.where(ZA_sorted[:,1]==A))[0]

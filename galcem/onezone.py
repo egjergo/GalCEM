@@ -56,7 +56,7 @@ class Setup:
         self.IMF = IMF_class.IMF() #() # Function @ input stellar mass
         
         # Initialize Yields
-        isotope_class = Isotopes(self.IN)
+        self.iso_class = Isotopes(self.IN)
         #self.yields_MRSN_class = Yields_MRSN(self.IN)
         #self.yields_MRSN_class.import_yields()
         #self.yields_NSM_class = Yields_NSM(self.IN)

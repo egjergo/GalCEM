@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from pandas.core.common import flatten
+from .morphology import Auxiliary
 import os
 import re
 
@@ -26,6 +27,7 @@ class Isotopes:
     ''' Handles the isotope and yield selection '''
     def __init__(self, IN):
         self.IN = IN
+        self.aux = Auxiliary()
         self.elemZ = self.IN.periodic['elemZ']
         self.elemSymb = self.IN.periodic['elemSymb']
         self.elemName = self.IN.periodic['elemName']
@@ -57,6 +59,11 @@ class Isotopes:
         idx_Z = np.where(ZA_sorted[:,0] == self.elemZ[id_periodic].values)[0]
         print(ZA_sorted[idx_Z])
         return idx_Z
+    
+    def search_by_iso(self, ZA_sorted, Z, A):
+        '''Finds the index where ZA_sorted corresponds to the isotope (Z,A)'''
+        find_iso = np.array([Z,A], dtype='int64')
+        return self.aux.find_index(ZA_sorted, find_iso)[0]
 
 
 class Concentrations:
@@ -258,7 +265,7 @@ class Yields_SNII(Yields):
             self.elemA = lc18['a'].values #np.unique(lc18['a'].values)
             self.elemZ = lc18['z'].values #np.unique(lc18['z'].values)
             self.yields_list = glob.glob(lc18_yield_dir+'*.pkl')
-            patternz = "/z(.*?).a"
+            patternz = "/lc18_z(.*?).a"
             z_list = [re.search(patternz, yl).group(1) for yl in self.yields_list]
             searcha = [".a",".irv0"]
             a_list = [yl[yl.find(searcha[0])+len(searcha[0]):yl.find(searcha[1])] for yl in self.yields_list]
@@ -338,7 +345,7 @@ class Yields_LIMs(Yields):
             self.elemA = c15['a'].values #np.unique(c15['a'].values)
             self.elemZ = c15['z'].values #np.unique(c15['z'].values)
             self.yields_list = glob.glob(c15_yield_dir+'*.pkl')
-            patternz = "/z(.*?).a"
+            patternz = "/c15_z(.*?).a"
             z_list = [re.search(patternz, yl).group(1) for yl in self.yields_list]
             searcha = [".a",".irv0"]
             a_list = [yl[yl.find(searcha[0])+len(searcha[0]):yl.find(searcha[1])] for yl in self.yields_list]

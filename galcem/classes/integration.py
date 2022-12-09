@@ -203,27 +203,23 @@ class Wi:
         
 class Qmatrix:
     "   Talbot & Arnett (1973) and Portinari et al. (1998)"
-    def __init__(self, M=None, Mr=None, Xi0=None, Mej_i=None, 
-                 Ej_H=None, Ej_He=None, Ej_C13s=None, Ej_C13p=None, EjNs=None, EjNp=None,
-                 X1=None, X2=None,  XN14=None,
+    def __init__(self, ZA_sorted, M=None, Mr=None, Xi0=None, Mej_i=None, 
+                 Ej_H=None, Ej_He=None, Ej_C13s=None, Ej_C13p=None, 
+                 EjNs=None, EjNp=None, X=None, Y=None,  XN14=None,
                  XC=None, XC13=None, XO=None):
-        self.H_He_burning_list = [[10,20], [12,24], [14,28], [16,32], [20,40], [26,56]]
-        self.M = M
-        self.Mr = Mr
-        self.Xi0 = Xi0
-        self.MpiM = Mej_i
-        self.EH = Ej_H
-        self.EHe = Ej_He
-        self.ENs = EjNs
-        self.ENp = EjNp
-        self.EC13s = Ej_C13s
-        self.EC13p = Ej_C13p
-        self.X = X1
-        self.Y = X2
-        self.XC = XC
-        self.XC13 = XC13
-        self.XO = XO
-        self.XN = XN14
+        vars = locals()
+        self.__dict__.update(vars)
+        del self.__dict__['self']
+        from .morphology import Auxiliary
+        self.aux = Auxiliary()
+        self.alpha_iso = [[10,20], [12,24], [14,28], [16,32], [20,40], [26,56]]
+        self.Zn_h_iso = [30,70] # consider everything above an ncapture iso
+        self.O16_iso = [8,16]
+        self.N14_iso = [7,14]
+        self.C13_iso = [6,13]
+        self.C12_iso = [6,12]
+        self.He4_iso = [2,4]
+        self.H1_iso = [1,1]
         
         self.Mej = self.M - self.Mr
         self.X_plus_Y = self.X + self.Y
@@ -258,7 +254,7 @@ class Qmatrix:
     def qNs_func(self):
         """Appendix C eq. 5"""
         return (self.ENs / (self.M * self.CNO_frac) - 
-                (1-self.qC) * self.XN / self.CNO_frac + self.qC)
+                (1-self.qC) * self.XN14 / self.CNO_frac + self.qC)
     
     def qC13s_func(self):
         """Appendix C eq. 6"""
@@ -294,4 +290,12 @@ class Qmatrix:
         """Appendix C eq. 11"""
         return self.Chi_func(self.EiM, self.Xi0, self.d)
       
+    def H1_iso_func(self):
+        return (1 - self.q4) * self.X
+    
+    def He4_iso_func(self):
+        return (self.q4 - self.qC)*self.X + (1 - self.qC)*self.Y
+    
+    def C12_iso_func(self):
+        return self.Chi_C
           
