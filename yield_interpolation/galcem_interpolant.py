@@ -5,13 +5,15 @@ import dill
 import os
 
 class GalCemInterpolant(object):
-    def __init__(self,df,ycol,tf_funs={},name='',plot=None,fig_root='./',fig_view_angle=135,colormap=False):
+    def __init__(self,df,ycol,tf_funs={},name='',plot=None,fig_root='./',
+                 fig_view_angle=135,colormap=False):
         
         # initial setup 
         self.ycol = ycol
         self.xcols_all = [col for col in list(df.columns) if col!=ycol]
         self.xcols = ['metallicity','mass']
-        if len(self.xcols)!=2: raise Exception("GalCemInterpolant currently only supports models with 2D domain.")
+        warn="GalCemInterpolant currently only supports models with 2D domain."
+        if len(self.xcols)!=2: raise Exception(warn)
         self.tf_funs = tf_funs
         self.name = name
         
@@ -34,7 +36,8 @@ class GalCemInterpolant(object):
                 self.tf_funs[col+'_prime'] = lambda x: x
         
         # remaining setup
-        dftf = pd.DataFrame({col:self.tf_funs[col](df[col].to_numpy()) for col in list(df.columns)})
+        dftf = pd.DataFrame({col:self.tf_funs[col](df[col].to_numpy()) 
+                             for col in list(df.columns)})
         self.descrip = df.describe()
         self.descrip_tf = dftf.describe()
         xtf = dftf[self.xcols].to_numpy()
@@ -52,9 +55,12 @@ class GalCemInterpolant(object):
         cmdot,colordots,colordotstf = 'r','r','r'
         if colormap:
             cmdot = pyplot.cm.get_cmap('Paired')
-            s_lifetimes_p98 = pd.read_csv('galcem/input/starlifetime/portinari98table14.dat')
-            s_lifetimes_p98.columns = [name.replace('#M','M').replace('Z=0.','Z') for name in s_lifetimes_p98.columns]
-            colordots = np.array([s_lifetimes_p98[c].to_numpy() for c in s_lifetimes_p98.columns[1:]]).flatten()
+            p98_path = 'galcem/input/starlifetime/portinari98table14.dat'
+            s_lifet_p98 = pd.read_csv(p98_path)
+            s_lifet_p98.columns = [name.replace('#M','M').replace('Z=0.','Z') 
+                                   for name in s_lifet_98.columns]
+            colordots = np.array([s_lifet_98[c].to_numpy() 
+                            for c in s_lifet_98.columns[1:]]).flatten()
             colordotstf = colordots
         fig = pyplot.figure(figsize=(12,6*nrows))
         nticks = 257
@@ -64,24 +70,33 @@ class GalCemInterpolant(object):
             xtf = dftf[self.xcols].to_numpy()
             x0tfmin,x0tfmax = xtf[:,0].min(),xtf[:,0].max()
             x0tf_sep = x0tfmax-x0tfmin
-            x0_ticks = np.linspace(x0tfmin-sepfrac*x0tf_sep,x0tfmax+sepfrac*x0tf_sep,nticks)
+            x0_ticks = np.linspace(x0tfmin-sepfrac*x0tf_sep,x0tfmax+
+                                   sepfrac*x0tf_sep,nticks)
             x1tfmin,x1tfmax = xtf[:,1].min(),xtf[:,1].max()
             x1tf_sep = x1tfmax-x1tfmin
-            x1tf_ticks = np.linspace(x1tfmin-sepfrac*x1tf_sep,x1tfmax+sepfrac*x1tf_sep,nticks)
+            x1tf_ticks = np.linspace(x1tfmin-sepfrac*x1tf_sep,x1tfmax+
+                                     sepfrac*x1tf_sep,nticks)
             x0tfmesh,x1tfmesh = np.meshgrid(x0_ticks,x1tf_ticks)
-            x0tfmesh_flat,x1tfmesh_flat = x0tfmesh.flatten(),x1tfmesh.flatten()
-            ytf = self.eval_with_grad(x=np.vstack([x0tfmesh_flat,x1tfmesh_flat]).T,dx=dx)
+            x0tfmesh_flat = x0tfmesh.flatten()
+            x1tfmesh_flat = x1tfmesh.flatten()
+            ytf = self.eval_with_grad(
+                x=np.vstack([x0tfmesh_flat,x1tfmesh_flat]).T,dx=dx)
             ytfmesh = ytf.reshape(x0tfmesh.shape)
             ax = fig.add_subplot(nrows,2,4*i+1,projection='3d')
-            ax.plot_surface(x0tfmesh,x1tfmesh,ytfmesh,cmap=cmap,alpha=.9,vmin=ytfmesh.min(),vmax=ytfmesh.max(),rcount=rcount,ccount=ccount)#,antialiased=True)
-            if dx==[0,0]: ax.scatter(xtf[:,0],xtf[:,1],dftf[self.ycol].to_numpy(),c=colordotstf, cmap=cmdot)
+            ax.plot_surface(x0tfmesh,x1tfmesh,ytfmesh,cmap=cmap,alpha=.9,
+                            vmin=ytfmesh.min(),vmax=ytfmesh.max(),
+                            rcount=rcount,ccount=ccount)#,antialiased=True)
+            if dx==[0,0]: ax.scatter(xtf[:,0],xtf[:,1],
+                        dftf[self.ycol].to_numpy(),c=colordotstf, cmap=cmdot)
             ax.set_xlabel(self.xcols[0], fontsize=12)
             ax.set_ylabel(self.xcols[1], fontsize=12)
             ax.set_zlabel(self.ycol, fontsize=12)
-            if dx!=[0,0]: ax.set_title('d(%s) / d(%s)'%(self.ycol,self.xcols[dx.index(1)]))
+            if dx!=[0,0]: ax.set_title('d(%s) / d(%s)'%(self.ycol,
+                                                    self.xcols[dx.index(1)]))
             ax.view_init(azim=fig_view_angle)
             ax = fig.add_subplot(nrows,2,4*i+2)
-            contour = ax.contourf(x0tfmesh,x1tfmesh,ytfmesh,cmap=cmap,alpha=.95,vmin=ytfmesh.min(),vmax=ytfmesh.max(),levels=64)
+            contour = ax.contourf(x0tfmesh,x1tfmesh,ytfmesh,cmap=cmap,
+                    alpha=.95,vmin=ytfmesh.min(),vmax=ytfmesh.max(),levels=64)
             xlim,ylim = ax.get_xlim(),ax.get_ylim()
             ax.set_aspect((xlim[1]-xlim[0])/(ylim[1]-ylim[0]))
             cbar = fig.colorbar(contour,ax=None,shrink=0.5,aspect=5)
@@ -89,7 +104,8 @@ class GalCemInterpolant(object):
             ax.scatter(xtf[:,0],xtf[:,1],c=colordotstf, cmap=cmdot)
             ax.set_xlabel(self.xcols[0], fontsize=12)
             ax.set_ylabel(self.xcols[1], fontsize=12)
-            if dx!=[0,0]: ax.set_title('d(%s) / d(%s)'%(self.ycol,self.xcols[dx.index(1)]))
+            if dx!=[0,0]: ax.set_title('d(%s) / d(%s)'%(self.ycol,
+                                                    self.xcols[dx.index(1)]))
             # original domain
             x = df[self.xcols].to_numpy()
             x0min,x0max = x[:,0].min(),x[:,0].max()
@@ -98,20 +114,26 @@ class GalCemInterpolant(object):
             x1_ticks = np.linspace(x1min,x1max,nticks)
             x0mesh,x1mesh = np.meshgrid(x0_ticks,x1_ticks)
             x0mesh_flat,x1mesh_flat = x0mesh.flatten(),x1mesh.flatten()
-            dfx = pd.DataFrame({self.xcols[0]:x0mesh_flat,self.xcols[1]:x1mesh_flat})
+            dfx = pd.DataFrame({self.xcols[0]:x0mesh_flat,
+                                self.xcols[1]:x1mesh_flat})
             dfw = None if dx==[0,0] else self.xcols[dx.index(1)]
             y = self.__call__(dfx=dfx,dwrt=dfw)
             ymesh = y.reshape(x0mesh.shape)
             ax = fig.add_subplot(nrows,2,4*i+3,projection='3d')
-            ax.plot_surface(x0mesh,x1mesh,ymesh,cmap=cmap,alpha=.9,vmin=ymesh.min(),vmax=ymesh.max(),rcount=rcount,ccount=ccount)#,antialiased=True)
-            if dx==[0,0]: ax.scatter(x[:,0],x[:,1],df[self.ycol].to_numpy(),c=colordots, cmap=cmdot)
+            ax.plot_surface(x0mesh,x1mesh,ymesh,cmap=cmap,alpha=.9,
+                            vmin=ymesh.min(),vmax=ymesh.max(),rcount=rcount,
+                            ccount=ccount)#,antialiased=True)
+            if dx==[0,0]: ax.scatter(x[:,0],x[:,1],df[self.ycol].to_numpy(),
+                                     c=colordots, cmap=cmdot)
             ax.set_xlabel(self.xcols[0], fontsize=12)
             ax.set_ylabel(self.xcols[1], fontsize=12)
             ax.set_zlabel(self.ycol, fontsize=12)
-            if dx!=[0,0]: ax.set_title('d(%s) / d(%s)'%(self.ycol,self.xcols[dx.index(1)]))
+            if dx!=[0,0]: ax.set_title('d(%s) / d(%s)'%(self.ycol,
+                                                    self.xcols[dx.index(1)]))
             ax.view_init(azim=fig_view_angle)
             ax = fig.add_subplot(nrows,2,4*i+4)
-            contour = ax.contourf(x0mesh,x1mesh,ymesh,cmap=cmap,alpha=.95,vmin=ymesh.min(),vmax=ymesh.max(),levels=64)
+            contour = ax.contourf(x0mesh,x1mesh,ymesh,cmap=cmap,alpha=.95,
+                                  vmin=ymesh.min(),vmax=ymesh.max(),levels=64)
             xlim,ylim = ax.get_xlim(),ax.get_ylim()
             ax.set_aspect((xlim[1]-xlim[0])/(ylim[1]-ylim[0]))
             cbar = fig.colorbar(contour,ax=None,shrink=0.5,aspect=5)
@@ -119,18 +141,24 @@ class GalCemInterpolant(object):
             ax.scatter(x[:,0],x[:,1],c=colordots, cmap=cmdot)
             ax.set_xlabel(self.xcols[0], fontsize=12)
             ax.set_ylabel(self.xcols[1], fontsize=12)
-            if dx!=[0,0]: ax.set_title('d(%s) / d(%s)'%(self.ycol,self.xcols[dx.index(1)]))
+            if dx!=[0,0]: ax.set_title('d(%s) / d(%s)'%(self.ycol,
+                                                self.xcols[dx.index(1)]))
         fig.suptitle('%s\n%s by %s\nTransformed Domain (odd rows) | Original Domain (even rows)'%(self.name,self.ycol,str(self.xcols)), fontsize=15)
-        pyplot.subplots_adjust(left=0,bottom=0.1,right=1,top=0.9,wspace=0.2,hspace=0.2)
+        pyplot.subplots_adjust(left=0,bottom=0.1,right=1,top=0.9,wspace=0.2,
+                               hspace=0.2)
         #fig.tight_layout()
-        fig.savefig('%s%s.pdf'%(fig_root,name),format='pdf',bbox_inches='tight')
+        fig.savefig('%s%s.pdf'%(fig_root,name),bbox_inches='tight')
         pyplot.close(fig)
     
     def fit(self, x, y): 
         raise NotImplementedError
     
     def __call__(self,dfx,dwrt=None):
-        dftf = pd.DataFrame({col:self.tf_funs[col](dfx[col].to_numpy()) for col in self.xcols})
+        #breakpoint()
+        dftf = pd.DataFrame({
+            col:self.tf_funs[col](dfx[col])#.to_numpy().astype(float))
+                             for col in self.xcols
+                            })
         xtf = dftf[self.xcols].to_numpy()
         #print(f'{xtf=}')
         yhattf = self.eval_with_grad(xtf,dx=[0,0])
@@ -146,9 +174,10 @@ class GalCemInterpolant(object):
         yhattf_prime = self.eval_with_grad(xtf,dx=dx)
         # chain rule 
         #   y(x0,x1) = T^{-1}( I(g0(x0),g1(x1)) )
-        #   dy/dxi = I'(g0(x0),g1(x1)) gi'(xi) / T'( T^{-1}( I(g0(x0),g1(x1)) ) )
+        #   dy/dxi = I'(g0(x0),g1(x1)) gi'(xi) / T'( T^{-1}( I(g0(x0),g1(x1))))
         #          = I(x0tf,x1tf), gi'(xi) / T'(yhat)
-        dyhat_dxi = yhattf_prime*self.tf_funs[dwrt+'_prime'](x[:,didx])/self.tf_funs[self.ycol+'_prime'](yhat)
+        dyhat_dxi = (yhattf_prime*self.tf_funs[dwrt+'_prime'](x[:,didx])/
+                     self.tf_funs[self.ycol+'_prime'](yhat))
         return dyhat_dxi
     
     def eval_with_grad(self, x, dwrt):
@@ -156,9 +185,9 @@ class GalCemInterpolant(object):
         
     def get_metrics(self,df):
         y = df[self.ycol].to_numpy()
-        print(f'{y=}')
+        #print(f'{y=}')
         yhat = self.__call__(df)
-        print(f'{yhat=}')
+        #print(f'{yhat=}')
         eps_abs = np.abs(yhat-y)
         with np.errstate(all='ignore'):
             eps_rel = np.abs(np.divide(eps_abs,y))
@@ -175,7 +204,8 @@ class GalCemInterpolant(object):
         s = 'GalCemInterpolant[%s](%s)\n'%(self.name,','.join(self.xcols))
         s += '\ttrain data description\n\t\t%s'%str(self.descrip).replace('\n','\n\t\t')
         s += '\n\ttrain data metrics\n'
-        for metric,val in self.train_metrics.items(): s += '\t\t%25s: %.2e\n'%(metric,val)
+        for metric,val in self.train_metrics.items(): 
+            s += '\t\t%25s: %.2e\n'%(metric,val)
         return s
 
 class LinearAndNearestNeighbor_GCI(GalCemInterpolant):
@@ -201,6 +231,7 @@ class SmootheSpline2D_GCI(GalCemInterpolant):
     def fit(self, x, y):
         assert x.ndim==2 and x.shape[1]==2 and y.shape==(len(x),)
         self.model = interp.SmoothBivariateSpline(x=x[:,0],y=x[:,1],z=y)
+        
     def eval_with_grad(self, x, dx):
         assert x.ndim==2 and x.shape[1]==2 and len(dx)==x.shape[1]
         y = self.model(x=x[:,0],y=x[:,1],dx=dx[0],dy=dx[1],grid=False)
@@ -218,7 +249,8 @@ def fit_isotope_interpolants(df,root,tf_funs,fit_names=[],plot_names=[]):
         if fit_names!='all' and name not in fit_names: continue
         # fit model
         interpolant = LinearAndNearestNeighbor_GCI(
-            df = _df[['metallicity','mass','yield','mass_ej','massfrac','ysign']],
+            df = _df[['metallicity','mass','yield',
+                      'mass_ej','massfrac','ysign']],
             ycol = 'massfrac',
             tf_funs = tf_funs,
             name = name,

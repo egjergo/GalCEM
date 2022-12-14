@@ -72,7 +72,7 @@ class Plots(Setup):
         ax.tick_params(width=1, length = 5, which='minor')
         ax.set_xlim(np.min(x)-2.5, np.max(x)+2.5)
         ax.set_ylim(np.min(y)-2.5, np.max(y)+2.5)
-        ax3 = fig.add_axes([.02, 0.5, .4, .4], projection='3d')
+        ax3 = fig.add_axes([.01, .42, .45, .45], projection='3d')
         #ax3.azim=-90
         ax3.bar3d(x, y, 0, 1, 1, z, color=percent_colors, zsort='average')
         ax3.tick_params(axis='x', labelsize= 8, labeltop=True, labelbottom=False)

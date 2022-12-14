@@ -11,7 +11,6 @@ def parse_c15_raw():
     df = pd.DataFrame({col:[] for col in ['Isotope','A','Z','YIELD','MASS_INI','METALLICITY','IRV','MASS_EJ','MASS_FRACTION']})
     for txt_og in txts:
         if '.DS_Store' in txt_og: continue
-        print(txt_og)
         df_txt = pd.read_fwf(root_c15_raw_data+'data/'+txt_og, infer_nrows=400)
         print(df_txt.head())
         txt = txt_og.replace('zsun','z1.4m2').replace('20221214_21534.txt','').replace('yields_net_m','')
@@ -33,11 +32,8 @@ def parse_c15_raw():
         df_txt['YSIGN'] = np.sign(df_txt['YIELD'])
         df = df.append(df_txt)
         print('\n'+'~'*75+'\n')
-    df.columns = ['isotope','a','z','yield','mass','metallicity','irv','mass_ej','massfrac','ysign']
-    #dfy0 = df[df['yield']==0]
-    #print('setting %d rows with yield=0 to %.1e'%(len(dfy0),yield_eps))
-    #df.loc[df['yield']==0,'yield'] = yield_eps
-    #df.loc[df['massfrac']==0,'yield'] = yield_eps
+    df.columns = ['isotope','a','z','yield','mass','metallicity','irv',
+                  'mass_ej','massfrac','ysign']
     return df
 
 if __name__ == '__main__':
@@ -52,12 +48,14 @@ if __name__ == '__main__':
         df = df,
         root = root,
         tf_funs = {
-            'mass':lambda x:np.log10(x), 'mass_prime':lambda x:1/(x*np.log(10)),
-            'metallicity':lambda x:np.log10(x), 'metallicity_prime':lambda x:1/(x*np.log(10)),
-            #'yield':lambda y:np.log10(y), 'yield_prime':lambda y:1/(y*np.log(10)), 'yield_inv':lambda y:10**y,
-            'massfrac':lambda y:np.log10(np.abs(y)), 'massfrac_prime':lambda y:1/(y*np.log(10)), 'massfrac_inv':lambda y:10**y,
-            #'ysign':lambda y:np.sign(y)
+            'mass':lambda x:np.log10(x), 
+            'mass_prime':lambda x:1/(x*np.log(10)),
+            'metallicity':lambda x:np.log10(x), 
+            'metallicity_prime':lambda x:1/(x*np.log(10)),
+            'massfrac':lambda y: np.sign(y)*np.abs(y)**(1/3),
+            'massfrac_prime':lambda y:1/3*np.sign(y)*np.abs(y)**(-2/3),
+            'massfrac_inv':lambda y:np.sign(y)*np.abs(y)**3,
             },
         fit_names = 'all', # 'all', ['c15_z8.a16.irv0.O16'],
-        plot_names =  [], # [], 'all', ['c15_z8.a16.irv0.O16'] 
+        plot_names =  'all', # [], 'all', ['c15_z8.a16.irv0.O16'] 
         )

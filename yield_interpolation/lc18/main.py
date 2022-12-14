@@ -1,4 +1,4 @@
-from .yield_interpolation import galcem_interpolant as gcint
+from yield_interpolation import galcem_interpolant as gcint
 import numpy as np
 import pandas as pd
 import galcem as gc
@@ -78,10 +78,10 @@ if __name__ == '__main__':
             'mass_prime':lambda x:1/(x*np.log(10)),
             'metallicity':lambda x:np.log10(x), 
             'metallicity_prime':lambda x:1/(x*np.log(10)),
-            'massfrac':lambda y:np.log10(y), 
-            'massfrac_prime':lambda y:1/(y*np.log(10)), 
-            'massfrac_inv':lambda y:10**y,
+            'massfrac':lambda y: np.sign(y)*np.abs(y)**(1/3),
+            'massfrac_prime':lambda y:1/3*np.sign(y)*np.abs(y)**(-2/3),
+            'massfrac_inv':lambda y:np.sign(y)*np.abs(y)**3,
             },
         fit_names = 'all', # 'all', ['lc18_z8.a16.irv0.O16'],
-        plot_names = [] # [], 'all', ['lc18_z8.a16.irv0.O16']
+        plot_names = 'all' # [], 'all', ['lc18_z8.a16.irv0.O16']
         ) 
