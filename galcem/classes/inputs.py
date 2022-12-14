@@ -46,18 +46,18 @@ class Inputs:
         self.A_collapsars = 0.05 #0.06 # Fraction of white dwarfs that underwent a SNIa
 
         # Mass limits
-        self.Ml_SNIa = 3./2 # Lower limit for total binary mass for SNIae [Msun]
-        self.Mu_SNIa = 12 # Upper limit for total binary mass for SNIae [Msun]
-        self.Ml_LIMs = 0.07 # [Msun] !!!!!!! temporary. Import from yield tables
-        self.Mu_LIMs = 9 # [Msun] !!!!!!! temporary. Import from yield tables
-        self.Ml_NSM = 9 # [Msun] !!!!!!! temporary. Import from yield tables
-        self.Mu_NSM = 50 # [Msun] !!!!!!! temporary. Import from yield tables
-        self.Ml_MRSN = 9 # [Msun] !!!!!!! temporary. Import from yield tables
-        self.Mu_MRSN = 50 # [Msun] !!!!!!! temporary. Import from yield tables
-        self.Ml_SNCC = 10 # [Msun] !!!!!!! temporary. Import from yield tables
-        self.Mu_SNCC = 120 # [Msun] !!!!!!! temporary. Import from yield tables
-        self.Ml_collapsars = 9 # [Msun] !!!!!!! temporary. Import from yield tables
-        self.Mu_collapsars = 120 # [Msun] !!!!!!! temporary. Import from yield tables
+        self.Ml_SNIa = 3. # Lower limit for total binary mass for SNIae [Msun]
+        self.Mu_SNIa = 16 # Upper limit for total binary mass for SNIae [Msun]
+        self.Ml_LIMs = 0.07 # [Msun] 
+        self.Mu_LIMs = 9 # [Msun] 
+        self.Ml_NSM = 9 # [Msun] 
+        self.Mu_NSM = 50 # [Msun] 
+        self.Ml_MRSN = 9 # [Msun] 
+        self.Mu_MRSN = 50 # [Msun] 
+        self.Ml_SNCC = 10 # [Msun] 
+        self.Mu_SNCC = 120 # [Msun] 
+        self.Ml_collapsars = 9 # [Msun] 
+        self.Mu_collapsars = 120 # [Msun] 
 
         self.sd = 530.96618 # surf density coefficient for the disk (normalized to the MW mass?) 
         self.MW_SFR = 1.9 #+-0.4 [Msun/yr] from Chomiuk & Povich (2011) Galactic SFR (z=0)
