@@ -1,0 +1,22 @@
+Legenda
+The 18 columns in each row contain: 
+ 1) mass (Msun)
+ 2) intial equatorial rotational velocity (km/s)
+ 3) set F remnant mass (Msun) at [Fe/H]=0  
+ 4) set F remnant mass (Msun) at [Fe/H]=-1  
+ 5) set F remnant mass (Msun) at [Fe/H]=-2 
+ 6) set F remnant mass (Msun) at [Fe/H]=-3 
+ 7) set I remnant mass (Msun) at [Fe/H]=0  
+ 8) set I remnant mass (Msun) at [Fe/H]=-1  
+ 9) set I remnant mass (Msun) at [Fe/H]=-2 
+10) set I remnant mass (Msun) at [Fe/H]=-3 
+11) set M remnant mass (Msun) at [Fe/H]=0  
+12) set M remnant mass (Msun) at [Fe/H]=-1  
+13) set M remnant mass (Msun) at [Fe/H]=-2 
+14) set M remnant mass (Msun) at [Fe/H]=-3 
+15) set R remnant mass (Msun) at [Fe/H]=0  
+16) set R remnant mass (Msun) at [Fe/H]=-1  
+17) set R remnant mass (Msun) at [Fe/H]=-2 
+18) set R remnant mass (Msun) at [Fe/H]=-3
+
+Mremnant = -1.0000 means NO remnant because the star is expected to explode as a (P)PISN. 

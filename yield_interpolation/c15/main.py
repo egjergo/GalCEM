@@ -1,16 +1,18 @@
-from yield_interpolation.galcem_interpolant import GalCemInterpolant,fit_isotope_interpolants_irv0
+from yield_interpolation.galcem_interpolant import GalCemInterpolant,fit_isotope_interpolants
+import numpy as np
 import pandas as pd
 import os
 
 def parse_c15_raw():
     yield_eps = 1e-13
-    root_c15_raw_data = 'galcem/input/yields/lims/c15/data/'
+    root_c15_raw_data = 'galcem/input/yields/lims/c15/net/'
+    c15_phys = pd.read_fwf(root_c15_raw_data+'All_All_All_0_last_tp_20221214_21933.txt')
     txts = os.listdir(root_c15_raw_data)
     df = pd.DataFrame({col:[] for col in ['Isotope','A','Z','YIELD','MASS','METALLICITY','IRV']})
     for txt_og in txts:
         if '.DS_Store' in txt_og: continue
-        df_txt = pd.read_fwf(root_c15_raw_data+txt_og, infer_nrows=400)
-        txt = txt_og.replace('zsun','z1.4m2').replace('_20210617_33100.txt','').replace('yields_tot_m','')
+        df_txt = pd.read_fwf(root_c15_raw_data+'data/'+txt_og, infer_nrows=400)
+        txt = txt_og.replace('zsun','z1.4m2').replace('20221214_21534.txt','').replace('yields_net_m','')
         prts = txt.split('_')
         prts = prts[0].split('z')+[prts[1]]
         mass = float(prts[0].replace('p','.'))
@@ -32,7 +34,19 @@ def parse_c15_raw():
 
 if __name__ == '__main__':
     root = os.path.abspath(os.path.dirname(__file__))
+    for dirs in ['models', 'figs']:
+        if not os.path.exists(root+'/'+dirs):
+                os.makedirs(root+'/'+dirs)
     df = parse_c15_raw()
     df.to_csv(root+'/data.csv',index=False)
-    fit_isotope_interpolants_irv0(df,root)
-    
+    df = df[df['irv']==0]
+    fit_isotope_interpolants(
+        df = df,
+        root = root,
+        tf_funs = {
+            'mass':lambda x:np.log10(x), 'mass_prime':lambda x:1/(x*np.log(10)),
+            'metallicity':lambda x:np.log10(x), 'metallicity_prime':lambda x:1/(x*np.log(10)),
+            'yield':lambda y:np.log10(y), 'yield_prime':lambda y:1/(y*np.log(10)), 'yield_inv':lambda y:10**y},
+        fit_names = 'all', # 'all', ['c15_z8.a16.irv0.O16'],
+        plot_names =  [], # [], 'all', ['c15_z8.a16.irv0.O16'] 
+        )

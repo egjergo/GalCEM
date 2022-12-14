@@ -142,12 +142,10 @@ cython_debug/
 
 # GALCEM specific
 runs/
-!/galcem/input/yields/lims/c15/data/*.txt
+!/galcem/input/**
 /galcem/input/yields/snia/k20/*
 yield_interpolation/**/*.pdf
 yield_interpolation/**/*.pkl
-!/galcem/input/observations/*/*
-!/galcem/input/observations/*
 **.DS_Store**
 
 # dev specific
