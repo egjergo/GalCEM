@@ -1,16 +1,24 @@
-from yield_interpolation.galcem_interpolant import GalCemInterpolant,fit_isotope_interpolants_irv0
+from yield_interpolation import galcem_interpolant as gcinterp 
 import numpy as np
 import pandas as pd
 import os
 
 def parse_lc18_raw():
+    from .classes import inputs
+    IN = inputs.Inputs()
     yield_eps = 1e-13
-    df_raw = pd.read_table('galcem/input/yields/sncc/lc18/tab_R/tab_yieldstot_iso_exp_pd.dec',sep=',  ',dtype={'ID': object},header=None,engine='python')
-    header_idxs = np.argwhere((df_raw[0]=='ele').to_numpy()).flatten().tolist()+[len(df_raw)]
-    zini_map = {'a':.0181,'b':.00181,'c':.000181,'d':.0000181} # Asplund et al. (2009, Table 4)
+    fname = 'galcem/input/yields/sncc/lc18/tab_R/tab_yieldstot_iso_exp_pd.dec'
+    df_raw = pd.read_table(fname,sep=',  ',dtype={'ID': object},
+                           header=None,engine='python')
+    header_idx = (np.argwhere((df_raw[0]=='ele').to_numpy()).flatten().tolist()
+                   +[len(df_raw)])
+    zini_map = {'a':IN.solar_metallicity,
+                'b':1e-1*IN.solar_metallicity,
+                'c':1e-2*IN.solar_metallicity,
+                'd':1e-3*IN.solar_metallicity} 
     df = pd.DataFrame({'isotope':[],'a':[],'z':[],'yield':[],'mass':[],'metallicity':[],'irv':[]})
-    for i in range(len(header_idxs)-1):
-        start,end = header_idxs[i],header_idxs[i+1]
+    for i in range(len(header_idx)-1):
+        start,end = header_idx[i],header_idx[i+1]
         _df = df_raw.iloc[start:end]
         cols = _df.iloc[0].tolist()
         cols = [col.strip() for col in cols]
@@ -37,4 +45,4 @@ if __name__ == '__main__':
     root = os.path.abspath(os.path.dirname(__file__))
     df = parse_lc18_raw()
     df.to_csv(root+'/data.csv',index=False)
-    fit_isotope_interpolants_irv0(df,root)
+    gcinterp.fit_isotope_interpolants_irv0(df,root)

@@ -35,8 +35,8 @@ class Plots(Setup):
         self.iso_evolution_comp_plot(logAge=True)
         self.iso_evolution_comp_lelemz_plot()
         self.obs_table()
-        #self.ind_evolution()
-        #self.DTD()
+        #self.ind_evolution_plot()
+        #self.DTD_plot()
         ## self.elem_abundance() # compares and requires multiple runs (IMF & SFR variations)
         self.aux.tic_count(string="Plots saved in", tic=self.tic)
       
@@ -86,7 +86,7 @@ class Plots(Setup):
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'tracked_elements.pdf', bbox_inches='tight')
    
-    def DTD(self):
+    def DTD_plot(self):
         print('Starting DTD_plot()')
         from matplotlib import pyplot as plt
         #plt.style.use(self._dir+'/galcem.mplstyle')

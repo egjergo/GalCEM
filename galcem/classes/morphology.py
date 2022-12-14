@@ -1,8 +1,11 @@
 import math, time
+import os
+import dill
 import numpy as np
 import scipy.integrate
 import scipy.misc as sm 
 import scipy.interpolate as interp
+import scipy.integrate as integr
 import scipy.stats as ss
 
 """"""""""""""""""""""""""""""""""""""""""""""""
@@ -16,6 +19,8 @@ import scipy.stats as ss
 "    __        Auxiliary                       "
 "    __        Stellar_Lifetimes               "
 "    __        Infall                          "
+"    __        Greggio05                       "
+"    __        DTD                             "
 "    __        Initial_Mass_Function           "
 "    __        Star_Formation_Rate             "
 "                                              "
@@ -98,6 +103,8 @@ class Auxiliary:
         k4 = f(t+h, y+h*k3, n, **kwargs)
         return y + h * (k1 + 2*k2 + 2*k3 + k4) / 6
 
+    def fastquad(self):
+        "https://stackoverflow.com/questions/65269540/how-can-i-speed-up-scipy-integrate-quad"
 
 class Stellar_Lifetimes:
     '''
@@ -109,10 +116,13 @@ class Stellar_Lifetimes:
     '''
     def __init__(self, IN):
         self.IN = IN
+        s_mlz_root = os.path.dirname(__file__)+'/../../yield_interpolation/lifetime_mass_metallicity/'
         self.Z_names = ['Z0004', 'Z008', 'Z02', 'Z05']
         self.Z_binned = [0.0004, 0.008, 0.02, 0.05]
         self.Z_bins = [0.001789, 0.012649, 0.031623] # log-avg'd Z_binned
         self.s_mass = self.IN.s_lifetimes_p98['M'].values
+        self.lifetime_by_mass_metallicity_loaded = dill.load(open(s_mlz_root+'models/lifetime_by_mass_metallicity.pkl','rb'))
+        self.mass_by_lifetime_metallicity_loaded = dill.load(open(s_mlz_root+'models/mass_by_lifetime_metallicity.pkl','rb'))
     
     def interp_tau(self, idx):
         tau = self.IN.s_lifetimes_p98[self.Z_names[idx]] / 1e9
@@ -136,14 +146,14 @@ class Stellar_Lifetimes:
         Z_idx = np.digitize(metallicity, self.Z_bins)
         return self.stellar_masses()[Z_idx]
 
-    def dMdtauM(self, metallicity, time_chosen, n=1):
+    def dMdtauM(self, lz):#metallicity, time_chosen, n=1):
         '''
         Computes the first order derivative of the M(tau) function
         with respect to dtau, but multiplied by dtau/dt' = -1
         '''
-        Z_idx = np.digitize(metallicity, self.Z_bins)
-        dMdtau_deriv = - sm.derivative(self.interp_stellar_masses(metallicity), time_chosen[1001:-1000], n=n) #time_chosen[501:-500], n=n) !!!!!!!
-        return ss.mode(dMdtau_deriv)[0][0]
+        #Z_idx = np.digitize(metallicity, self.Z_bins)
+        #dMdtau_deriv = - sm.derivative(self.interp_stellar_masses(metallicity), time_chosen[1001:-1000], n=n) #time_chosen[501:-500], n=n) !!!!!!!
+        return -self.mass_by_lifetime_metallicity_loaded(lz,dwrt='lifetime_Gyr') #self.ss.mode(dMdtau_deriv)[0][0]
         
         
 class Infall:
@@ -201,10 +211,84 @@ class Infall:
         '''
         return lambda t: self.aInf() * self.infall_func()(t)
     
+      
+    
+class Greggio05:
+    '''Greggio (2005, A&A 441, 1055G) Single degenerate
+    https://ui.adsabs.harvard.edu/abs/2005A%26A...441.1055G/abstract 
+    
+    tauMS in Gyr'''
+    def __init__(self, tauMS):
+        self.tauMS = tauMS
+        self.K = 0.86 # Valid for Kroupa01, alpha=2.35, gamma=1 of Eq. (16)
+        self.k_alpha = 1.55 # For Kroupa01, 2.83 for Salpeter55
+        self.A_Ia = 1e-3 # For Kroupa01, 5e-4 for Salpeter55
+        self.alpha = 2.35
+        self.gamma = 1
+        self.epsilon = 1 # Represented as solid and dashed lines in Fig. 2 for 1 and 0.5 respectively
+        self.m2 = self.Girardi00_secondary_lifetime()
+        self.m2c = self.m2c_func()
+        self.m2e = self.m2e_func()
+        self.mWDn = self.mWDn_func()
+        self.m1n = self.m1n_func()
+        self.m1i = self.m1i_func()
+        self.n_SD = self.SD_n_m2()
+        self.deriv_m2_abs = self.abs_deriv_m2()
+        self.f_SD_Ia = 10**self.K * self.n_SD * self.deriv_m2_abs #self.f_SD_Ia_func()
         
+    def f_SD_Ia_func(self):
+        val = 10**self.K * self.n_SD * self.deriv_m2_abs
+        if val > 0.:
+            return val
+        else:
+            return 0.
+
+    def Girardi00_secondary_lifetime(self):
+        '''Eq. (12) returns m2'''
+        logtauMS = np.log10(self.tauMS*1e9, where=self.tauMS>0.)
+        #if np.logical_and(self.tauMS> 0.04, self.tauMS< 25):
+        return np.piecewise(logtauMS, [logtauMS==0., logtauMS > 0.], 
+                            [1e-32, 10**(0.0471*logtauMS**2 - 1.2*logtauMS + 7.3)])
+        #else:
+        #    return 1e-32
+        
+    def SD_n_m2(self):
+        '''Distribution function of the secondaries in SNIa progenitor systems
+        obtained by summing over all possible primaries, ranging from 
+        a minimum value (m_{1,i}) to 8 Msun
+        Eq. (16)'''
+        if self.m2<=8:
+            exponent = self.alpha + self.gamma
+            return self.m2**(-self.alpha) * ((self.m2/self.m1i)**exponent - (self.m2/8)**exponent)
+        else:
+            return 0.
+    
+    def m1i_func(self):
+        return np.amax([self.m2, self.m1n])
+    
+    def m1n_func(self):
+        '''Eq. (19)'''
+        return np.amax([2., 2. + 10.*(self.mWDn - 0.6)])
+    
+    def mWDn_func(self):
+        '''Eq. (17)'''
+        return 1.4 - self.epsilon * self.m2e
+    
+    def m2e_func(self):
+        '''right after Eq. (18)'''
+        return self.m2 - self.m2c
+    
+    def m2c_func(self):
+        '''Eq. (18)'''
+        return np.amax([0.3, 0.3 + 0.1*(self.m2-2), 0.15*(self.m2-4)])
+    
+    def abs_deriv_m2(self):
+        return np.power(self.tauMS,-1.44, where=self.tauMS>0.)
+      
+     
 class DTD:
     '''
-    For all delayed time distibutions
+    For all delayed time distibutions (inactive for now)
     '''
     def __init__(self):
         self.A_Ia = .35
@@ -224,6 +308,7 @@ class DTD:
         if self.custom:
             return self.custom
         
+
 class Initial_Mass_Function:
     '''
     CLASS
@@ -241,7 +326,7 @@ class Initial_Mass_Function:
         normalized IMF by calling .IMF() onto the instantiated class
     
     Accepts a custom function 'func'
-    Defaults options are 'Salpeter55', 'Kroupa03', [...]
+    Defaults options are 'Salpeter55', 'Kroupa01', [...]
     '''
     def __init__(self, Ml, Mu, IN, option=None, custom_IMF=None):
         self.Ml = Ml
@@ -249,32 +334,30 @@ class Initial_Mass_Function:
         self.IN = IN
         self.option = self.IN.IMF_option if option is None else option
         self.custom = self.IN.custom_IMF if custom_IMF is None else custom_IMF
+        self.xi0 = self.normalization()
+    
+    def powerlaw(self, Mstar, alpha=2.3):
+        return Mstar**(-alpha)
     
     def Salpeter55(self, plaw=None):
         plaw = self.IN.Salpeter_IMF_Plaw if plaw is None else plaw
-        return lambda Mstar: Mstar ** (-(1 + plaw))
+        return lambda Mstar: self.powerlaw(Mstar, alpha=plaw)
         
-    def canonical_IMF(self, Mstar):
-        if Mstar <= 0.5:
-            plaw = -0.3
-        elif self.mass <= 1.0:
-            plaw = 1.2
-        else:
-            plaw = 1.7
-        return Mstar **(-(1 + plaw))
-        
-    def Kroupa93(self):#, C = 0.31): #if m <= 0.5: lambda m: 0.58 * (m ** -0.30)/m
-        '''
-        Kroupa, Tout & Gilmore (1993)
-        '''
-        return lambda Mstar: self.canonical_IMF(Mstar)
+    def Kroupa01(self, alpha1=1.3, alpha2=2.3, alpha3=2.3):
+        return lambda Mstar: np.piecewise(Mstar, 
+                            [np.logical_or(Mstar < self.IN.Ml_LIMs, Mstar >=  self.IN.Mu_SNCC),
+                             np.logical_and(Mstar >=  self.IN.Ml_LIMs, Mstar < 0.5),
+                             np.logical_and(Mstar >= 0.5, Mstar < 1.),
+                             np.logical_and(Mstar >= 1., Mstar < self.IN.Mu_SNCC)],
+                            [0., 
+                             lambda M: 2 * self.powerlaw(M, alpha=alpha1), 
+                             lambda M: self.powerlaw(M, alpha=alpha2), 
+                             lambda M: self.powerlaw(M, alpha=alpha3)])
         
     def IMF_select(self):
         if not self.custom:
-            if self.option == 'Salpeter55':
-                    return self.Salpeter55()
-            if self.option == 'Kroupa03':
-                    return self.Kroupa03()
+            if self.option == 'Salpeter55': return self.Salpeter55()
+            if self.option == 'Kroupa01' or self.option == 'canonical': return self.Kroupa01()
         if self.custom:
             return self.custom
     
@@ -282,16 +365,37 @@ class Initial_Mass_Function:
         return Mstar * self.IMF_select()(Mstar)
         
     def normalization(self): 
-        return np.reciprocal(scipy.integrate.quad(self.integrand, self.Ml, self.Mu)[0])
+        return np.reciprocal(integr.quad(self.integrand, self.Ml, self.Mu)[0])
 
-    def IMF(self): #!!!!!!!! might not be efficient with the IGIMF
-        return lambda Mstar: self.integrand(Mstar) * self.normalization()
+    def IMF(self): #!!!!!!!! it is missing the time dependence (for the IGIMF or custom IMFs)
+        #return lambda Mstar: self.IMF_select()(Mstar) * self.normalization()
+        return lambda Mstar: self.IMF_select()(Mstar) * self.normalization()
         
+    def massweighted_IMF(self): #!!!!!!!! it is missing the time dependence (for the IGIMF or custom IMFs)
+        #return lambda Mstar: self.IMF_select()(Mstar) * self.normalization()
+        return lambda Mstar: self.integrand(Mstar) * self.normalization()
+    
+    def IMF_fraction(self, Mlow, Mhigh, massweighted=True):
+        '''
+        If massweighted==True, returns the fraction by mass of the stars 
+        within [Mlow, Mhigh] w.r.t. the total mass-weighted IMF.
+        
+        If massweighted==False, computes the same fraction, by number,
+        w.r.t. the IMF.
+        '''
+        if massweighted==True:
+            function = self.massweighted_IMF()
+        else:
+            function = self.IMF()
+        numerator = integr.quad(function, Mlow, Mhigh)[0]
+        denominator = integr.quad(function, self.Ml, self.Mu)[0]
+        return np.divide(numerator, denominator)
+    
     def IMF_test(self):
         '''
         Returns the normalized integrand integral. If the IMF works, it should return 1.
         '''
-        return self.normalization() * scipy.integrate.quad(self.integrand, self.Ml, self.Mu)[0]
+        return self.normalization() * integr.quad(self.integrand, self.Ml, self.Mu)[0]
         
         
 class Star_Formation_Rate:

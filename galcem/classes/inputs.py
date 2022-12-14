@@ -22,14 +22,14 @@ class Inputs:
     def __init__(self):
         '''	applies to the thick disk at 8 kpc '''        
         # Time parameters
-        self.nTimeStep = 0.01 #0.002 #0.01 # Picked to smooth the mapping between stellar masses and lifetimes
+        self.nTimeStep = 0.01 #0.002 #0.01 
         self.numTimeStep = 2000 # Like FM
         self.num_MassGrid = 200
         self.include_channel = ['SNCC', 'LIMs', 'SNIa']
         
         self.age_Galaxy = 13.8 # [Gyr]
         self.age_Sun = 4.6 # [Gyr]
-        self.solar_metallicity = 0.0181 # Asplund et al. (2009, Table 4)
+        self.solar_metallicity = 0.0134 # Asplund et al. (2009, Table 4)
         self.r = 8 # [kpc] Compute around the solar neighborhood
         self.k_SFR = 1
         self.wind_efficiency = 0 # override: no overflow #self.default_params('wind_efficiency', self.morphology)
@@ -70,7 +70,7 @@ class Inputs:
         self.custom_SNIaDTD = None
 
         self.inf_option = None # or 'two-infall'
-        self.IMF_option = 'Salpeter55' #'Kroupa03' #'Kroupa01'  
+        self.IMF_option = 'Kroupa01' #'canonical' #'Salpeter55'  
         self.SFR_option = 'SFRgal' # or 'CSFR'
         self.CSFR_option = None # e.g., 'md14'. 
         self.SNIaDTD_option = 'GreggioRenzini83' # 'RuizMannucci01'
