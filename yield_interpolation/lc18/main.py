@@ -7,7 +7,7 @@ def parse_lc18_raw():
     from .classes import inputs
     IN = inputs.Inputs()
     yield_eps = 1e-13
-    fname = 'galcem/input/yields/sncc/lc18/tab_R/tab_yieldstot_iso_exp_pd.dec'
+    fname = 'galcem/input/yields/sncc/lc18/tab_R/tab_yieldsnet_iso_exp.dec'
     df_raw = pd.read_table(fname,sep=',  ',dtype={'ID': object},
                            header=None,engine='python')
     header_idx = (np.argwhere((df_raw[0]=='ele').to_numpy()).flatten().tolist()
