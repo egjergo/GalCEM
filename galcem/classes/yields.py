@@ -17,7 +17,7 @@ import re
 "    __        Yields (parent class to Yields_*)     "
 "    __        Yields_BBN (subclass)                 "
 "    __        Yields_SNIa (subclass)                "
-"    __        Yields_SNII (subclass)                "
+"    __        Yields_SNCC (subclass)                "
 "    __        Yields_LIMs (subclass)                "
 "                                                    "
 """"""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -207,48 +207,17 @@ class Yields_SNIa(Yields):
                 yields.append(0.)
         self.yields = yields
                 
-class Yields_SNII(Yields):
+class Yields_SNCC(Yields):
     '''
-    Yields by SNII stars, from Limongi & Chieffi (2018) by default.
+    Yields by SNCC stars, from Limongi & Chieffi (2018) by default.
     '''
     def __init__(self, IN, option=None):
         self.IN = IN
-        self.option = self.IN.yields_SNII_option if option is None else option
+        self.option = self.IN.yields_SNCC_option if option is None else option
         self.rotationalVelocity_bins = None
         super().__init__()
  
     def import_yields(self):
-        if self.option == 'lc18old':
-            self.metallicity_bins = np.power(10, [0., -1., -2., -3.])
-            self.rotationalVelocity_bins = [0., 150., 300.]
-            yd = self._dir + '/input/yields/snii/lc18/tab_R/'
-            yieldsT = []
-            yieldsTable = []
-            headers = []
-            
-            with open(yd + 'tab_yieldstot_iso_exp.dec', 'r') as yieldsSNII:
-                for line in yieldsSNII:
-                    if 'ele' not in line:
-                        types = np.concatenate([['<U4', 'i4', 'i4'], (len(headers[-1]) - 3) * ['f8']])
-                        dtypes = list(zip(headers[-1],types))
-                        #l = np.array(line.split())#, dtype=dtypes)
-                        l = line.split()
-                        yieldsT.append(l)
-                    else:
-                        headers.append(line.split())
-                        if yieldsT:
-                            yieldsTable.append(yieldsT)
-                        yieldsT = []
-                yieldsTable.append(yieldsT) 
-                
-            yieldsT = np.array(yieldsTable)    
-            self.tables = np.reshape(yieldsT, (4,3,142,13)) 
-            self.stellarMass_bins = np.array(headers[0][4:], dtype='<U3').astype('float')
-            self.elemZ = self.tables[0,0,:,1].astype('int')
-            self.elemA = self.tables[0,0,:,2].astype('int')
-            self.stellarMassIni = self.tables[:,:,:,3].astype('float')
-            self.yields = self.tables[:,:,:,4:].astype('float') 
-    
         if self.option == 'lc18':
             import re
             import glob
@@ -258,7 +227,7 @@ class Yields_SNII(Yields):
             self.elemA = lc18['a'].values #np.unique(lc18['a'].values)
             self.elemZ = lc18['z'].values #np.unique(lc18['z'].values)
             self.yields_list = glob.glob(lc18_yield_dir+'*.pkl')
-            patternz = "/z(.*?).a"
+            patternz = "/lc18_z(.*?).a"
             z_list = [re.search(patternz, yl).group(1) for yl in self.yields_list]
             searcha = [".a",".irv0"]
             a_list = [yl[yl.find(searcha[0])+len(searcha[0]):yl.find(searcha[1])] for yl in self.yields_list]
@@ -338,7 +307,7 @@ class Yields_LIMs(Yields):
             self.elemA = c15['a'].values #np.unique(c15['a'].values)
             self.elemZ = c15['z'].values #np.unique(c15['z'].values)
             self.yields_list = glob.glob(c15_yield_dir+'*.pkl')
-            patternz = "/z(.*?).a"
+            patternz = "/c15_z(.*?).a"
             z_list = [re.search(patternz, yl).group(1) for yl in self.yields_list]
             searcha = [".a",".irv0"]
             a_list = [yl[yl.find(searcha[0])+len(searcha[0]):yl.find(searcha[1])] for yl in self.yields_list]

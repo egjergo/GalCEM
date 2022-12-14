@@ -55,14 +55,14 @@ class Wi:
         self.Wi_grid_class = Wi_grid(self.metallicity, self.age_idx, self.IN, lifetime_class, self.time_chosen)
         self.MRSN_birthtime_grid, self.MRSN_lifetime_grid, self.MRSN_mass_grid = self.Wi_grid_class.grids(self.IN.Ml_MRSN, self.IN.Mu_MRSN)
         self.NSM_birthtime_grid, self.NSM_lifetime_grid, self.NSM_mass_grid = self.Wi_grid_class.grids(self.IN.Ml_NSM, self.IN.Mu_NSM)
-        self.SNII_birthtime_grid, self.SNII_lifetime_grid, self.SNII_mass_grid = self.Wi_grid_class.grids(self.IN.Ml_SNII, self.IN.Mu_SNII)
+        self.SNCC_birthtime_grid, self.SNCC_lifetime_grid, self.SNCC_mass_grid = self.Wi_grid_class.grids(self.IN.Ml_SNCC, self.IN.Mu_SNCC)
         self.LIMs_birthtime_grid, self.LIMs_lifetime_grid, self.LIMs_mass_grid = self.Wi_grid_class.grids(self.IN.Ml_LIMs, self.IN.Mu_LIMs) # !!!!!!! you should subtract SNIa fraction
         self.SNIa_birthtime_grid, self.SNIa_lifetime_grid, self.SNIa_mass_grid = self.Wi_grid_class.grids(self.IN.Ml_SNIa, self.IN.Mu_SNIa)
         self.yield_load = None
         
     def grid_picker(self, channel_switch, grid_type):
         # Selects e.g. "self.LIMs_birthtime_grid"
-        # channel_switch:        can be 'LIMs', 'SNIa', 'SNII'
+        # channel_switch:        can be 'LIMs', 'SNIa', 'SNCC'
         # grid_type:            can be 'birthtime', 'lifetime', 'mass' 
         return self.__dict__[channel_switch+'_'+grid_type+'_grid']
     
@@ -141,7 +141,7 @@ class Wi:
         integrand = np.multiply(SFR_comp, F_SNIa)
         return integr.simps(integrand, x=birthtime_grid)
  
-    def compute_rate(self, channel_switch='SNII'):
+    def compute_rate(self, channel_switch='SNCC'):
         # Computes the Type II SNae rate 
         birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
         mass_grid = self.grid_picker(channel_switch, 'mass')

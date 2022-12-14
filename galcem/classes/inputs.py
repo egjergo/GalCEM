@@ -25,7 +25,7 @@ class Inputs:
         self.nTimeStep = 0.01 #0.002 #0.01 # Picked to smooth the mapping between stellar masses and lifetimes
         self.numTimeStep = 2000 # Like FM
         self.num_MassGrid = 200
-        self.include_channel = ['SNII', 'LIMs', 'SNIa']
+        self.include_channel = ['SNCC', 'LIMs', 'SNIa']
         
         self.age_Galaxy = 13.8 # [Gyr]
         self.age_Sun = 4.6 # [Gyr]
@@ -54,15 +54,15 @@ class Inputs:
         self.Mu_NSM = 50 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Ml_MRSN = 9 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Mu_MRSN = 50 # [Msun] !!!!!!! temporary. Import from yield tables
-        self.Ml_SNII = 10 # [Msun] !!!!!!! temporary. Import from yield tables
-        self.Mu_SNII = 120 # [Msun] !!!!!!! temporary. Import from yield tables
+        self.Ml_SNCC = 10 # [Msun] !!!!!!! temporary. Import from yield tables
+        self.Mu_SNCC = 120 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Ml_collapsars = 9 # [Msun] !!!!!!! temporary. Import from yield tables
         self.Mu_collapsars = 120 # [Msun] !!!!!!! temporary. Import from yield tables
 
         self.sd = 530.96618 # surf density coefficient for the disk (normalized to the MW mass?) 
         self.MW_SFR = 1.9 #+-0.4 [Msun/yr] from Chomiuk & Povich (2011) Galactic SFR (z=0)
         self.MW_RSNIa = np.divide([1699.5622597959612, 2348.4781118615615, 1013.0199016364531], 1e6/2.8) # 1.4*2 Msun, average SNIa mass
-        self.MW_RSNII = np.divide([7446.483293967046, 10430.201123624402, 4367.610510548821], 1e6/15) # 15 Msun, IMF-averaged mass
+        self.MW_RSNCC = np.divide([7446.483293967046, 10430.201123624402, 4367.610510548821], 1e6/15) # 15 Msun, IMF-averaged mass
         self.Salpeter_IMF_Plaw = 1.35 # IMF Salpeter power law
 
         self.custom_IMF = None
@@ -78,7 +78,7 @@ class Inputs:
         self.yields_NSM_option = 'r14'
         self.yields_MRSN_option = 'n17'
         self.yields_LIMs_option = 'c15'
-        self.yields_SNII_option = 'lc18'
+        self.yields_SNCC_option = 'lc18'
         self.LC18_vel_idx = 0 # !!!!!!! eventually you should write a function to compute this
         self.yields_SNIa_option = 'i99' # 'k20' 
         self.yields_BBN_option = 'gp13'

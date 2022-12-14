@@ -54,8 +54,8 @@ if __name__ == '__main__':
         tf_funs = {
             'mass':lambda x:np.log10(x), 'mass_prime':lambda x:1/(x*np.log(10)),
             'metallicity':lambda x:np.log10(x), 'metallicity_prime':lambda x:1/(x*np.log(10)),
-            #'yield':lambda y:np.log10(np.abs(y)), 'yield_prime':lambda y:1/(np.abs(y)*np.log(10)), 'yield_inv':lambda y:10**np.abs(y),
-            'massfrac':lambda y:np.log10(np.abs(y)), 'massfrac_prime':lambda y:1/(np.abs(y)*np.log(10)), 'massfrac_inv':lambda y:10**np.abs(y),
+            #'yield':lambda y:np.log10(y), 'yield_prime':lambda y:1/(y*np.log(10)), 'yield_inv':lambda y:10**y,
+            'massfrac':lambda y:np.log10(np.abs(y)), 'massfrac_prime':lambda y:1/(y*np.log(10)), 'massfrac_inv':lambda y:10**y,
             #'ysign':lambda y:np.sign(y)
             },
         fit_names = 'all', # 'all', ['c15_z8.a16.irv0.O16'],

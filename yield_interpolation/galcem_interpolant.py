@@ -132,8 +132,11 @@ class GalCemInterpolant(object):
     def __call__(self,dfx,dwrt=None):
         dftf = pd.DataFrame({col:self.tf_funs[col](dfx[col].to_numpy()) for col in self.xcols})
         xtf = dftf[self.xcols].to_numpy()
+        #print(f'{xtf=}')
         yhattf = self.eval_with_grad(xtf,dx=[0,0])
+        #print(f'{yhattf=}')
         yhat = self.tf_funs[self.ycol+'_inv'](yhattf)
+        #print(f'{yhat=}')
         if dwrt is None: return yhat
         # handle derivitives
         x = dfx[self.xcols].to_numpy()
@@ -153,7 +156,9 @@ class GalCemInterpolant(object):
         
     def get_metrics(self,df):
         y = df[self.ycol].to_numpy()
+        print(f'{y=}')
         yhat = self.__call__(df)
+        print(f'{yhat=}')
         eps_abs = np.abs(yhat-y)
         with np.errstate(all='ignore'):
             eps_rel = np.abs(np.divide(eps_abs,y))

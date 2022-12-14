@@ -5,7 +5,7 @@ import os
 
 def parse_lc18_raw():
     yield_eps = 1e-13
-    df_raw = pd.read_table('galcem/input/yields/snii/lc18/tab_R/tab_yieldstot_iso_exp_pd.dec',sep=',  ',dtype={'ID': object},header=None,engine='python')
+    df_raw = pd.read_table('galcem/input/yields/sncc/lc18/tab_R/tab_yieldstot_iso_exp_pd.dec',sep=',  ',dtype={'ID': object},header=None,engine='python')
     header_idxs = np.argwhere((df_raw[0]=='ele').to_numpy()).flatten().tolist()+[len(df_raw)]
     zini_map = {'a':.0181,'b':.00181,'c':.000181,'d':.0000181} # Asplund et al. (2009, Table 4)
     df = pd.DataFrame({'isotope':[],'a':[],'z':[],'yield':[],'mass':[],'metallicity':[],'irv':[]})
