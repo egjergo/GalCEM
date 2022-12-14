@@ -1,4 +1,4 @@
-from yield_interpolation.galcem_interpolant import GalCemInterpolant,fit_isotope_interpolants
+from .yield_interpolation import galcem_interpolant as gcint
 import numpy as np
 import pandas as pd
 import galcem as gc
@@ -70,7 +70,7 @@ if __name__ == '__main__':
     df = parse_lc18_raw()
     df.to_csv(root+'/data.csv',index=False)
     df = df[df['irv']==0]
-    fit_isotope_interpolants(
+    gcint.fit_isotope_interpolants(
         df = df,
         root = root,
         tf_funs = {
