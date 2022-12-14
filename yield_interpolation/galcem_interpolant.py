@@ -9,7 +9,8 @@ class GalCemInterpolant(object):
         
         # initial setup 
         self.ycol = ycol
-        self.xcols = [col for col in list(df.columns) if col!=ycol]
+        self.xcols_all = [col for col in list(df.columns) if col!=ycol]
+        self.xcols = ['metallicity','mass']
         if len(self.xcols)!=2: raise Exception("GalCemInterpolant currently only supports models with 2D domain.")
         self.tf_funs = tf_funs
         self.name = name
@@ -40,6 +41,7 @@ class GalCemInterpolant(object):
         ytf = dftf[self.ycol].to_numpy()
         self.fit(xtf,ytf)       
         self.train_metrics = self.get_metrics(df)
+        
         # optional plotting in transformed space
         if plot is None: return
         dxs = plot
@@ -211,8 +213,8 @@ def fit_isotope_interpolants(df,root,tf_funs,fit_names=[],plot_names=[]):
         if fit_names!='all' and name not in fit_names: continue
         # fit model
         interpolant = LinearAndNearestNeighbor_GCI(
-            df = _df[['metallicity','mass','yield']],
-            ycol = 'yield',
+            df = _df[['metallicity','mass','yield','mass_ej','massfrac','ysign']],
+            ycol = 'massfrac',
             tf_funs = tf_funs,
             name = name,
             plot = [[0,0]] if plot_names=='all' or name in plot_names else None,
