@@ -239,14 +239,14 @@ class Yields_SNCC(Yields):
             self.ZA_list = ZA_list.astype('int')
             
     def construct_yields(self, ZA_sorted):
-        import pickle
+        import dill
         yields = []
         yields_l = pd.Series(self.yields_list, dtype='str')
         for i,val in enumerate(ZA_sorted):
-            pattern = '/z'+ str(val[0]) + '.a' + str(val[1])+'.irv0'
+            pattern = '/lc18_z'+ str(val[0]) + '.a' + str(val[1])+'.irv0'
             select_id = np.where(yields_l.str.contains(pattern))[0]
             if len(select_id) > 0.:
-                yields.append(pickle.load(open(yields_l.iloc[select_id[0]],'rb')))
+                yields.append(dill.load(open(yields_l.iloc[select_id[0]],'rb')))
             else:
                 yields.append(pd.DataFrame(columns=['mass', 'metallicity']))
         self.yields = yields
@@ -319,14 +319,14 @@ class Yields_LIMs(Yields):
             self.ZA_list = ZA_list.astype('int')
             
     def construct_yields(self, ZA_sorted):
-        import pickle
+        import dill
         yields = []
         yields_l = pd.Series(self.yields_list, dtype='str')
         for i,val in enumerate(ZA_sorted):
-            pattern = '/z'+ str(val[0]) + '.a' + str(val[1])+'.irv0'
+            pattern = '/c15_z'+ str(val[0]) + '.a' + str(val[1])+'.irv0'
             select_id = np.where(yields_l.str.contains(pattern))[0]
             if len(select_id) > 0.:
-                yields.append(pickle.load(open(yields_l.iloc[select_id[0]],'rb')))
+                yields.append(dill.load(open(yields_l.iloc[select_id[0]],'rb')))
             else:
                 yields.append(pd.DataFrame(columns=['mass', 'metallicity']))
         self.yields = yields

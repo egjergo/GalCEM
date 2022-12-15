@@ -7,7 +7,7 @@ import os
 class GalCemInterpolant(object):
     def __init__(self,df,ycol,tf_funs={},name='',plot=None,fig_root='./',
                  fig_view_angle=135,colormap=False):
-        
+        import numpy as np
         # initial setup 
         self.ycol = ycol
         self.xcols_all = [col for col in list(df.columns) if col!=ycol]
@@ -240,6 +240,7 @@ class SmootheSpline2D_GCI(GalCemInterpolant):
     
 def fit_isotope_interpolants(df,root,tf_funs,fit_names=[],plot_names=[]):
     # iterate over a,z pairs and save interpolants based on irv=0
+    import numpy as np
     print('\n'+'~'*75+'\n')
     dirname = os.path.basename(root)
     dfs = dict(tuple(df.groupby(['isotope','a','z'])))

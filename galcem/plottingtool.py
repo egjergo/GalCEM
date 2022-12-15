@@ -3,7 +3,7 @@ import time
 from .onezone import Setup
 import numpy as np
 import pandas as pd
-np.seterr(divide = 'ignore') 
+np.seterr(divide='ignore') 
 
 class Plots(Setup):
     """
@@ -370,14 +370,14 @@ class Plots(Setup):
         plt.style.use(self._dir+'/galcem.mplstyle')
         import matplotlib.ticker as ticker
         Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
-        Masses = np.log10(Mass_i[:,2:], where=Mass_i[:,2:]>0.)
+        Masses = np.log10(Mass_i[:,2:])#, where=Mass_i[:,2:]>0.)
         phys = np.loadtxt(self._dir_out + 'phys.dat')
         W_i_comp = pickle.load(open(self._dir_out + 'W_i_comp.pkl','rb'))
         #Mass_MRSN = np.log10(W_i_comp['MRSN'])
-        Mass_BBN = np.log10(W_i_comp['BBN'], where=W_i_comp['BBN']>0.)
-        Mass_SNCC = np.log10(W_i_comp['SNCC'], where=W_i_comp['SNCC']>0.)
-        Mass_AGB = np.log10(W_i_comp['LIMs'], where=W_i_comp['LIMs']>0.)
-        Mass_SNIa = np.log10(W_i_comp['SNIa'], where=W_i_comp['SNIa']>0.)
+        Mass_BBN = np.log10(W_i_comp['BBN'])#, where=W_i_comp['BBN']>0.)
+        Mass_SNCC = np.log10(W_i_comp['SNCC'])#, where=W_i_comp['SNCC']>0.)
+        Mass_AGB = np.log10(W_i_comp['LIMs'])#, where=W_i_comp['LIMs']>0.)
+        Mass_SNIa = np.log10(W_i_comp['SNIa'])#, where=W_i_comp['SNIa']>0.)
         timex = phys[:,0]
         Z = self.ZA_sorted[:,0]
         A = self.ZA_sorted[:,1]
@@ -447,15 +447,15 @@ class Plots(Setup):
         plt.style.use(self._dir+'/galcem.mplstyle')
         import matplotlib.ticker as ticker
         Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
-        Masses = np.log10(Mass_i[:,2:], where=Mass_i[:,2:]>0.)
+        Masses = np.log10(Mass_i[:,2:])#, where=Mass_i[:,2:]>0.)
         phys = np.loadtxt(self._dir_out + 'phys.dat')
         W_i_comp = pickle.load(open(self._dir_out + 'W_i_comp.pkl','rb'))
         #Mass_MRSN = np.log10(W_i_comp['MRSN'], where=W_i_comp['MRSN']>0.)
         yr_rate = IN.nTimeStep * 1e9
-        Mass_BBN = np.log10(W_i_comp['BBN']/yr_rate, where=W_i_comp['BBN']>0., out=np.zeros((W_i_comp['BBN']).shape))
-        Mass_SNCC = np.log10(W_i_comp['SNCC']/yr_rate, where=W_i_comp['SNCC']>0., out=np.zeros((W_i_comp['SNCC']).shape))
-        Mass_AGB = np.log10(W_i_comp['LIMs']/yr_rate, where=W_i_comp['LIMs']>0., out=np.zeros((W_i_comp['LIMs']).shape))
-        Mass_SNIa = np.log10(W_i_comp['SNIa']/yr_rate, where=W_i_comp['SNIa']>0., out=np.zeros((W_i_comp['SNIa']).shape))
+        Mass_BBN = np.log10(W_i_comp['BBN']/yr_rate)#, where=W_i_comp['BBN']>0., out=np.zeros((W_i_comp['BBN']).shape))
+        Mass_SNCC = np.log10(W_i_comp['SNCC']/yr_rate)#, where=W_i_comp['SNCC']>0., out=np.zeros((W_i_comp['SNCC']).shape))
+        Mass_AGB = np.log10(W_i_comp['LIMs']/yr_rate)#, where=W_i_comp['LIMs']>0., out=np.zeros((W_i_comp['LIMs']).shape))
+        Mass_SNIa = np.log10(W_i_comp['SNIa']/yr_rate)#, where=W_i_comp['SNIa']>0., out=np.zeros((W_i_comp['SNIa']).shape))
         timex = phys[:,0]
         Z = self.ZA_sorted[:,0]
         A = self.ZA_sorted[:,1]

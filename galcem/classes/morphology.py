@@ -117,44 +117,24 @@ class Stellar_Lifetimes:
     def __init__(self, IN):
         self.IN = IN
         s_mlz_root = os.path.dirname(__file__)+'/../../yield_interpolation/lifetime_mass_metallicity/'
-        self.Z_names = ['Z0004', 'Z008', 'Z02', 'Z05']
-        self.Z_binned = [0.0004, 0.008, 0.02, 0.05]
-        self.Z_bins = [0.001789, 0.012649, 0.031623] # log-avg'd Z_binned
         self.s_mass = self.IN.s_lifetimes_p98['M'].values
         self.lifetime_by_mass_metallicity_loaded = dill.load(open(s_mlz_root+'models/lifetime_by_mass_metallicity.pkl','rb'))
         self.mass_by_lifetime_metallicity_loaded = dill.load(open(s_mlz_root+'models/mass_by_lifetime_metallicity.pkl','rb'))
     
-    def interp_tau(self, idx):
-        tau = self.IN.s_lifetimes_p98[self.Z_names[idx]] / 1e9
-        return interp.interp1d(self.s_mass, tau)
-    def stellar_lifetimes(self):
-        return [self.interp_tau(ids) for ids in range(4)]
-        
-    def interp_M(self, idx):
-        tau = self.IN.s_lifetimes_p98[self.Z_names[idx]] / 1e9
-        return interp.interp1d(tau, self.s_mass)
-    def stellar_masses(self):
-        return [self.interp_M(idx) for idx in range(4)]
-    
-    def interp_stellar_lifetimes(self, metallicity):
+    def interp_stellar_lifetimes(self, df_mass_metallicity):
         '''Picks the tau(M) interpolation at the appropriate metallicity'''
-        Z_idx = np.digitize(metallicity, self.Z_bins)
-        return self.stellar_lifetimes()[Z_idx]
+        return self.lifetime_by_mass_metallicity_loaded(df_mass_metallicity)
 
-    def interp_stellar_masses(self, metallicity):
+    def interp_stellar_masses(self, df_lifetime_metallicity):
         '''Picks the M(tau) interpolation at the appropriate metallicity'''
-        Z_idx = np.digitize(metallicity, self.Z_bins)
-        return self.stellar_masses()[Z_idx]
+        return self.mass_by_lifetime_metallicity_loaded(df_lifetime_metallicity)
 
-    def dMdtauM(self, lz):#metallicity, time_chosen, n=1):
+    def dMdtauM(self, df_lifetime_metallicity):#, time_chosen, n=1):
         '''
         Computes the first order derivative of the M(tau) function
         with respect to dtau, but multiplied by dtau/dt' = -1
         '''
-        #Z_idx = np.digitize(metallicity, self.Z_bins)
-        #dMdtau_deriv = - sm.derivative(self.interp_stellar_masses(metallicity), time_chosen[1001:-1000], n=n) #time_chosen[501:-500], n=n) !!!!!!!
-        return -self.mass_by_lifetime_metallicity_loaded(lz,dwrt='lifetime_Gyr') #self.ss.mode(dMdtau_deriv)[0][0]
-        
+        return - self.mass_by_lifetime_metallicity_loaded(df_lifetime_metallicity,dwrt='lifetime_Gyr')
         
 class Infall:
     '''

@@ -74,14 +74,14 @@ if __name__ == '__main__':
         df = df,
         root = root,
         tf_funs = {
-            'mass':lambda x:np.log10(x), 
-            'mass_prime':lambda x:1/(x*np.log(10)),
-            'metallicity':lambda x:np.log10(x), 
-            'metallicity_prime':lambda x:1/(x*np.log(10)),
+            'mass':lambda x: np.log10(x), 
+            'mass_prime':lambda x: 1/(x*np.log(10)),
+            'metallicity':lambda x: np.log10(x), 
+            'metallicity_prime':lambda x: 1/(x*np.log(10)),
             'massfrac':lambda y: np.sign(y)*np.abs(y)**(1/3),
             'massfrac_prime':lambda y:1/3*np.sign(y)*np.abs(y)**(-2/3),
             'massfrac_inv':lambda y:np.sign(y)*np.abs(y)**3,
             },
         fit_names = 'all', # 'all', ['lc18_z8.a16.irv0.O16'],
-        plot_names = 'all' # [], 'all', ['lc18_z8.a16.irv0.O16']
+        plot_names = [] # [], 'all', ['lc18_z8.a16.irv0.O16']
         ) 

@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import scipy.interpolate as interp
 import scipy.integrate as integr
 
@@ -16,22 +17,40 @@ import scipy.integrate as integr
 
 class Wi_grid:
     ''' grids for the Wi integral '''
-    def __init__(self, metallicity, age_idx, IN, lifetime_class, time_chosen):
-        self.metallicity = metallicity #* np.ones(IN.num_MassGrid) # !!!!!!!
+    def __init__(self, metallicity, age_idx, IN, lifetime_class, time_chosen, Z_v):
+        self.metallicity = metallicity 
         self.age_idx = age_idx
         self.IN = IN
+        self.Z_v = Z_v
         self.lifetime_class = lifetime_class
         self.time_chosen = time_chosen
 
     def grids(self, Ml_lim, Mu_lim):
-        # Ml_lim and Mu_lim are mass limits
-        # They are converted to lifetimes by integr_lim() in integration_grid()
+        '''
+        Computes the mass, stellar lifetime and birthtime grids
+        employed in the rate intragrals.
+        
+        Ml_lim and Mu_lim are mass limits for each channel.
+        '''
         mass_grid = np.geomspace(Ml_lim, Mu_lim, num = self.IN.num_MassGrid)
-        lifetime_grid = self.lifetime_class.interp_stellar_lifetimes(self.metallicity)(mass_grid) #np.power(10, self.lifetime_class.interp_stellar_lifetimes(mass_grid, self.metallicity))#np.column_stack([mass_grid, self.metallicity * np.ones(len(mass_grid))])))
-        birthtime_grid = self.time_chosen[self.age_idx] - lifetime_grid 
+        df_mz = pd.DataFrame(np.array([mass_grid, np.ones(len(mass_grid))*
+                        self.metallicity]).T, columns=['mass', 'metallicity'])
+        lifetime_grid0 = self.lifetime_class.interp_stellar_lifetimes(df_mz)
+        birthtime_grid0 = self.time_chosen[self.age_idx] - lifetime_grid0 
+        metallicity_grid = self.Z_component(birthtime_grid0)
+        df_mz = pd.DataFrame(np.array([mass_grid, metallicity_grid]).T,
+                             columns=['mass', 'metallicity'])
+        lifetime_grid = self.lifetime_class.interp_stellar_lifetimes(df_mz)
+        birthtime_grid = self.time_chosen[self.age_idx] - lifetime_grid
         positive_idx = np.where(birthtime_grid > 0.)
-        return birthtime_grid[positive_idx], lifetime_grid[positive_idx], mass_grid[positive_idx]
+        return (birthtime_grid[positive_idx], lifetime_grid[positive_idx], 
+                mass_grid[positive_idx])
 
+    def Z_component(self, birthtime_grid):
+        # Returns the interpolated SFR vector computed at the birthtime grids
+        _Z_interp = interp.interp1d(self.time_chosen[:self.age_idx+1],
+                    self.Z_v[:self.age_idx+1], fill_value='extrapolate')
+        return _Z_interp(birthtime_grid) # Linear metallicity
             
 class Wi:
     '''
@@ -52,7 +71,7 @@ class Wi:
         self.ZA_sorted = ZA_sorted
         self.metallicity = self.Z_v[age_idx]
         self.age_idx = age_idx
-        self.Wi_grid_class = Wi_grid(self.metallicity, self.age_idx, self.IN, lifetime_class, self.time_chosen)
+        self.Wi_grid_class = Wi_grid(self.metallicity, self.age_idx, self.IN, lifetime_class, self.time_chosen, self.Z_v)
         self.MRSN_birthtime_grid, self.MRSN_lifetime_grid, self.MRSN_mass_grid = self.Wi_grid_class.grids(self.IN.Ml_MRSN, self.IN.Mu_MRSN)
         self.NSM_birthtime_grid, self.NSM_lifetime_grid, self.NSM_mass_grid = self.Wi_grid_class.grids(self.IN.Ml_NSM, self.IN.Mu_NSM)
         self.SNCC_birthtime_grid, self.SNCC_lifetime_grid, self.SNCC_mass_grid = self.Wi_grid_class.grids(self.IN.Ml_SNCC, self.IN.Mu_SNCC)
@@ -61,41 +80,51 @@ class Wi:
         self.yield_load = None
         
     def grid_picker(self, channel_switch, grid_type):
-        # Selects e.g. "self.LIMs_birthtime_grid"
-        # channel_switch:        can be 'LIMs', 'SNIa', 'SNCC'
-        # grid_type:            can be 'birthtime', 'lifetime', 'mass' 
+        '''
+        Selects e.g. "self.LIMs_birthtime_grid"
+        channel_switch:        can be 'LIMs', 'SNIa', 'SNCC'
+        grid_type:            can be 'birthtime', 'lifetime', 'mass' 
+        '''
         return self.__dict__[channel_switch+'_'+grid_type+'_grid']
     
     def Z_component(self, birthtime_grid):
-        # Returns the interpolated SFR vector computed at the birthtime grids
-        _Z_interp = interp.interp1d(self.time_chosen[:self.age_idx+1], self.Z_v[:self.age_idx+1], fill_value='extrapolate')
+        ''' Returns the interpolated metallicity vector
+        computed at the birthtime grids'''
+        _Z_interp = interp.interp1d(self.time_chosen[:self.age_idx+1], 
+                    self.Z_v[:self.age_idx+1], fill_value='extrapolate')
         return _Z_interp(birthtime_grid) # Linear metallicity
     
     def SFR_component(self, birthtime_grid):
-        # Returns the interpolated SFR vector computed at the birthtime grids
-        SFR_interp = interp.interp1d(self.time_chosen[:self.age_idx+1], self.SFR_v[:self.age_idx+1], fill_value='extrapolate')
+        '''Returns the interpolated SFR vector 
+        computed at the birthtime grids'''
+        SFR_interp = interp.interp1d(self.time_chosen[:self.age_idx+1],
+                    self.SFR_v[:self.age_idx+1], fill_value='extrapolate')
         return SFR_interp(birthtime_grid)
 
     def IMF_component(self, mass_grid):
         # Returns the IMF vector computed at the mass grids
         return self.IMF(mass_grid)
     
-    def dMdtauM_component(self, lifetime_grid, derlog=None): #!!!!!!!
+    def dMdtauM_component(self, lifetime_grid, birthtime_grid, derlog=None):
         # computes the derivative of M(tauM) w.r.t. tauM
         derlog = self.IN.derlog if derlog is None else derlog
         if derlog == False:
-            return self.lifetime_class.dMdtauM(np.log10(lifetime_grid), self.metallicity*np.ones(len(lifetime_grid)))#(lifetime_grid)
+            metallicity_grid = self.Z_component(birthtime_grid)
+            df_lz = pd.DataFrame(np.array([lifetime_grid,
+                            metallicity_grid]).T, columns=['lifetime_Gyr',
+                                                           'metallicity'])
+            return self.lifetime_class.dMdtauM(df_lz)
         if derlog == True:
             return 1   
 
     def yield_component(self, channel_switch, mass_grid, birthtime_grid, vel_idx=None):
         return interpolation(mass_grid, metallicity(birthtime_grid))
     
-    def mass_component(self, channel_switch, mass_grid, lifetime_grid): #
+    def mass_component(self, channel_switch, mass_grid, lifetime_grid, birthtime_grid): #
         # Portinari+98, page 22, last eq. first column
         birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
         IMF_comp = self.IMF_component(mass_grid) # overwrite continuously in __init__
-        return IMF_comp, IMF_comp * self.dMdtauM_component(np.log10(lifetime_grid)) 
+        return IMF_comp, IMF_comp * self.dMdtauM_component(lifetime_grid, birthtime_grid) 
 
     def integr_SNIa(self, mass_grid):
         f_nu = lambda nu: 24 * (1 - nu)**2        
@@ -180,7 +209,7 @@ class Wi:
             birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
             SFR_comp = self.SFR_component(birthtime_grid)
             SFR_comp[SFR_comp<0] = 0.
-            IMF_comp, mass_comp = self.mass_component(channel_switch, mass_grid, lifetime_grid)# 
+            IMF_comp, mass_comp = self.mass_component(channel_switch, mass_grid, lifetime_grid, birthtime_grid) 
             #integrand = np.prod(np.vstack[SFR_comp, mass_comp, self.yield_load[i]])
             integrand = np.prod(np.vstack([SFR_comp, mass_comp]), axis=0)
             #return integr.simps(integrand, x=birthtime_grid)

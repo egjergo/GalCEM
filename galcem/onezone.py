@@ -319,7 +319,6 @@ class OneZone(Setup):
                         if not self.yield_models[ch][i].empty:
                             yield_grid = Z_comps[ch]
                             yield_grid['mass'] = Wi_comps[ch]['mass_grid']
-                            breakpoint()
                             Wi_vals[ch] = integr.simps(np.multiply(
                                 Wi_comps[ch]['integrand'], 
                                 self.yield_models[ch][i](yield_grid)), 
