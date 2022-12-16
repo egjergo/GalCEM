@@ -14,6 +14,7 @@ import time
 import numpy as np
 import pandas as pd
 from .onezone import Setup
+from .classes.inputs import Auxiliary
 np.seterr(divide='ignore') 
 
 class Plots(Setup):
@@ -26,7 +27,11 @@ class Plots(Setup):
         super().__init__(IN, outdir=outdir)
         self.tic.append(time.perf_counter())
         package_loading_time = self.tic[-1]
-        print('Lodaded the plotting class in %.1e seconds.'%package_loading_time)   
+        print('Lodaded the plotting class in %.1e seconds.'%package_loading_time)  
+    
+    def __repr__(self):
+        aux = Auxiliary()
+        return aux.repr(self) 
         
     def plots(self):
         self.tic.append(time.perf_counter())

@@ -24,6 +24,7 @@ import scipy.interpolate as interp
 import scipy.integrate as integr
 import scipy.stats as ss
 
+from ..classes.inputs import Auxiliary
 
 class Infall:
     '''
@@ -52,14 +53,8 @@ class Infall:
         self.option = self.IN.inf_option if option is None else option
     
     def __repr__(self):
-        print('\nThese are the parameter values of the class\n')
-        import json
-        print(json.dumps(self.__dict__, default=str, indent=4))
-        print('\nThese are the class contents\n')
-        contents = [(x, type(x)) for x in self.__dir__() if not x.startswith('__')]
-        return '\n'.join(contents)
-        #return '\n'.join(self.__dir__())
-        #return '\n'.join(self.__doc__)
+        aux = Auxiliary()
+        return aux.repr(self)
     
     def infall_func_simple(self):
         '''
@@ -116,6 +111,10 @@ class Star_Formation_Rate:
         self.option_CSFR = (self.IN.CSFR_option if option_CSFR is None 
                                                 else option_CSFR)
         self.morphology = self.IN.morphology if morph is None else morph
+    
+    def __repr__(self):
+        aux = Auxiliary()
+        return aux.repr(self)
 
     def SFRgal(self, k=None, Mgas=[], Mtot=[], timestep_n=0): 
         ''' Talbot & Arnett (1975)'''
@@ -192,6 +191,10 @@ class Initial_Mass_Function:
         self.option = self.IN.IMF_option if option is None else option
         self.custom = self.IN.custom_IMF if custom_IMF is None else custom_IMF
         self.xi0 = self.normalization()
+    
+    def __repr__(self):
+        aux = Auxiliary()
+        return aux.repr(self)
     
     def powerlaw(self, Mstar, alpha=2.3):
         return Mstar**(-alpha)
@@ -270,6 +273,10 @@ class Stellar_Lifetimes:
         self.lifetime_by_mass_metallicity_loaded = dill.load(open(s_mlz_root+'models/lifetime_by_mass_metallicity.pkl','rb'))
         self.mass_by_lifetime_metallicity_loaded = dill.load(open(s_mlz_root+'models/mass_by_lifetime_metallicity.pkl','rb'))
     
+    def __repr__(self):
+        aux = Auxiliary()
+        return aux.repr(self)
+    
     def interp_stellar_lifetimes(self, df_mass_metallicity):
         '''Picks the tau(M) interpolation at the appropriate metallicity'''
         return self.lifetime_by_mass_metallicity_loaded(df_mass_metallicity)
@@ -308,6 +315,10 @@ class Greggio05:
         self.n_SD = self.SD_n_m2()
         self.deriv_m2_abs = self.abs_deriv_m2()
         self.f_SD_Ia = 10**self.K * self.n_SD * self.deriv_m2_abs #self.f_SD_Ia_func()
+    
+    def __repr__(self):
+        aux = Auxiliary()
+        return aux.repr(self)
         
     def f_SD_Ia_func(self):
         val = 10**self.K * self.n_SD * self.deriv_m2_abs
@@ -369,6 +380,10 @@ class DTD:
         self.A_Ia = .35
         self.t0_Ia = 0.150 # [Gyr]
         self.tau_Ia = 1.1
+    
+    def __repr__(self):
+        aux = Auxiliary()
+        return aux.repr(self)
         
     def MaozMannucci12(self, t):
         if t > self.t0_Ia:
@@ -382,4 +397,3 @@ class DTD:
                     return self.MaozMannucci12()
         if self.custom:
             return self.custom
-

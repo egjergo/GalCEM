@@ -4,6 +4,7 @@ import scipy.interpolate as interp
 import scipy.integrate as integr
 
 from ..classes import morphology as morph
+from ..classes.inputs import Auxiliary
 
 """"""""""""""""""""""""""""""""""""""""""""""""
 "                                              "
@@ -26,6 +27,10 @@ class Wi_grid:
         self.Z_v = Z_v
         self.lifetime_class = lifetime_class
         self.time_chosen = time_chosen
+    
+    def __repr__(self):
+        aux = Auxiliary()
+        return aux.repr(self)
 
     def grids(self, Ml_lim, Mu_lim):
         '''
@@ -35,15 +40,23 @@ class Wi_grid:
         Ml_lim and Mu_lim are mass limits for each channel.
         '''
         mass_grid = np.geomspace(Ml_lim, Mu_lim, num = self.IN.num_MassGrid)
+        
         df_mz = pd.DataFrame(np.array([mass_grid, np.ones(len(mass_grid))*
                         self.metallicity]).T, columns=['mass', 'metallicity'])
         lifetime_grid0 = self.lifetime_class.interp_stellar_lifetimes(df_mz)
         birthtime_grid0 = self.time_chosen[self.age_idx] - lifetime_grid0 
-        metallicity_grid = self.Z_component(birthtime_grid0)
-        df_mz = pd.DataFrame(np.array([mass_grid, metallicity_grid]).T,
-                             columns=['mass', 'metallicity'])
-        lifetime_grid = self.lifetime_class.interp_stellar_lifetimes(df_mz)
-        birthtime_grid = self.time_chosen[self.age_idx] - lifetime_grid
+        metallicity_grid0 = self.Z_component(birthtime_grid0)
+        metallicity_grid = np.ones(len(metallicity_grid0))
+        
+        # Make sure the grid points for the integration converge
+        while not np.allclose(metallicity_grid, metallicity_grid0, equal_nan=False):
+            metallicity_grid0 = metallicity_grid
+            df_mz = pd.DataFrame(np.array([mass_grid, metallicity_grid0]).T,
+                                 columns=['mass', 'metallicity'])
+            lifetime_grid = self.lifetime_class.interp_stellar_lifetimes(df_mz)
+            birthtime_grid = self.time_chosen[self.age_idx] - lifetime_grid
+            metallicity_grid = self.Z_component(birthtime_grid)
+            
         positive_idx = np.where(birthtime_grid > 0.)
         return (birthtime_grid[positive_idx], lifetime_grid[positive_idx], 
                 mass_grid[positive_idx])
@@ -80,6 +93,10 @@ class Wi:
         self.LIMs_birthtime_grid, self.LIMs_lifetime_grid, self.LIMs_mass_grid = self.Wi_grid_class.grids(self.IN.Ml_LIMs, self.IN.Mu_LIMs) # !!!!!!! you should subtract SNIa fraction
         self.SNIa_birthtime_grid, self.SNIa_lifetime_grid, self.SNIa_mass_grid = self.Wi_grid_class.grids(self.IN.Ml_SNIa, self.IN.Mu_SNIa)
         self.yield_load = None
+    
+    def __repr__(self):
+        aux = Auxiliary()
+        return aux.repr(self)
         
     def grid_picker(self, channel_switch, grid_type):
         '''

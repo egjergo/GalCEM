@@ -157,6 +157,10 @@ class Setup:
         self.Rate_SNIa = self.initialize() 
         self.Rate_NSM = self.initialize()
         self.Rate_MRSN = self.initialize() 
+    
+    def __repr__(self):
+        aux = Auxiliary()
+        return aux.repr(self)
    
     def initialize(self,matrix=False):
         if matrix==True:
@@ -178,6 +182,10 @@ class OneZone(Setup):
         self.tic.append(time.process_time())
         package_loading_time = self.tic[-1]
         print('Package lodaded in %.1e seconds.'%package_loading_time)
+    
+    def __repr__(self):
+        aux = Auxiliary()
+        return aux.repr(self)
     
     def main(self):
         ''' Run the OneZone program '''

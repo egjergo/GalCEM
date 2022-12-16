@@ -22,6 +22,7 @@ import pandas as pd
 from pandas.core.common import flatten
 import os
 import re
+from ..classes.inputs import Auxiliary
 
 
 class Isotopes:
@@ -32,6 +33,10 @@ class Isotopes:
         self.elemSymb = self.IN.periodic['elemSymb']
         self.elemName = self.IN.periodic['elemName']
         self.elemA_characteristic = self.IN.periodic['elemA']
+    
+    def __repr__(self):
+        aux = Auxiliary()
+        return aux.repr(self)
     
     def pick_i_by_iso(self, ZA_sorted, elemZ, elemA):
         '''Finds the isotope entry in the isotope list'''
@@ -86,6 +91,10 @@ class Concentrations:
         self.solarA09_vs_Fe_bymass = (self.solarA09_vs_Fe_bynumb + 
                                       self.log10_avg_elem_vs_X(elemZ=26))
         self.asplund3_pd = self.IN.asplund3 
+    
+    def __repr__(self):
+        aux = Auxiliary()
+        return aux.repr(self)
                 
     def log10_avg_elem_vs_X(self, elemZ=1):
         ''' log10(<M all> / <M elemZ>) absolute abundance by mass'''
@@ -136,6 +145,10 @@ class Yields:
         self.metallicityIni = None # Initial stellar metallicity (n.b. not all yields have it!)
         self.stellarMassIni = None # Initial stellar mass (n.b. not all yields have it!)
         self._dir = os.path.join(os.path.dirname( __file__ ), '..')
+    
+    def __repr__(self):
+        aux = Auxiliary()
+        return aux.repr(self)
         
         
 class Yields_BBN(Yields):
@@ -147,6 +160,10 @@ class Yields_BBN(Yields):
         self.option = self.IN.yields_BBN_option if option is None else option
         self.massCol = None
         super().__init__()
+    
+    def __repr__(self):
+        aux = Auxiliary()
+        return aux.repr(self)
         
     def import_yields(self):
         if self.option == 'gp13':
@@ -179,6 +196,10 @@ class Yields_SNIa(Yields):
         self.IN = IN
         self.option = self.IN.yields_SNIa_option if option is None else option
         super().__init__()
+    
+    def __repr__(self):
+        aux = Auxiliary()
+        return aux.repr(self)
         
     def import_yields(self):
         if self.option == 'k20':
@@ -222,6 +243,10 @@ class Yields_SNCC(Yields):
         self.option = self.IN.yields_SNCC_option if option is None else option
         self.rotationalVelocity_bins = None
         super().__init__()
+    
+    def __repr__(self):
+        aux = Auxiliary()
+        return aux.repr(self)
  
     def import_yields(self):
         if self.option == 'lc18':
@@ -263,6 +288,10 @@ class Yields_LIMs(Yields):
         self.option = self.IN.yields_LIMs_option if option is None else option
         self.Returned_stellar_mass = None
         super().__init__()
+    
+    def __repr__(self):
+        aux = Auxiliary()
+        return aux.repr(self)
  
     def is_unique(self, val, split_length):
         it_is = [t[val] for t in self.tables]
@@ -344,6 +373,10 @@ class Yields_MRSN(Yields):
         super().__init__()
         self.yd = self._dir + '/input/yields/mrsn/' + self.option
         self.ejectamass = self.ejecta_mass()
+    
+    def __repr__(self):
+        aux = Auxiliary()
+        return aux.repr(self)
         
     def ejecta_mass(self):
         return pd.read_csv(self.yd + '/ejectamass.dat', sep=',', comment='#')
@@ -388,6 +421,10 @@ class Yields_NSM(Yields):
         super().__init__()
         self.yd = self._dir + '/input/yields/nsm/' + self.option
         self.ejectamass = 0.04 # Rastinejad+22
+    
+    def __repr__(self):
+        aux = Auxiliary()
+        return aux.repr(self)
         
     def import_yields(self):
         #''''''

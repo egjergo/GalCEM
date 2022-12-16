@@ -116,6 +116,10 @@ class Inputs:
         self.asplund3 = pd.read_csv(_dir+'/input/physics/asplund09/table3.dat', sep=',', comment='#')
         self.periodic = pd.read_csv(_dir+'/input/physics/periodicinfo.dat', sep=',', comment='#')
     
+    def __repr__(self):
+        aux = Auxiliary()
+        return aux.repr(self)
+    
     def default_params(self, choice, morphology):
         '''
         Dictionary of dictionaries. Picks default morphology parameters:
@@ -203,6 +207,12 @@ class Inputs:
     
 
 class Auxiliary:
+    def __repr__(self):
+        import json
+        print('\nThese are the class functions:')
+        contents = [x for x in self.__dir__() if not x.startswith('__')]
+        return '\n'.join(contents)
+    
     def varname(self, var, dir=locals()):
         return [ key for key, val in dir.items() if id( val) == id( var)][0]
 
@@ -229,6 +239,24 @@ class Auxiliary:
         m = math.floor((tic[-1] - tic[-2])/60.)
         s = ((tic[-1] - tic[-2])%60.)
         print('%s = %d minutes and %d seconds'%(string,m,s))
+
+    def repr(self, class_self):
+        import json
+        #print('\nThese are the parameter values of the class:')
+        #print(json.dumps(class_self.__dict__, default=str, indent=4))
+        print('\nThese are the class functions:')
+        contents = [x for x in class_self.__dir__() if not x.startswith('__')
+                                              if x not in class_self.__dict__]
+        print(json.dumps(contents, default=str, indent=4))
+        dict_keys = list(class_self.__dict__.keys())
+        dictionary = {}
+        for d in dict_keys: dictionary[d] = type(class_self.__dict__[d])
+        for c in contents: dictionary[c] = type(getattr(class_self, c))
+        repr_dict = {}#d: str(dictionary[d])
+        for i in dictionary.keys(): repr_dict[i] = str(dictionary[i])
+        print("There are the types for all the contents in the class")
+        print(json.dumps(repr_dict, default=str, indent=4))
+        return '\n'.join(repr_dict)
 
     def pick_ZA_sorted_idx(self, ZA_sorted, Z=1,A=1):
         return np.intersect1d(np.where(ZA_sorted[:,0]==Z), np.where(ZA_sorted[:,1]==A))[0]
