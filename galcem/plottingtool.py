@@ -1,8 +1,19 @@
+""""""""""""""""""""""""""""""""""""""""""""""""
+"                                              "
+"       PLOT CLASS FOR SINGLE-ZONE RUNS        "
+"  Contains the plot class to be paired with   " 
+"        the Setup class of onezone.py         "
+"                                              "
+" LIST OF CLASSES:                             "
+"    __        Plots (subclass)                "
+"                                              "
+""""""""""""""""""""""""""""""""""""""""""""""""
+
 import pickle
 import time
-from .onezone import Setup
 import numpy as np
 import pandas as pd
+from .onezone import Setup
 np.seterr(divide='ignore') 
 
 class Plots(Setup):
@@ -270,8 +281,8 @@ class Plots(Setup):
         fig, ax = plt.subplots(1,1, figsize=(7,5))
         ax.plot(gal_time, FeH, color='black', label='[Fe/H]', linewidth=3) 
         ax.axvline(x=self.IN.age_Galaxy-self.IN.age_Sun, linewidth=2, color='orange', label=r'Age$_{\odot}$')
-        ax.plot(self.IN.age_Galaxy +0.5 - FeH_age, a*FeH_age+b, color='red', alpha=1, linewidth=3, label='linear fit on [Fe/H]')
-        ax.scatter(self.IN.age_Galaxy +0.5 - FeH_age, FeH_value, color='red', marker='*', alpha=0.3, label='Silva Aguirre et al. (2018)')
+        ax.plot(self.IN.age_Galaxy - FeH_age, a*FeH_age+b, color='red', alpha=1, linewidth=3, label='linear fit on [Fe/H]')
+        ax.scatter(self.IN.age_Galaxy - FeH_age, FeH_value, color='red', marker='*', alpha=0.3, label='Silva Aguirre et al. (2018)')
         ax.axhline(y=0, linewidth=1, color='orange', linestyle='--')
         #ax.errorbar(self.IN.age_Galaxy - observ['age'], observ['FeH'], yerr=observ['FeHerr'], marker='s', label='Meusinger+91', mfc='gray', ecolor='gray', ls='none')
         ax.legend(loc='lower right', frameon=False, fontsize=17)
@@ -306,8 +317,8 @@ class Plots(Setup):
         ax.plot(gal_time, ZH, color='blue', label='Z', linewidth=3)
         ax.axvline(x=self.IN.age_Galaxy-self.IN.age_Sun, linewidth=2, color='orange', label=r'Age$_{\odot}$')
         ax.axhline(y=0, linewidth=1, color='orange', linestyle='--')
-        ax.plot(self.IN.age_Galaxy +0.5 - metallicity_age, a*metallicity_age+b, color='red', alpha=1, linewidth=3, label='linear fit on [M/H]')
-        ax.scatter(self.IN.age_Galaxy +0.5 - metallicity_age, metallicity_value, color='red', marker='*', alpha=0.3, label='Silva Aguirre et al. (2018)')
+        ax.plot(self.IN.age_Galaxy - metallicity_age, a*metallicity_age+b, color='red', alpha=1, linewidth=3, label='linear fit on [M/H]')
+        ax.scatter(self.IN.age_Galaxy - metallicity_age, metallicity_value, color='red', marker='*', alpha=0.3, label='Silva Aguirre et al. (2018)')
         #ax.errorbar(self.IN.age_Galaxy - observ['age'], observ['FeH'], yerr=observ['FeHerr'], marker='s', label='Meusinger+91', mfc='gray', ecolor='gray', ls='none')
         ax.legend(loc='lower right', frameon=False, fontsize=17)
         ax.set_ylabel(r'metallicity', fontsize=20)

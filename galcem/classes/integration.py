@@ -3,6 +3,8 @@ import pandas as pd
 import scipy.interpolate as interp
 import scipy.integrate as integr
 
+from ..classes import morphology as morph
+
 """"""""""""""""""""""""""""""""""""""""""""""""
 "                                              "
 "             INTEGRATION CLASSES              "

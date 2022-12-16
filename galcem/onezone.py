@@ -1,28 +1,26 @@
-# I only achieve simplicity with enormous effort (Clarice Lispector)
-import time
-import numpy as np
-import pandas as pd
-import scipy.integrate as integr
-from scipy.interpolate import *
-import os
-import pickle
-
-from .classes import morphology as morph
-from .classes import yields as yi
-from .classes import integration as gcint
-
 """"""""""""""""""""""""""""""""""""""""""""""""
 "                                              "
 "      MAIN CLASSES FOR SINGLE-ZONE RUNS       "
-"   Contains classes that solve the integral   " 
-"  part of the integro-differential equations  "
+"       Contains classes that solve the        " 
+"     integro-differential equations of GCE    "
 "                                              "
 " LIST OF CLASSES:                             "
 "    __        Setup (parent)                  "
 "    __        OneZone (subclass)              "
-"    __        Plots (subclass)                "
 "                                              "
 """"""""""""""""""""""""""""""""""""""""""""""""
+
+import os
+import pickle
+import time
+import numpy as np
+import pandas as pd
+import scipy.integrate as integr
+#from scipy.interpolate import *
+from .classes import morphology as morph
+from .classes import yields as yi
+from .classes import integration as gcint
+from .classes.inputs import Auxiliary
 
 class Setup:
     """
@@ -34,8 +32,11 @@ class Setup:
         self._dir_out_figs = self._dir_out + 'figs/'
         os.makedirs(self._dir_out,exist_ok=True)
         os.makedirs(self._dir_out_figs,exist_ok=True)
+        self.morph = morph
+        self.yi = yi
+        self.gcint = gcint
         self.IN = IN
-        self.aux = morph.Auxiliary()
+        self.aux = Auxiliary()
         self.lifetime_class = morph.Stellar_Lifetimes(self.IN)
         
         # Setup
@@ -45,11 +46,14 @@ class Setup:
                                         num = self.IN.num_MassGrid)
         self.time_logspace = np.logspace(np.log10(IN.time_start), 
                                     np.log10(IN.time_end), num=IN.numTimeStep)
-        self.time_uniform = np.arange(self.IN.time_start, self.IN.age_Galaxy,
+        self.time_uniform = np.arange(self.IN.time_start, 
+                            self.IN.age_Galaxy+self.IN.nTimeStep,
                                       self.IN.nTimeStep)
         #self.time_uniform =  np.arange(IN.time_start,IN.time_end,IN.nTimeStep)
         self.time_logspace = np.logspace(np.log10(self.IN.time_start),
                     np.log10(self.IN.age_Galaxy), num=self.IN.numTimeStep)
+        # For now, leave to time_chosen equal to time_uniform. 
+        # Some computations depend on a uniform timestep
         self.time_chosen = self.time_uniform
         self.idx_age_Galaxy = self.aux.find_nearest(self.time_chosen, 
                                                     self.IN.age_Galaxy)
@@ -57,14 +61,14 @@ class Setup:
         # The bulge goes as an inverse square law
         #sigma(t_G) before eq(7). Not used so far !!!!!!!
         surf_density_Galaxy = self.IN.sd / np.exp(self.IN.r / self.IN.Reff)
-        self.infall_class = morph.Infall(self.IN, 
-                        morphology=self.IN.morphology, time=self.time_chosen)
+        self.infall_class = morph.Infall(self.IN, time=self.time_chosen)
         self.infall = self.infall_class.inf()
         self.SFR_class = morph.Star_Formation_Rate(self.IN, self.IN.SFR_option,
                                                    self.IN.custom_SFR)
-        IMF_class = morph.Initial_Mass_Function(self.Ml, self.Mu, self.IN,
+        self.IMF_class = morph.Initial_Mass_Function(self.Ml, self.Mu, self.IN,
                                     self.IN.IMF_option, self.IN.custom_IMF)
-        self.IMF = IMF_class.IMF() #() # Function @ input stellar mass
+        self.IMF = self.IMF_class.IMF() #() # Function @ input stellar mass
+        self.DTD_Ia = np.vectorize(morph.Greggio05) # [func(lifetime)]
         
         # Initialize Yields
         self.iso_class = yi.Isotopes(self.IN)
@@ -138,7 +142,7 @@ class Setup:
         self.returned_Mass_v = self.initialize() 
         self.SFR_v = self.initialize()
         self.f_SNIa_v = self.initialize()
-        # Gass mass (i,j) where the i rows are the isotopes 
+        # Mass_i_v is the gass mass (i,j) where the i rows are the isotopes 
         # and j are the timesteps, [:,j] follows the timesteps
         self.Mass_i_v = self.initialize(matrix=True)
         self.W_i_comp = {ch: self.initialize(matrix=True) 

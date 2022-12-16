@@ -9,7 +9,8 @@ import os
 "    the input parameters to set up a run      " 
 "                                              "
 " LIST OF CLASSES:                             "
-"    __        INPUTS                          "
+"    __        Inputs                          "
+"    __        Auxiliary                       "
 "                                              "
 """"""""""""""""""""""""""""""""""""""""""""""""
 
@@ -32,21 +33,23 @@ class Inputs:
         self.solar_metallicity = 0.0134 # Asplund et al. (2009, Table 4)
         self.r = 8 # [kpc] Compute around the solar neighborhood
         self.k_SFR = 1
-        self.wind_efficiency = 0 # override: no overflow #self.default_params('wind_efficiency', self.morphology)
-
+        
         self.morphology = 'spiral'
         self.M_inf = self.default_params('M_inf', self.morphology)
         self.Reff = self.default_params('Reff', self.morphology)
         self.tau_inf = self.default_params('tau_inf', self.morphology)
         self.nu = self.default_params('nu', self.morphology)
-        
+        self.wind_efficiency = self.default_params('wind_efficiency', 
+                                                   self.morphology)
+        self.wind_efficiency = 0 # override: no overflow
+
         # Fraction of compact objects
-        self.A_SNIa = 0.06 #0.35 # Fraction of white dwarfs that underwent a SNIa
+        self.A_SNIa = 1. # Fixed inside morph.Greggio05() #0.06 # Fraction of white dwarfs that underwent a SNIa
         self.A_NSM = 0.03 #0.06 # Fraction of white dwarfs that underwent a SNIa
         self.A_collapsars = 0.05 #0.06 # Fraction of white dwarfs that underwent a SNIa
 
         # Mass limits
-        self.Ml_SNIa = 3. # Lower limit for total binary mass for SNIae [Msun]
+        self.Ml_SNIa = 1. # Lower limit for total binary mass for SNIae [Msun]
         self.Mu_SNIa = 16 # Upper limit for total binary mass for SNIae [Msun]
         self.Ml_LIMs = 0.07 # [Msun] 
         self.Mu_LIMs = 9 # [Msun] 
@@ -57,7 +60,7 @@ class Inputs:
         self.Ml_SNCC = 10 # [Msun] 
         self.Mu_SNCC = 120 # [Msun] 
         self.Ml_collapsars = 9 # [Msun] 
-        self.Mu_collapsars = 120 # [Msun] 
+        self.Mu_collapsars = 150 # [Msun] 
 
         self.sd = 530.96618 # surf density coefficient for the disk (normalized to the MW mass?) 
         self.MW_SFR = 1.9 #+-0.4 [Msun/yr] from Chomiuk & Povich (2011) Galactic SFR (z=0)
@@ -197,3 +200,84 @@ class Inputs:
         	'UrsaMinor': 11}
         }
         return dictionary[choice][morphology]
+    
+
+class Auxiliary:
+    def varname(self, var, dir=locals()):
+        return [ key for key, val in dir.items() if id( val) == id( var)][0]
+
+    def is_monotonic(self, arr):
+        #print ('for %s'%varname(arr)) 
+        if all(arr[i] <= arr[i + 1] for i in range(len(arr) - 1)): 
+            return "monotone increasing" 
+        elif all(arr[i] >= arr[i + 1] for i in range(len(arr) - 1)):
+            return "monotone decreasing"
+        return "not monotonic array"
+    
+    def find_nearest(self, array, value):
+        '''Returns the index in array s.t. array[idx] is closest to value(float)'''
+        array = np.asarray(array)
+        idx = (np.abs(array - value)).argmin()
+        return idx
+    
+    def deriv(self, func, x, n=1):
+        ''' Returns the nth order derivative of a function '''
+        return sm.derivative(func, x)
+
+    def tic_count(self, string="Computation time", tic=None):
+        tic.append(time.process_time())
+        m = math.floor((tic[-1] - tic[-2])/60.)
+        s = ((tic[-1] - tic[-2])%60.)
+        print('%s = %d minutes and %d seconds'%(string,m,s))
+
+    def pick_ZA_sorted_idx(self, ZA_sorted, Z=1,A=1):
+        return np.intersect1d(np.where(ZA_sorted[:,0]==Z), np.where(ZA_sorted[:,1]==A))[0]
+
+    def age_from_z(self, zf, h = 0.7, OmegaLambda0 = 0.7, Omegam0 = 0.3, Omegar0 = 1e-4, lookback_time = False):
+        '''
+        Finds the age (or lookback time) given a redshift (or scale factor).
+        Assumes flat LCDM. Std cosmology, zero curvature. z0 = 0, a0 = 1.
+        Omegam0 = 0.28 # 0.24 DM + 0.04 baryonic
+        
+        INPUT:    
+        (Deprecated input aem = Float. Scale factor.) #zf = np.reciprocal(np.float(aem))-1
+        (OmegaLambda0 = 0.72, Omegam0 = 0.28)
+        zf  = redshift
+        
+        OUTPUT
+        lookback time.
+        '''
+        H0 = 100 * h * 3.24078e-20 * 3.15570e16 # [ km s^-1 Mpc^-1 * Mpc km^-1 * s Gyr^-1 ]
+        age = scipy.integrate.quad(lambda z: 1 / ( (z + 1) *np.sqrt(OmegaLambda0 + 
+                                Omegam0 * (z+1)**3 + Omegar0 * (z+1)**4) ), 
+                                zf, np.inf)[0] / H0 # Since BB [Gyr]
+        if not lookback_time:
+            return age
+        else:
+            age0 = scipy.ntegrate.quad(lambda z: 1 / ( (z + 1) *np.sqrt(OmegaLambda0 
+                                + Omegam0 * (z+1)**3 + Omegar0 * (z+1)**4) ),
+                                 0, np.inf)[0] / H0 # present time [Gyr]
+            return age0 - age
+
+    def RK4(self, f, t, y, n, h, **kwargs):
+        '''
+        Classic Runge-Kutta 4th order for solving:     dy/dt = f(t,y,n)
+        
+        INPUT
+            f    explicit function
+            t    independent variable
+            y    dependent variable
+            n    timestep index
+            h    timestep width (delta t)
+        
+        RETURN
+            next timestep
+        '''
+        k1 = f(t, y, n, **kwargs)
+        k2 = f(t+0.5*h, y+0.5*h*k1, n, **kwargs)
+        k3 = f(t+0.5*h, y+0.5*h*k2, n, **kwargs)
+        k4 = f(t+h, y+h*k3, n, **kwargs)
+        return y + h * (k1 + 2*k2 + 2*k3 + k4) / 6
+
+    def fastquad(self):
+        "https://stackoverflow.com/questions/65269540/how-can-i-speed-up-scipy-integrate-quad"

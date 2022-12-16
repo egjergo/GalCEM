@@ -1,15 +1,8 @@
-import numpy as np
-import pandas as pd
-from pandas.core.common import flatten
-import os
-import re
-
 """"""""""""""""""""""""""""""""""""""""""""""""""""""
 "                                                    "
 "                YIELDS CLASSES                      "
-" Tracks the contribution by individual events       "
-"       Suggested upgrade:  superclasses             "
-"         for the functions in common                "
+"      Tracks the contribution to the chemical       " 
+"          enrichment by individual events           "
 "                                                    "
 " LIST OF CLASSES:                                   "
 "    __        Isotopes                              "
@@ -19,8 +12,17 @@ import re
 "    __        Yields_SNIa (subclass)                "
 "    __        Yields_SNCC (subclass)                "
 "    __        Yields_LIMs (subclass)                "
+"    __        Yields_MRSN (subclass)                "
+"    __        Yields_NSM (subclass)                 "
 "                                                    "
 """"""""""""""""""""""""""""""""""""""""""""""""""""""
+
+import numpy as np
+import pandas as pd
+from pandas.core.common import flatten
+import os
+import re
+
 
 class Isotopes:
     ''' Handles the isotope and yield selection '''
