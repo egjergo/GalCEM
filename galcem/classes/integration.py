@@ -1,3 +1,4 @@
+#import time
 import numpy as np
 import pandas as pd
 import scipy.interpolate as interp
@@ -48,15 +49,21 @@ class Wi_grid:
         metallicity_grid0 = self.Z_component(birthtime_grid0)
         metallicity_grid = np.ones(len(metallicity_grid0))
         
-        # Make sure the grid points for the integration converge
-        while not np.allclose(metallicity_grid, metallicity_grid0, equal_nan=False):
-            metallicity_grid0 = metallicity_grid
-            df_mz = pd.DataFrame(np.array([mass_grid, metallicity_grid0]).T,
-                                 columns=['mass', 'metallicity'])
-            lifetime_grid = self.lifetime_class.interp_stellar_lifetimes(df_mz)
-            birthtime_grid = self.time_chosen[self.age_idx] - lifetime_grid
-            metallicity_grid = self.Z_component(birthtime_grid)
-            
+        # # Make sure the grid points for the integration converge
+        # to_sec = 30
+        # timeout = time.time() + to_sec 
+        # while not np.allclose(metallicity_grid, metallicity_grid0, equal_nan=False):
+        #     metallicity_grid0 = metallicity_grid
+        df_mz = pd.DataFrame(np.array([mass_grid, metallicity_grid0]).T,
+                                  columns=['mass', 'metallicity'])
+        lifetime_grid = self.lifetime_class.interp_stellar_lifetimes(df_mz)
+        birthtime_grid = self.time_chosen[self.age_idx] - lifetime_grid
+        metallicity_grid = self.Z_component(birthtime_grid)
+        #     if time.time() > timeout:
+        #         print(f"Error: The metallicity grid isn't converging within {to_sec} seconds.")
+        # #         print(f"{metallicity_grid0=}")
+        # #         print(f"{metallicity_grid=}")
+        #         break     
         positive_idx = np.where(birthtime_grid > 0.)
         return (birthtime_grid[positive_idx], lifetime_grid[positive_idx], 
                 mass_grid[positive_idx])

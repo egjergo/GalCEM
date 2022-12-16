@@ -1,7 +1,3 @@
-import numpy as np
-import pandas as pd
-import os
-
 """"""""""""""""""""""""""""""""""""""""""""""""
 "                                              "
 "                  INPUT CLASS                 "
@@ -13,6 +9,13 @@ import os
 "    __        Auxiliary                       "
 "                                              "
 """"""""""""""""""""""""""""""""""""""""""""""""
+
+import os
+import time
+import math
+import numpy as np
+import pandas as pd
+
 
 class Inputs:
     """
