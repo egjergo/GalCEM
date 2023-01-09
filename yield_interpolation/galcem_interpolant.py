@@ -58,9 +58,9 @@ class GalCemInterpolant(object):
             p98_path = 'galcem/input/starlifetime/portinari98table14.dat'
             s_lifet_p98 = pd.read_csv(p98_path)
             s_lifet_p98.columns = [name.replace('#M','M').replace('Z=0.','Z') 
-                                   for name in s_lifet_98.columns]
-            colordots = np.array([s_lifet_98[c].to_numpy() 
-                            for c in s_lifet_98.columns[1:]]).flatten()
+                                   for name in s_lifet_p98.columns]
+            colordots = np.array([s_lifet_p98[c].to_numpy() 
+                            for c in s_lifet_p98.columns[1:]]).flatten()
             colordotstf = colordots
         fig = pyplot.figure(figsize=(12,6*nrows))
         nticks = 257

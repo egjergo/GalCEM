@@ -47,7 +47,7 @@ class Inputs:
         self.wind_efficiency = 0 # override: no overflow
 
         # Fraction of compact objects
-        self.A_SNIa = 1. # Fixed inside morph.Greggio05() #0.06 # Fraction of white dwarfs that underwent a SNIa
+        #self.A_SNIa = 1. # Fixed inside morph.Greggio05() # Fraction of white dwarfs that underwent a SNIa
         self.A_NSM = 0.03 #0.06 # Fraction of white dwarfs that underwent a SNIa
         self.A_collapsars = 0.05 #0.06 # Fraction of white dwarfs that underwent a SNIa
 
@@ -210,6 +210,11 @@ class Inputs:
     
 
 class Auxiliary:
+    '''
+    A collection of auxiliary static methods, 
+    but they're not defined as such because for some reason
+    it slows down the runs.
+    '''
     def __repr__(self):
         import json
         print('\nThese are the class functions:')

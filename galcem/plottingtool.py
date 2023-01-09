@@ -23,8 +23,8 @@ class Plots(Setup):
     """    
     def __init__(self, outdir = 'runs/mygcrun/'):
         self.tic = []
-        IN = pickle.load(open(outdir + 'inputs.pkl','rb'))
-        super().__init__(IN, outdir=outdir)
+        self.IN = pickle.load(open(outdir + 'inputs.pkl','rb'))
+        super().__init__(self.IN, outdir=outdir)
         self.tic.append(time.perf_counter())
         package_loading_time = self.tic[-1]
         print('Lodaded the plotting class in %.1e seconds.'%package_loading_time)  
@@ -177,6 +177,7 @@ class Plots(Setup):
         print('Starting total_evolution_plot()')
         from matplotlib import pyplot as plt
         import matplotlib.ticker as ticker
+        Mfin = self.IN.M_inf
         #plt.style.use(self._dir+'/galcem.mplstyle')
         phys = np.loadtxt(self._dir_out + 'phys.dat')
         Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
@@ -209,11 +210,11 @@ class Plots(Setup):
         axs[0].semilogy(time_plot, Mtot, label=r'$M_{tot}$', linewidth=4, color='black')
         axs[0].semilogy(time_plot, Mstar_v + Mgas_v, label= r'$M_g + M_s$', linewidth=3, linestyle = '--', color='#a9a9a9')
         axs[0].semilogy(time_plot, np.sum(Mass_i[2:4,2:], axis=0), label = r'$M_{He,g}$', linewidth=1, linestyle='--', color='#0073ff')
-        axs[1].semilogy(time_plot[:-1], np.divide(Rate_SNCC[:-1],1e9), label= r'$R_{SNCC}$', color = '#0034ff', linestyle=':', linewidth=3)
-        axs[1].semilogy(time_plot[:-1], np.divide(Rate_SNIa[:-1],1e9), label= r'$R_{SNIa}$', color = '#00b3ff', linestyle=':', linewidth=3)
-        axs[1].semilogy(time_plot[:-1], np.divide(Rate_LIMs[:-1],1e9), label= r'$R_{LIMs}$', color = '#ff00b3', linestyle=':', linewidth=3)
+        axs[1].semilogy(time_plot[:-1], np.divide(Rate_SNCC[:-1],1e9)*Mfin, label= r'$R_{SNCC}$', color = '#0034ff', linestyle=':', linewidth=3)
+        axs[1].semilogy(time_plot[:-1], np.divide(Rate_SNIa[:-1],1e9)*Mfin, label= r'$R_{SNIa}$', color = '#00b3ff', linestyle=':', linewidth=3)
+        axs[1].semilogy(time_plot[:-1], np.divide(Rate_LIMs[:-1],1e9)*Mfin, label= r'$R_{LIMs}$', color = '#ff00b3', linestyle=':', linewidth=3)
         axs[1].semilogy(time_plot[:-1], Infall_rate[:-1], label= r'Infall', color = 'black', linestyle='-', linewidth=3)
-        axs[1].semilogy(time_plot[:-1], SFR_v[:-1], label= r'SFR', color = '#ff8c00', linestyle='--', linewidth=3)
+        axs[1].semilogy(time_plot[:-1], SFR_v[:-1]*Mfin, label= r'SFR', color = '#ff8c00', linestyle='--', linewidth=3)
         axs[0].set_ylim(1e6, 1e11)
         axs[1].set_ylim(1e-3, 1e2)
         axt.set_ylim(1e-3, 1e2)

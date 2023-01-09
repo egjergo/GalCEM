@@ -1,4 +1,4 @@
-#import time
+import time
 import numpy as np
 import pandas as pd
 import scipy.interpolate as interp
@@ -82,13 +82,13 @@ class Wi:
     birthtime (t')     is the stellar birthtime
     lifetime (tau)    is the stellar lifetime
     '''
-    def __init__(self, age_idx, IN, lifetime_class, time_chosen, Z_v, SFR_v, f_SNIa_v, IMF, ZA_sorted):
+    def __init__(self, age_idx, IN, lifetime_class, time_chosen, Z_v, SFR_v, Greggio05_SD, IMF, ZA_sorted):
         self.IN = IN
         self.lifetime_class = lifetime_class
         self.time_chosen = time_chosen
         self.Z_v = Z_v
         self.SFR_v = SFR_v
-        self.f_SNIa_v = f_SNIa_v
+        self.Greggio05_SD = Greggio05_SD
         self.IMF = IMF
         self.ZA_sorted = ZA_sorted
         self.metallicity = self.Z_v[age_idx]
@@ -167,7 +167,7 @@ class Wi:
         #self.f_SNIa_v[self.age_idx] = F_SNIa
         return F_SNIa 
     
-    def compute_rateSNIa(self, channel_switch='SNIa'):
+    def _compute_rateSNIa(self, channel_switch='SNIa'):
         birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
         mass_grid = self.grid_picker(channel_switch, 'mass')
         f_nu = lambda nu: 24 * (1 - nu)**2
@@ -187,14 +187,14 @@ class Wi:
         integrand = np.multiply(SFR_comp, F_SNIa)
         return integr.simps(integrand, x=birthtime_grid)
  
-    def _compute_rateSNIa(self, channel_switch='SNIa'):
-        from .morphology import DTD
-        DTD_class = DTD()
+    def compute_rateSNIa(self, channel_switch='SNIa'):
         birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
+        lifetime_grid = self.grid_picker(channel_switch, 'lifetime')
         SFR_comp = self.SFR_component(birthtime_grid)
-        F_SNIa = [DTD_class.MaozMannucci12(t) for t in birthtime_grid]
+        F_SNIa = np.array([D.f_SD_Ia for D in self.Greggio05_SD(lifetime_grid)])
+        #F_SNIa = [DTD_class.MaozMannucci12(t) for t in lifetime_grid]
         integrand = np.multiply(SFR_comp, F_SNIa)
-        return integr.simps(integrand, x=birthtime_grid)
+        return integr.simps(integrand, x=lifetime_grid)
  
     def compute_rate(self, channel_switch='SNCC'):
         # Computes the Type II SNae rate 
@@ -213,7 +213,7 @@ class Wi:
         if channel_switch == 'SNIa':
             if len(self.grid_picker('SNIa', 'birthtime')) > 0.:
                 #R_SNIa = self.IN.A_SNIa * self.compute_rate(channel_switch='SNIa')
-                return self.IN.A_SNIa * self.compute_rateSNIa()
+                return self.compute_rateSNIa()
             else:
                 return self.IN.epsilon  
         else:

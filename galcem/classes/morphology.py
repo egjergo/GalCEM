@@ -120,14 +120,7 @@ class Star_Formation_Rate:
         ''' Talbot & Arnett (1975)'''
         k = self.IN.k_SFR if k is None else k
         f_g = Mgas[timestep_n] / Mtot[timestep_n]
-        return self.IN.nu  * (Mgas[timestep_n]) * f_g**(k-1) * self.IN.SFR_rescaling
-    
-    
-    def SFR_G(self, k=None, G=[], Mtot=[], timestep_n=0): 
-        ''' Talbot & Arnett (1975)'''
-        k = self.IN.k_SFR if k is None else k
-        return np.multiply(self.IN.nu  * (G[timestep_n])**(k))
-            #/ (Mtot[timestep_n])**(k-1), self.IN.SFR_rescaling)
+        return self.IN.nu  * (Mgas[timestep_n]) * f_g**(k-1) / self.IN.M_inf #* self.IN.SFR_rescaling
     
     def CSFR(self):
         '''
@@ -314,14 +307,14 @@ class Greggio05:
         self.m1i = self.m1i_func()
         self.n_SD = self.SD_n_m2()
         self.deriv_m2_abs = self.abs_deriv_m2()
-        self.f_SD_Ia = 10**self.K * self.n_SD * self.deriv_m2_abs #self.f_SD_Ia_func()
+        self.f_SD_Ia = self.f_SD_Ia_func() #self.k_alpha * self.A_Ia * 10**self.K * self.n_SD * self.deriv_m2_abs 
     
     def __repr__(self):
         aux = Auxiliary()
         return aux.repr(self)
         
     def f_SD_Ia_func(self):
-        val = 10**self.K * self.n_SD * self.deriv_m2_abs
+        val = self.k_alpha * self.A_Ia * 10**self.K * self.n_SD * self.deriv_m2_abs
         if val > 0.:
             return val
         else:

@@ -68,7 +68,8 @@ class Setup:
         self.IMF_class = morph.Initial_Mass_Function(self.Ml, self.Mu, self.IN,
                                     self.IN.IMF_option, self.IN.custom_IMF)
         self.IMF = self.IMF_class.IMF() #() # Function @ input stellar mass
-        self.DTD_Ia = np.vectorize(morph.Greggio05) # [func(lifetime)]
+        self.Greggio05_SD = np.vectorize(morph.Greggio05) # [func(lifetime)]
+        self.f_SNIa_v = np.array([D.f_SD_Ia for D in self.Greggio05_SD(self.time_chosen)])
         
         # Initialize Yields
         self.iso_class = yi.Isotopes(self.IN)
@@ -141,7 +142,6 @@ class Setup:
         self.Mgas_v = self.initialize() 
         self.returned_Mass_v = self.initialize() 
         self.SFR_v = self.initialize()
-        self.f_SNIa_v = self.initialize()
         # Mass_i_v is the gass mass (i,j) where the i rows are the isotopes 
         # and j are the timesteps, [:,j] follows the timesteps
         self.Mass_i_v = self.initialize(matrix=True)
@@ -200,9 +200,9 @@ class OneZone(Setup):
             for key, value in self.IN.__dict__.items(): 
                 if type(value) is pd.DataFrame:
                     with open(self._dir_out + 'inputs.txt', 'a') as ff:
-                        ff.write('\n %s:\n'%(key))
-                    value.to_csv(self._dir_out + 'inputs.txt', mode='a',
-                                 sep='\t', index=True, header=True)
+                        ff.write('\n %s type %s\n'%(key, str(type(value))))
+                    #value.to_csv(self._dir_out + 'inputs.txt', mode='a',
+                    #             sep='\t', index=True, header=True)
         self.evolve()
         self.aux.tic_count(string="Computation time", tic=self.tic)
         G_v = np.divide(self.Mgas_v, self.Mtot)
@@ -245,7 +245,7 @@ class OneZone(Setup):
             if n > 0.: 
                 Wi_class = gcint.Wi(n, self.IN, self.lifetime_class, 
                                     self.time_chosen, self.Z_v, self.SFR_v,
-                              self.f_SNIa_v, self.IMF, self.ZA_sorted)
+                              self.Greggio05_SD, self.IMF, self.ZA_sorted)
                 _rates = Wi_class.compute_rates()
                 self.Rate_SNCC[n] = _rates[0] #!!!!!!! automate
                 self.Rate_LIMs[n] = _rates[1]
@@ -274,12 +274,12 @@ class OneZone(Setup):
         # Explicit general diff eq GCE function
         # Mgas(t)
         #print(f'{self.SFR_tn(n)==self.SFR_v[n]=}')
-        return (self.Infall_rate[n] - self.SFR_tn(n) + np.sum([
+        return (self.Infall_rate[n] - self.SFR_tn(n) * self.IN.M_inf + np.sum([
                 self.W_i_comp[ch][:,n] for ch in self.IN.include_channel]))
     
     def Mstar_func(self, t_n, y_n, n, i=None):
         # Mstar(t)
-        return self.SFR_tn(n) - np.sum([
+        return self.SFR_tn(n) * self.IN.M_inf - np.sum([
                self.W_i_comp[ch][:,n] for ch in self.IN.include_channel])
 
     def SFR_tn(self, timestep_n):
