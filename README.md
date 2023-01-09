@@ -1,7 +1,7 @@
 # GalCEM 
 Modern IPA pronunciation: gálkɛ́m.
 
-Eda Gjergo (Nanjing University) <GalacticCEM@gmail.com>
+Direct queries to Eda Gjergo (Nanjing University) <GalacticCEM@gmail.com>
 
 ![GalCEM flowchart](/docs/figs/GalCEMdiagram.jpg "GalCEM flowchart")
 
