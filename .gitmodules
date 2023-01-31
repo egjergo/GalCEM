@@ -1,0 +1,3 @@
+[submodule "yield_interpolation/FriendlyInterpolants"]
+	path = yield_interpolation/FriendlyInterpolants
+	url = git@github.com:alegresor/FriendlyInterpolants.git
