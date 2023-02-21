@@ -36,11 +36,11 @@ class Infall:
                                     (see examples/mwe.py)
     
     EXAMPLE:
-    >>> import galcem as gc
+    >>> import galcem as glc
     >>> import numpy as np
-    >>> inputs = gc.Inputs()
+    >>> inputs = glc.Inputs()
     >>> time_v = np.arange(0.5,13.8, 0.01)
-    >>> Infall_class = gc.morph.Infall(inputs)
+    >>> Infall_class = glc.morph.Infall(inputs)
     >>> infall_func = Infall_class.inf()
     >>> infall_v = infall_func(time_v)
     
@@ -71,9 +71,7 @@ class Infall:
         return None
     
     def infall_func(self):
-        '''
-        Picks the infall function based on the option
-        '''
+        ''' Picks the infall function based on the option'''
         if not self.option:
             return self.infall_func_simple()
         elif self.option == 'two-infall':
@@ -87,12 +85,10 @@ class Infall:
             inf() and SFR()
         """
         return np.divide(self.IN.M_inf, scipy.integrate.quad(self.infall_func(),
-                             self.time[0], self.IN.age_Galaxy)[0])
+                             self.time[0], self.IN.Galaxy_age)[0])
 
     def inf(self):
-        '''
-        Returns the infall array
-        '''
+        '''Returns the infall array'''
         return lambda t: self.aInf() * self.infall_func()(t)
 
 
@@ -193,40 +189,61 @@ class Initial_Mass_Function:
         return Mstar**(-alpha)
     
     def Salpeter55(self, plaw=None):
-        plaw = self.IN.Salpeter_IMF_Plaw if plaw is None else plaw
+        plaw = self.IN.IMF_single_slope if plaw is None else plaw
         return lambda Mstar: self.powerlaw(Mstar, alpha=plaw)
         
-    def Kroupa01(self, alpha1=1.3, alpha2=2.3, alpha3=2.3):
+    def Kroupa01(self, alpha0=0.3, alpha1=1.3, alpha2=2.3, alpha3=2.3,
+                lim01=0.08, lim12=0.5, lim23=1.):
+        '''lim refer to the mass limits that break the power law'''
         return lambda Mstar: np.piecewise(Mstar, 
-                            [np.logical_or(Mstar < self.IN.Ml_LIMs, Mstar >=  self.IN.Mu_SNCC),
-                             np.logical_and(Mstar >=  self.IN.Ml_LIMs, Mstar < 0.5),
-                             np.logical_and(Mstar >= 0.5, Mstar < 1.),
-                             np.logical_and(Mstar >= 1., Mstar < self.IN.Mu_SNCC)],
+                            [np.logical_or(Mstar < self.Ml, Mstar >= self.Mu),
+                             np.logical_and(Mstar >= self.Ml, Mstar < lim01),
+                             np.logical_and(Mstar >= lim01, Mstar < lim12),
+                             np.logical_and(Mstar >= lim12, Mstar < lim23),
+                             np.logical_and(Mstar >= lim23, Mstar < self.Mu)],
                             [0., 
-                             lambda M: 2 * self.powerlaw(M, alpha=alpha1), 
+                             lambda M: 1/(lim01*lim12) * self.powerlaw(M, alpha=alpha0),
+                             lambda M: 1/lim12 * self.powerlaw(M, alpha=alpha1), 
                              lambda M: self.powerlaw(M, alpha=alpha2), 
                              lambda M: self.powerlaw(M, alpha=alpha3)])
-        
+    
+    def Chabrier03(self, systems=False, alpha=2.3):
+        if systems == False: # for individual stars
+            lognorm = lambda M: (0.158 * (1 / (M * np.log(10))) * 
+                            np.exp(-(np.log10(M) - np.log10(0.08))**2 /(2 * 0.69**2)))
+        else: # for systems (i.e. binaries)
+            lognorm = lambda M: (0.086 * (1 / (M * np.log(10))) *
+                            np.exp(-(np.log10(M) - np.log10(0.22))**2 / (2 * 0.57**2)))
+        return lambda Mstar : np.piecewise(Mstar,
+                            [Mstar < 1.,
+                            Mstar >= 1.],
+                            [lambda M: lognorm(M),
+                            lambda M: lognorm(1) * self.powerlaw(M, alpha=alpha)])
+
     def IMF_select(self):
         if not self.custom:
             if self.option == 'Salpeter55': return self.Salpeter55()
             if self.option == 'Kroupa01' or self.option == 'canonical': return self.Kroupa01()
+            if self.option == 'Chabrier03': return self.Chabrier03()
         if self.custom:
             return self.custom
     
     def integrand(self, Mstar):
+        '''unnormalized mass weighted IMF'''
         return Mstar * self.IMF_select()(Mstar)
         
     def normalization(self): 
         return np.reciprocal(integr.quad(self.integrand, self.Ml, self.Mu)[0])
 
     def IMF(self): #!!!!!!!! it is missing the time dependence (for the IGIMF or custom IMFs)
-        #return lambda Mstar: self.IMF_select()(Mstar) * self.normalization()
-        return lambda Mstar: self.IMF_select()(Mstar) * self.normalization()
+        '''
+        It returns an anonymous function because it is easier to handle in evolve()
+        '''
+        return lambda Mstar: self.IMF_select()(Mstar) * self.xi0
         
     def massweighted_IMF(self): #!!!!!!!! it is missing the time dependence (for the IGIMF or custom IMFs)
-        #return lambda Mstar: self.IMF_select()(Mstar) * self.normalization()
-        return lambda Mstar: self.integrand(Mstar) * self.normalization()
+        #return lambda Mstar: Mstar * self.IMF_select()(Mstar) * self.normalization()
+        return lambda Mstar: self.integrand(Mstar) * self.xi0
     
     def IMF_fraction(self, Mlow, Mhigh, massweighted=True):
         '''
@@ -242,13 +259,15 @@ class Initial_Mass_Function:
             function = self.IMF()
         numerator = integr.quad(function, Mlow, Mhigh)[0]
         denominator = integr.quad(function, self.Ml, self.Mu)[0]
+        print(f'{numerator=}')
+        print(f'{denominator=}')
         return np.divide(numerator, denominator)
     
     def IMF_test(self):
         '''
         Returns the normalized integrand integral. If the IMF works, it should return 1.
         '''
-        return self.normalization() * integr.quad(self.integrand, self.Ml, self.Mu)[0]
+        return self.xi0 * integr.quad(self.integrand, self.Ml, self.Mu)[0]
 
 
 class Stellar_Lifetimes:

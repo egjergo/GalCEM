@@ -198,7 +198,7 @@ class Plots(Setup):
         time_plot = time_chosen
         xscale = '_lin'
         MW_SFR_xcoord = 13.7
-        axs[0].hlines(self.IN.M_inf, 0, self.IN.age_Galaxy, label=r'$M_{gal,f}$', linewidth=1, linestyle = '-.', color='#8c00ff')
+        axs[0].hlines(self.IN.M_inf, 0, self.IN.Galaxy_age, label=r'$M_{gal,f}$', linewidth=1, linestyle = '-.', color='#8c00ff')
         axt.vlines(MW_SFR_xcoord, self.IN.MW_SFR-.4, self.IN.MW_SFR+0.4, label=r'SFR$_{MW}$ CP11', linewidth = 6, linestyle = '-', color='#ff8c00', alpha=0.8)
         axt.vlines(MW_SFR_xcoord, self.IN.MW_RSNCC[2], self.IN.MW_RSNCC[1], label=r'R$_{SNCC,MW}$ M05', linewidth = 6, linestyle = '-', color='#0034ff', alpha=0.8)
         axt.vlines(MW_SFR_xcoord, self.IN.MW_RSNIa[2], self.IN.MW_RSNIa[1], label=r'R$_{SNIa,MW}$ M05', linewidth = 6, linestyle = '-', color='#00b3ff', alpha=0.8)
@@ -286,18 +286,18 @@ class Plots(Setup):
         FeH = np.log10(np.divide(Fe, H)) - solar_norm_H[elemZ]
         fig, ax = plt.subplots(1,1, figsize=(7,5))
         ax.plot(gal_time, FeH, color='black', label='[Fe/H]', linewidth=3) 
-        ax.axvline(x=self.IN.age_Galaxy-self.IN.age_Sun, linewidth=2, color='orange', label=r'Age$_{\odot}$')
-        ax.plot(self.IN.age_Galaxy - FeH_age, a*FeH_age+b, color='red', alpha=1, linewidth=3, label='linear fit on [Fe/H]')
-        ax.scatter(self.IN.age_Galaxy - FeH_age, FeH_value, color='red', marker='*', alpha=0.3, label='Silva Aguirre et al. (2018)')
+        ax.axvline(x=self.IN.Galaxy_age-self.IN.solar_age, linewidth=2, color='orange', label=r'Age$_{\odot}$')
+        ax.plot(self.IN.Galaxy_age - FeH_age, a*FeH_age+b, color='red', alpha=1, linewidth=3, label='linear fit on [Fe/H]')
+        ax.scatter(self.IN.Galaxy_age - FeH_age, FeH_value, color='red', marker='*', alpha=0.3, label='Silva Aguirre et al. (2018)')
         ax.axhline(y=0, linewidth=1, color='orange', linestyle='--')
-        #ax.errorbar(self.IN.age_Galaxy - observ['age'], observ['FeH'], yerr=observ['FeHerr'], marker='s', label='Meusinger+91', mfc='gray', ecolor='gray', ls='none')
+        #ax.errorbar(self.IN.Galaxy_age - observ['age'], observ['FeH'], yerr=observ['FeHerr'], marker='s', label='Meusinger+91', mfc='gray', ecolor='gray', ls='none')
         ax.legend(loc='lower right', frameon=False, fontsize=17)
         ax.set_ylabel(r'['+np.unique(self.ZA_symb_list[elemZ].values)[0]+'/H]', fontsize=20)
         ax.set_xlabel('Galaxy Age [Gyr]', fontsize=20)
         ax.set_ylim(-2,1)
         xscale = '_lin'
         if not logAge:
-            ax.set_xlim(0,self.IN.age_Galaxy)
+            ax.set_xlim(0,self.IN.Galaxy_age)
         else:
             ax.set_xscale('log')
             xscale = '_log'
@@ -321,18 +321,18 @@ class Plots(Setup):
         ZH = np.log10(np.divide(Z, H)/self.IN.solar_metallicity)
         fig, ax = plt.subplots(1,1, figsize=(7,5))
         ax.plot(gal_time, ZH, color='blue', label='Z', linewidth=3)
-        ax.axvline(x=self.IN.age_Galaxy-self.IN.age_Sun, linewidth=2, color='orange', label=r'Age$_{\odot}$')
+        ax.axvline(x=self.IN.Galaxy_age-self.IN.solar_age, linewidth=2, color='orange', label=r'Age$_{\odot}$')
         ax.axhline(y=0, linewidth=1, color='orange', linestyle='--')
-        ax.plot(self.IN.age_Galaxy - metallicity_age, a*metallicity_age+b, color='red', alpha=1, linewidth=3, label='linear fit on [M/H]')
-        ax.scatter(self.IN.age_Galaxy - metallicity_age, metallicity_value, color='red', marker='*', alpha=0.3, label='Silva Aguirre et al. (2018)')
-        #ax.errorbar(self.IN.age_Galaxy - observ['age'], observ['FeH'], yerr=observ['FeHerr'], marker='s', label='Meusinger+91', mfc='gray', ecolor='gray', ls='none')
+        ax.plot(self.IN.Galaxy_age - metallicity_age, a*metallicity_age+b, color='red', alpha=1, linewidth=3, label='linear fit on [M/H]')
+        ax.scatter(self.IN.Galaxy_age - metallicity_age, metallicity_value, color='red', marker='*', alpha=0.3, label='Silva Aguirre et al. (2018)')
+        #ax.errorbar(self.IN.Galaxy_age - observ['age'], observ['FeH'], yerr=observ['FeHerr'], marker='s', label='Meusinger+91', mfc='gray', ecolor='gray', ls='none')
         ax.legend(loc='lower right', frameon=False, fontsize=17)
         ax.set_ylabel(r'metallicity', fontsize=20)
         ax.set_xlabel('Galaxy Age [Gyr]', fontsize=20)
         ax.set_ylim(-2,1)
         xscale = '_lin'
         if not logAge:
-            ax.set_xlim(0,self.IN.age_Galaxy)
+            ax.set_xlim(0,self.IN.Galaxy_age)
         else:
             ax.set_xscale('log')
             xscale = '_log'
@@ -360,22 +360,22 @@ class Plots(Setup):
         fig, ax = plt.subplots(1,1, figsize=(7,5))
         ax.plot(time, NFe, color='magenta', label='[N/Fe]', linewidth=3)
         ax.plot(time, MgFe, color='teal', label='[Mg/Fe]', linewidth=3)
-        ax.axvline(x=self.IN.age_Galaxy-self.IN.age_Sun, linewidth=2, color='orange', label=r'Age$_{\odot}$')
+        ax.axvline(x=self.IN.Galaxy_age-self.IN.solar_age, linewidth=2, color='orange', label=r'Age$_{\odot}$')
         #ax.axhline(y=0, linewidth=1, color='orange', linestyle='--')
-        #ax.plot(self.IN.age_Galaxy +0.5 - metallicity_age, a*metallicity_age+b, color='red', alpha=1, linewidth=3, label='linear fit on [M/H]')
-        #ax.scatter(self.IN.age_Galaxy +0.5 - metallicity_age, metallicity_value, color='red', marker='*', alpha=0.3, label='Silva Aguirre et al. (2018)')
-        #ax.errorbar(self.IN.age_Galaxy - observ['age'], observ['FeH'], yerr=observ['FeHerr'], marker='s', label='Meusinger+91', mfc='gray', ecolor='gray', ls='none')
+        #ax.plot(self.IN.Galaxy_age +0.5 - metallicity_age, a*metallicity_age+b, color='red', alpha=1, linewidth=3, label='linear fit on [M/H]')
+        #ax.scatter(self.IN.Galaxy_age +0.5 - metallicity_age, metallicity_value, color='red', marker='*', alpha=0.3, label='Silva Aguirre et al. (2018)')
+        #ax.errorbar(self.IN.Galaxy_age - observ['age'], observ['FeH'], yerr=observ['FeHerr'], marker='s', label='Meusinger+91', mfc='gray', ecolor='gray', ls='none')
         ax.legend(loc='best', frameon=False, fontsize=17)
         ax.set_ylabel(r'[X/Fe]', fontsize=20)
         ax.set_xlabel('Galaxy Age [Gyr]', fontsize=20)
         ax.set_ylim(-2,1)
         xscale = '_lin'
         if not logAge:
-            ax.set_xlim(0,self.IN.age_Galaxy)
+            ax.set_xlim(0,self.IN.Galaxy_age)
         else:
             ax.set_xscale('log')
             xscale = '_log'
-            ax.set_xlim(2e-2,self.IN.age_Galaxy)
+            ax.set_xlim(2e-2,self.IN.Galaxy_age)
         #ax.set_xlim(1e-2, 1.9e1)
         fig.tight_layout()
         plt.savefig(self._dir_out_figs + 'ind_evolution'+str(xscale)+'.pdf', bbox_inches='tight')

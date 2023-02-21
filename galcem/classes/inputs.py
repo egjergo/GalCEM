@@ -31,11 +31,12 @@ class Inputs:
         self.num_MassGrid = 200
         self.include_channel = ['SNCC', 'LIMs', 'SNIa']
         
-        self.age_Galaxy = 13.8 # [Gyr]
-        self.age_Sun = 4.6 # [Gyr]
+        self.Galaxy_birthtime = 0.1 # [Gyr]
+        self.Galaxy_age = 13.8 # [Gyr]
+        self.solar_age = 4.6 # [Gyr]
         self.solar_metallicity = 0.0134 # Asplund et al. (2009, Table 4)
         self.r = 8 # [kpc] Compute around the solar neighborhood
-        self.k_SFR = 1
+        self.k_SFR = 1 # SFR power law exponent
         
         self.morphology = 'spiral'
         self.M_inf = self.default_params('M_inf', self.morphology)
@@ -44,12 +45,12 @@ class Inputs:
         self.nu = self.default_params('nu', self.morphology)
         self.wind_efficiency = self.default_params('wind_efficiency', 
                                                    self.morphology)
-        self.wind_efficiency = 0 # override: no overflow
+        self.wind_efficiency = 0 # !!!!!!! override: no overflow
 
         # Fraction of compact objects
         #self.A_SNIa = 1. # Fixed inside morph.Greggio05() # Fraction of white dwarfs that underwent a SNIa
-        self.A_NSM = 0.03 #0.06 # Fraction of white dwarfs that underwent a SNIa
-        self.A_collapsars = 0.05 #0.06 # Fraction of white dwarfs that underwent a SNIa
+        self.A_NSM = 0.03 #0.06 # Fraction of neutron stars that underwent an episode of coalescence
+        self.A_collapsars = 0.05 #0.06 # Fraction of massive stars that evolved into collapsars
 
         # Mass limits
         self.Ml_SNIa = 1. # Lower limit for total binary mass for SNIae [Msun]
@@ -67,23 +68,23 @@ class Inputs:
 
         self.sd = 530.96618 # surf density coefficient for the disk (normalized to the MW mass?) 
         self.MW_SFR = 1.9 #+-0.4 [Msun/yr] from Chomiuk & Povich (2011) Galactic SFR (z=0)
-        self.MW_RSNIa = np.divide([1699.5622597959612, 2348.4781118615615, 1013.0199016364531], 1e6/2.8) # 1.4*2 Msun, average SNIa mass
-        self.MW_RSNCC = np.divide([7446.483293967046, 10430.201123624402, 4367.610510548821], 1e6/15) # 15 Msun, IMF-averaged mass
-        self.Salpeter_IMF_Plaw = 1.35 # IMF Salpeter power law
+        self.MW_RSNIa = np.divide([1699.5622597959612, 2348.4781118615615, 1013.0199016364531], 1e6/2.8) # 1.4*2 Msun, average SNIa mass, data from Mannucci et al. (2005) https://ui.adsabs.harvard.edu/abs/2005A%26A...433..807M/abstract
+        self.MW_RSNCC = np.divide([7446.483293967046, 10430.201123624402, 4367.610510548821], 1e6/15) # 15 Msun, IMF-averaged mass, data from Mannucci et al. (2005) https://ui.adsabs.harvard.edu/abs/2005A%26A...433..807M/abstract
+        self.IMF_single_slope = 2.35 # IMF Salpeter power law
 
         self.custom_IMF = None
         self.custom_SFR = None
         self.custom_SNIaDTD = None
 
-        self.inf_option = None # or 'two-infall'
-        self.IMF_option = 'Kroupa01' #'canonical' #'Salpeter55'  
+        self.inf_option = None # None: default exponential decay, or 'two-infall'
+        self.IMF_option = 'Salpeter55' #'canonical', 'Salpeter55', 'Kroupa01'
         self.SFR_option = 'SFRgal' # or 'CSFR'
-        self.CSFR_option = None # e.g., 'md14'. 
-        self.SNIaDTD_option = 'GreggioRenzini83' # 'RuizMannucci01'
+        self.CSFR_option = None # None: no cosmic SFR, e.g. 'md14' for Madau & Dickinson (2014). This requires self.SFR_option='CSFR'
+        self.SNIaDTD_option = 'Greggio05'# !!!!!!! 'GreggioRenzini83' # 'RuizMannucci01'
 
         self.yields_NSM_option = 'r14'
         self.yields_MRSN_option = 'n17'
-        self.yields_LIMs_option = 'c15'
+        self.yields_LIMs_option = 'c15' #'k10'
         self.yields_SNCC_option = 'lc18'
         self.LC18_vel_idx = 0 # !!!!!!! eventually you should write a function to compute this
         self.yields_SNIa_option = 'i99' # 'k20' 
@@ -95,29 +96,13 @@ class Inputs:
         self.derlog = False
         
         _dir = os.path.join(os.path.dirname( __file__ ), '..')
-        p98_t14_df = pd.read_csv(_dir+'/input/starlifetime/portinari98table14.dat')
-        p98_t14_df.columns = [name.replace('#M','mass').replace('Z=','') 
-                                            for name in p98_t14_df.columns]
-        p98_t14_df = pd.melt(p98_t14_df, id_vars='mass', 
-                                        value_vars=list(p98_t14_df.columns[1:]), var_name='metallicity', value_name='lifetimes_yr')
-        p98_t14_df['mass_log10'] = np.log10(p98_t14_df['mass'])
-        p98_t14_df['metallicity'] = p98_t14_df['metallicity'].astype(float)
-        p98_t14_df['lifetimes_log10_Gyr'] = np.log10(p98_t14_df['lifetimes_yr']/1e9)
-        p98_t14_df['lifetimes_Gyr'] = p98_t14_df['lifetimes_yr']/1e9
-        s_lifetimes_p98 = pd.read_csv(_dir+'/input/starlifetime/portinari98table14.dat')
-        s_lifetimes_p98.columns = [name.replace('#M','M').replace('Z=0.','Z') for name in s_lifetimes_p98.columns]
-        self.time_start = np.min([s_lifetimes_p98[Z] for Z in ['Z0004', 'Z008', 'Z02', 'Z05']]) / 1e9 # [Gyr]
-        self.time_end = np.max([s_lifetimes_p98[Z] for Z in ['Z0004', 'Z008', 'Z02', 'Z05']]) / 1e9 # [Gyr]
-        self.s_lifetimes_p98 = s_lifetimes_p98
-        self.p98_t14_df = p98_t14_df
-        
-        self.asplund1 = pd.read_csv(_dir+'/input/physics/asplund09/table1.dat', sep=',', comment='#')
-        self.asplund1['photospheric'] = pd.to_numeric(self.asplund1['photospheric'], errors='coerce')
-        self.asplund1['meteoric'] = pd.to_numeric(self.asplund1['meteoric'], errors='coerce')
-        self.asplund1['P-err'] = pd.to_numeric(self.asplund1['P-err'], errors='coerce')
-        self.asplund1['M-err'] = pd.to_numeric(self.asplund1['M-err'], errors='coerce')
-        self.asplund3 = pd.read_csv(_dir+'/input/physics/asplund09/table3.dat', sep=',', comment='#')
+        self.s_lifetimes_p98 = pd.read_csv(_dir+'/input/starlifetime/portinari98table14.dat')
+        self.s_lifetimes_p98.columns = [name.replace('#M','M').replace('Z=0.','Z') for name in self.s_lifetimes_p98.columns]
         self.periodic = pd.read_csv(_dir+'/input/physics/periodicinfo.dat', sep=',', comment='#')
+        self.asplund3 = pd.read_csv(_dir+'/input/physics/asplund09/table3.dat', sep=',', comment='#')
+        self.asplund1 = pd.read_csv(_dir+'/input/physics/asplund09/table1.dat', sep=',', comment='#')
+        for col in self.asplund1.columns[2:]:
+            self.asplund1[col] = pd.to_numeric(self.asplund1[col], errors='coerce')
     
     def __repr__(self):
         aux = Auxiliary()
@@ -150,64 +135,118 @@ class Inputs:
             'UrsaMinor'
         '''
         dictionary = {
-        'M_inf' : {'elliptical': 5.0e11, 
-            'spiral': 5.0e10,
-            'irregular': 5.5e8,
-            'Fornax': 5.0e8,
-            'Sculptor': 1.0e8,
-            'ReticulumII': 1.0e5,
-            'BootesI': 1.1e7,
-            'Carina': 5.0e8,
-            'Sagittarius': 2.1e9,
-            'Sextan': 5.0e8,
-            'UrsaMinor': 5.0e8},
-        'Reff' : {'elliptical': 7,
-		    'spiral': 3.5,
-		    'irregular': 1,
-            'Fornax': 1, # !!!!!!! Ask!!!!!!! not on the paper
-            'Sculptor': 1,
-            'ReticulumII': 1,
-            'BootesI': 1,
-            'Carina': 1,
-            'Sagittarius': 1,
-            'Sextan': 1,
-            'UrsaMinor': 1},
-        'tau_inf' : {'elliptical': 0.2, 
-           'spiral': 7.,
-           'irregular': 7.,
-           'Fornax': 3,
-           'Sculptor': 0.5,
-           'ReticulumII': 0.05,
-           'BootesI': 0.05,
-           'Carina': 0.5,
-           'Sagittarius': 0.5,
-           'Sextan': 0.5,
-           'UrsaMinor': 0.5},
-        'nu' : {'elliptical': 17., 
-	        'spiral': 1., 
-	        'irregular': 0.1,
-            'Fornax': 0.1,
-            'Sculptor': 0.2,
-            'ReticulumII': 0.01,
-            'BootesI': 0.005,
-            'Carina': 0.15,
-            'Sagittarius': 1,
-            'Sextan': 0.005,
-            'UrsaMinor': 0.05},
-        'wind_efficiency' : {'elliptical': 10, 
-			'spiral': 0.2,
-			'irregular': 0.5,
-        	'Fornax': 1,
-        	'Sculptor': 9,
-        	'ReticulumII': 6,
-        	'BootesI': 12,
-        	'Carina': 5,
-        	'Sagittarius': 9,
-        	'Sextan': 11,
-        	'UrsaMinor': 11}
+            'M_inf' : {
+                'elliptical': 5.0e11, 
+                'spiral': 5.0e10,
+                'irregular': 5.5e8,
+                'Fornax': 5.0e8,
+                'Sculptor': 1.0e8,
+                'ReticulumII': 1.0e5,
+                'BootesI': 1.1e7,
+                'Carina': 5.0e8,
+                'Sagittarius': 2.1e9,
+                'Sextan': 5.0e8,
+                'UrsaMinor': 5.0e8},
+            'Reff' : {
+                'elliptical': 7,
+                'spiral': 3.5,
+                'irregular': 1,
+                'Fornax': 1, # !!!!!!! Ask!!!!!!! not on the paper
+                'Sculptor': 1,
+                'ReticulumII': 1,
+                'BootesI': 1,
+                'Carina': 1,
+                'Sagittarius': 1,
+                'Sextan': 1,
+                'UrsaMinor': 1},
+            'tau_inf' : {
+                'elliptical': 0.2, 
+            'spiral': 7.,
+            'irregular': 7.,
+            'Fornax': 3,
+            'Sculptor': 0.5,
+            'ReticulumII': 0.05,
+            'BootesI': 0.05,
+            'Carina': 0.5,
+            'Sagittarius': 0.5,
+            'Sextan': 0.5,
+            'UrsaMinor': 0.5},
+            'nu' : {
+                'elliptical': 17., 
+                'spiral': 1., 
+                'irregular': 0.1,
+                'Fornax': 0.1,
+                'Sculptor': 0.2,
+                'ReticulumII': 0.01,
+                'BootesI': 0.005,
+                'Carina': 0.15,
+                'Sagittarius': 1,
+                'Sextan': 0.005,
+                'UrsaMinor': 0.05},
+            'wind_efficiency' : {
+                'elliptical': 10, 
+                'spiral': 0.2,
+                'irregular': 0.5,
+                'Fornax': 1,
+                'Sculptor': 9,
+                'ReticulumII': 6,
+                'BootesI': 12,
+                'Carina': 5,
+                'Sagittarius': 9,
+                'Sextan': 11,
+                'UrsaMinor': 11}
         }
         return dictionary[choice][morphology]
     
+    def Mannucci05_SN_rate(self, SNtype, morphology):
+        '''
+        SN rate per century per 10^10 Msun in Galaxy mass
+        Note: The SNII and SNIb/c rate is only expressed as an upper limit
+        
+        From Table 2 of Mannucci et al. (2005) 
+        https://ui.adsabs.harvard.edu/abs/2005A%26A...433..807M/abstract
+        
+        OPTIONS
+            SNtype        'Ia', 'Ib/c', 'II'
+            morphology    'elliptical', 'S0', 'spiral', 'irregular' 
+            
+        RETURNS
+            list          [value, +err, -err]
+        '''
+        dictionary = {
+            'Ia': {
+                'elliptical': [0.044, 0.016, 0.014],
+                'S0':  [0.065, 0.027, 0.025],
+                'spiral': [0.17, 0.068, 0.063],
+                'irregular': [0.77, 0.42, 0.31]
+            },
+            'Ib/c': {
+                'elliptical': [0.0093, 0., 2.],
+                'S0': [0.036, 0.026, 0.018],
+                'spiral': [0.12, 0.074, 0.059],
+                'irregular': [0.54, 0.66, 0.38]
+            },
+            'II': {
+                'elliptical': [0.013, 0., 2.],
+                'S0': [0.12, 0.059, 0.054],
+                'spiral': [0.74, 0.31, 0.3],
+                'irregular': [1.7, 1.4, 1.0]
+            }
+        }
+        return dictionary[SNtype][morphology]
+    
+    def Mannucci05_convert_to_SNrate_yr(self, SNtype, morphology):
+        '''
+        Returns the number of SNae of "SNtype" type, per year,
+        at present day, for the galaxy's final mass.
+        
+        Depends on the Galaxy's final mass, self. M_inf
+        '''
+        to_Gal_fin_mass = self.M_inf /1.e10
+        to_yr = 1.e-2
+        rate = self.Mannucci05_SN_rate(SNtype, morphology)
+        return np.multiply(rate, to_Gal_fin_mass * to_yr)
+        
 
 class Auxiliary:
     '''

@@ -34,9 +34,9 @@ python examples/mwe.py
 ## Run a minimum working example from a Python console:
 
 ```python
-import galcem as gc
+import galcem as glc
 inputs = gc.Inputs()
 inputs.nTimeStep = .25
-oz = gc.OneZone(inputs,outdir='runs/MYDIR/')
+oz = glc.OneZone(inputs,outdir='runs/MYDIR/')
 oz.main()
 ```

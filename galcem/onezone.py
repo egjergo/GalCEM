@@ -40,23 +40,23 @@ class Setup:
         self.lifetime_class = morph.Stellar_Lifetimes(self.IN)
         
         # Setup
-        self.Ml = self.IN.Ml_LIMs # Lower limit stellar mass [Msun] 
-        self.Mu = self.IN.Ml_SNCC # Upper limit stellar mass [Msun]
+        self.Ml = 0.1#self.IN.Ml_LIMs # Lower limit stellar mass [Msun] 
+        self.Mu = 100#self.IN.Mu_collapsars # Upper limit stellar mass [Msun]
         self.mass_uniform = np.linspace(self.Ml, self.Mu, 
                                         num = self.IN.num_MassGrid)
-        self.time_logspace = np.logspace(np.log10(IN.time_start), 
-                                    np.log10(IN.time_end), num=IN.numTimeStep)
-        self.time_uniform = np.arange(self.IN.time_start, 
-                            self.IN.age_Galaxy+self.IN.nTimeStep,
+        self.time_logspace = np.logspace(np.log10(IN.Galaxy_birthtime), 
+                                    np.log10(IN.Galaxy_age), num=IN.numTimeStep)
+        self.time_uniform = np.arange(self.IN.Galaxy_birthtime, 
+                            self.IN.Galaxy_age+self.IN.nTimeStep,
                                       self.IN.nTimeStep)
-        #self.time_uniform =  np.arange(IN.time_start,IN.time_end,IN.nTimeStep)
-        self.time_logspace = np.logspace(np.log10(self.IN.time_start),
-                    np.log10(self.IN.age_Galaxy), num=self.IN.numTimeStep)
+        #self.time_uniform =  np.arange(IN.Galaxy_birthtime,IN.Galaxy_age,IN.nTimeStep)
+        self.time_logspace = np.logspace(np.log10(self.IN.Galaxy_birthtime),
+                    np.log10(self.IN.Galaxy_age), num=self.IN.numTimeStep)
         # For now, leave to time_chosen equal to time_uniform. 
         # Some computations depend on a uniform timestep
         self.time_chosen = self.time_uniform
-        self.idx_age_Galaxy = self.aux.find_nearest(self.time_chosen, 
-                                                    self.IN.age_Galaxy)
+        self.idx_Galaxy_age = self.aux.find_nearest(self.time_chosen, 
+                                                    self.IN.Galaxy_age)
         # Surface density for the disk. 
         # The bulge goes as an inverse square law
         #sigma(t_G) before eq(7). Not used so far !!!!!!!
@@ -233,7 +233,7 @@ class OneZone(Setup):
         #self.file1.write(self.ZA_sorted)
         self.Mass_i_v[:,0] = np.multiply(self.Mtot[0], self.models_BBN)
         self.Mass_i_v[:,1] = np.multiply(self.Mtot[1], self.models_BBN)
-        for n in range(len(self.time_chosen[:self.idx_age_Galaxy])):
+        for n in range(len(self.time_chosen[:self.idx_Galaxy_age])):
             print('time [Gyr] = %.2f'%self.time_chosen[n])
             self.file1.write('n = %d\n'%n)
             self.total_evolution(n)        

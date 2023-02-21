@@ -1,12 +1,3 @@
-import time
-import numpy as np
-import pandas as pd
-import scipy.interpolate as interp
-import scipy.integrate as integr
-
-from ..classes import morphology as morph
-from ..classes.inputs import Auxiliary
-
 """"""""""""""""""""""""""""""""""""""""""""""""
 "                                              "
 "             INTEGRATION CLASSES              "
@@ -18,6 +9,15 @@ from ..classes.inputs import Auxiliary
 "    __        Wi                              "
 "                                              "
 """"""""""""""""""""""""""""""""""""""""""""""""
+import time
+import numpy as np
+import pandas as pd
+import scipy.interpolate as interp
+import scipy.integrate as integr
+
+from ..classes import morphology as morph
+from ..classes.inputs import Auxiliary
+
 
 class Wi_grid:
     ''' grids for the Wi integral '''

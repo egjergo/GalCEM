@@ -1,12 +1,12 @@
 import numpy as np
 import pandas as pd
-import galcem as gc
+import galcem as glc
 import os
 from yield_interpolation.fit_isotope_interpolants import fit_isotope_interpolants
 
 def parse_lc18_raw():
     yield_eps = 1e-13
-    inputs = gc.Inputs()
+    inputs = glc.Inputs()
     Zsun = inputs.solar_metallicity
     df_raw = pd.read_table('galcem/input/yields/sncc/lc18/tab_R/tab_yieldstot_iso_exp_pd.dec',sep=',  ',dtype={'ID': object},header=None,engine='python')
     header_idxs = np.argwhere((df_raw[0]=='ele').to_numpy()).flatten().tolist()+[len(df_raw)]
