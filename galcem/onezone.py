@@ -40,8 +40,8 @@ class Setup:
         self.lifetime_class = morph.Stellar_Lifetimes(self.IN)
         
         # Setup
-        self.Ml = 0.1#self.IN.Ml_LIMs # Lower limit stellar mass [Msun] 
-        self.Mu = 100#self.IN.Mu_collapsars # Upper limit stellar mass [Msun]
+        self.Ml = self.IN.Ml_LIMs # Lower limit stellar mass [Msun] 
+        self.Mu = self.IN.Mu_collapsars # Upper limit stellar mass [Msun]
         self.mass_uniform = np.linspace(self.Ml, self.Mu, 
                                         num = self.IN.num_MassGrid)
         self.time_logspace = np.logspace(np.log10(IN.Galaxy_birthtime), 

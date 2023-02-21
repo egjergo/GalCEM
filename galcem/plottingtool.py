@@ -197,11 +197,10 @@ class Plots(Setup):
         axt = axs[1].twinx()
         time_plot = time_chosen
         xscale = '_lin'
-        MW_SFR_xcoord = 13.7
         axs[0].hlines(self.IN.M_inf, 0, self.IN.Galaxy_age, label=r'$M_{gal,f}$', linewidth=1, linestyle = '-.', color='#8c00ff')
-        axt.vlines(MW_SFR_xcoord, self.IN.MW_SFR-.4, self.IN.MW_SFR+0.4, label=r'SFR$_{MW}$ CP11', linewidth = 6, linestyle = '-', color='#ff8c00', alpha=0.8)
-        axt.vlines(MW_SFR_xcoord, self.IN.MW_RSNCC[2], self.IN.MW_RSNCC[1], label=r'R$_{SNCC,MW}$ M05', linewidth = 6, linestyle = '-', color='#0034ff', alpha=0.8)
-        axt.vlines(MW_SFR_xcoord, self.IN.MW_RSNIa[2], self.IN.MW_RSNIa[1], label=r'R$_{SNIa,MW}$ M05', linewidth = 6, linestyle = '-', color='#00b3ff', alpha=0.8)
+        axt.vlines(self.IN.Galaxy_age, self.IN.MW_SFR-.4, self.IN.MW_SFR+0.4, label=r'SFR$_{MW}$ CP11', linewidth = 6, linestyle = '-', color='#ff8c00', alpha=0.8)
+        axt.vlines(self.IN.Galaxy_age, self.IN.MW_RSNCC[2], self.IN.MW_RSNCC[1], label=r'R$_{SNCC,MW}$ M05', linewidth = 6, linestyle = '-', color='#0034ff', alpha=0.8)
+        axt.vlines(self.IN.Galaxy_age, self.IN.MW_RSNIa[2], self.IN.MW_RSNIa[1], label=r'R$_{SNIa,MW}$ M05', linewidth = 6, linestyle = '-', color='#00b3ff', alpha=0.8)
         axs[0].semilogy(time_plot, Mstar_v, label= r'$M_{star}$', linewidth=3, color='#ff8c00')
         axs[0].semilogy(time_plot, Mgas_v, label= r'$M_{gas}$', linewidth=3, color='#0d00ff')
         axs[0].semilogy(time_plot, np.sum(Mass_i[:,2:], axis=0), label = r'$M_{g,tot,i}$', linewidth=2, linestyle=':', color='#00b3ff')

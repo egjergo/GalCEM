@@ -202,10 +202,7 @@ class Wi:
         mass_grid = self.grid_picker(channel_switch, 'mass')
         SFR_comp = self.SFR_component(birthtime_grid)
         SFR_comp[SFR_comp<0] = 0.
-        if channel_switch == 'SNIa':
-            IMF_comp = self.DTD_SNIa(mass_grid)
-        else:
-            IMF_comp = self.IMF_component(mass_grid)
+        IMF_comp = self.IMF_component(mass_grid)
         integrand = np.multiply(SFR_comp, IMF_comp)
         return integr.simps(integrand, x=mass_grid)
     

@@ -77,7 +77,7 @@ class Inputs:
         self.custom_SNIaDTD = None
 
         self.inf_option = None # None: default exponential decay, or 'two-infall'
-        self.IMF_option = 'Salpeter55' #'canonical', 'Salpeter55', 'Kroupa01'
+        self.IMF_option = 'Kroupa01' #'canonical', 'Salpeter55', 'Kroupa01'
         self.SFR_option = 'SFRgal' # or 'CSFR'
         self.CSFR_option = None # None: no cosmic SFR, e.g. 'md14' for Madau & Dickinson (2014). This requires self.SFR_option='CSFR'
         self.SNIaDTD_option = 'Greggio05'# !!!!!!! 'GreggioRenzini83' # 'RuizMannucci01'
