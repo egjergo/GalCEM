@@ -36,7 +36,7 @@ def fit_lifetime_mass_metallicity_interpolants(df,root):
             'metallicity':lambda x:np.sqrt(x), 'metallicity.prime':lambda x:1/(2*np.sqrt(x)),
             'lifetime_Gyr':lambda y:np.log10(y), 'lifetime_Gyr.prime':lambda y:1/(y*np.log(10)), 'lifetime_Gyr.inv':lambda y:10**y},
         name = 'LifetimeInterpolant',
-        plot = False,#[None,'mass','metallicity'],
+        plot = [None,'mass','metallicity'],#False,
         fig_root = root+'/figs/',
         plot_ops={'scatter':False,'sepfl':0,'sepfr':0,'sepfb':0,'sepft':0},
         plot_mod = plot_mod)
@@ -59,7 +59,7 @@ def fit_lifetime_mass_metallicity_interpolants(df,root):
             'metallicity':lambda x:np.sqrt(x), 'metallicity.prime':lambda x:1/(2*np.sqrt(x)),
             'mass':lambda y:np.log10(y), 'mass.prime':lambda y:1/(y*np.log(10)), 'mass.inv':lambda y:10**y},
         name = 'MassInterpolant',
-        plot = False,#[None,'lifetime_Gyr','metallicity'],
+        plot = [None,'lifetime_Gyr','metallicity'], #False,
         fig_root = root+'/figs/',
         plot_ops={'scatter':False,'sepfl':0,'sepfr':0,'sepfb':0,'sepft':0},
         plot_mod = plot_mod)
