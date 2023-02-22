@@ -4,11 +4,11 @@ import galcem as glc
 import os
 from yield_interpolation.fit_isotope_interpolants import fit_isotope_interpolants
 
-def parse_lc18_raw():
+def parse_lc18_raw(lc18_path='galcem/input/yields/sncc/lc18/tab_R/tab_yieldstot_iso_exp.dec'):
     yield_eps = 1e-13
     inputs = glc.Inputs()
     Zsun = inputs.solar_metallicity
-    df_raw = pd.read_table('galcem/input/yields/sncc/lc18/tab_R/tab_yieldstot_iso_exp_pd.dec',sep=',  ',dtype={'ID': object},header=None,engine='python')
+    df_raw = pd.read_fwf(lc18_path, infer_rows=400, header=None)
     header_idxs = np.argwhere((df_raw[0]=='ele').to_numpy()).flatten().tolist()+[len(df_raw)]
     zini_map = {'a':Zsun,'b':1e-1*Zsun,'c':1e-2*Zsun,'d':1e-3*Zsun} # Asplund et al. (2009, Table 4)
     df = pd.DataFrame({'isotope':[],'a':[],'z':[],'yield':[],'mass':[],'metallicity':[],'irv':[]})

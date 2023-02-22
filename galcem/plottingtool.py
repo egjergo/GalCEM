@@ -55,7 +55,7 @@ class Plots(Setup):
         self.iso_evolution_comp_lelemz_plot()
         self.obs_table()
         #self.ind_evolution_plot()
-        #self.DTD_plot()
+        self.DTD_plot()
         ## self.elem_abundance() # compares and requires multiple runs (IMF & SFR variations)
         self.aux.tic_count(string="Plots saved in", tic=self.tic)
       
@@ -109,9 +109,9 @@ class Plots(Setup):
         print('Starting DTD_plot()')
         from matplotlib import pyplot as plt
         #plt.style.use(self._dir+'/galcem.mplstyle')
-        phys = np.loadtxt(self._dir_out + 'phys.dat')
-        gal_time = phys[:-1,0]
-        DTD_SNIa = phys[:-1,12]
+        phys = pd.read_csv(self._dir_out+'phys.dat', sep=',', comment='#')
+        gal_time = phys['time[Gyr]'].iloc[:-1]
+        DTD_SNIa = phys['DTD_Ia[N/yr]'].iloc[:-1]
         fig, ax = plt.subplots(1,1, figsize=(7,5))
         ax.loglog(time, DTD_SNIa, color='blue', label='SNIa')
         ax.legend(loc='best', frameon=False, fontsize=13)
@@ -120,7 +120,7 @@ class Plots(Setup):
         ax.set_ylim(1e-3,1e0)
         ax.set_xlim(1e-2, 1.9e1)
         fig.tight_layout()
-        plt.savefig(self._dir_out_figs + 'DTD.pdf', bbox_inches='tight')
+        plt.savefig(self._dir_out_figs + 'DTD_SNIa.pdf', bbox_inches='tight')
         
     def lifetimeratio_test_plot(self,colormap='Paired'):
         print('Starting lifetimeratio_test_plot()')
@@ -182,26 +182,26 @@ class Plots(Setup):
         import matplotlib.ticker as ticker
         Mfin = self.IN.M_inf
         #plt.style.use(self._dir+'/galcem.mplstyle')
-        phys = np.loadtxt(self._dir_out + 'phys.dat')
+        phys = pd.read_csv(self._dir_out+'phys.dat', sep=',', comment='#')
         Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
-        time_chosen = phys[:,0]
-        Mtot = phys[:,1]
-        Mgas_v = phys[:,2]
-        Mstar_v = phys[:,3]
-        SFR_v = phys[:,4]
-        Infall_rate = phys[:,5] 
-        Z_v = phys[:,6]
-        G_v = phys[:,7]
-        S_v = phys[:,8] 
-        Rate_SNCC = phys[:,9]
-        Rate_SNIa = phys[:,10]
-        Rate_LIMs = phys[:,11]
+        time_chosen = phys['time[Gyr]']#.iloc[:-1]
+        Mtot = phys['Mtot[Msun]']
+        Mgas_v = phys['Mgas[Msun]']
+        Mstar_v = phys['Mstar[Msun]']
+        SFR_v = phys['SFR[Msun/yr]']
+        Infall_rate = phys['Inf[Msun/yr]'] 
+        Z_v = phys['Zfrac']
+        G_v = phys['Gfrac']
+        S_v = phys['Sfrac'] 
+        Rate_SNCC = phys['R_CC[M/yr]']
+        Rate_SNIa = phys['R_Ia[M/yr]']
+        Rate_LIMs = phys['R_LIMs[M/y]']
         fig, axs = plt.subplots(1, 2, figsize=figsiz)
         axt = axs[1].twinx()
         time_plot = time_chosen
         xscale = '_lin'
         axs[0].hlines(self.IN.M_inf, 0, self.IN.Galaxy_age, label=r'$M_{gal,f}$', linewidth=1, linestyle = '-.', color='#8c00ff')
-        axt.vlines(self.IN.Galaxy_age, self.IN.MW_SFR-.4, self.IN.MW_SFR+0.4, label=r'SFR$_{MW}$ CP11', linewidth = 6, linestyle = '-', color='#ff8c00', alpha=0.8)
+        axt.vlines(self.IN.Galaxy_age, self.IN.MW_SFR-.4, self.IN.MW_SFR+0.4, label=r'SFR$_{MW}$ CP11', linewidth = 7, linestyle = '-', color='#ff8c00', alpha=0.8)
         axt.vlines(self.IN.Galaxy_age, self.IN.MW_RSNCC[2], self.IN.MW_RSNCC[1], label=r'R$_{SNCC,MW}$ M05', linewidth = 6, linestyle = '-', color='#0034ff', alpha=0.8)
         axt.vlines(self.IN.Galaxy_age, self.IN.MW_RSNIa[2], self.IN.MW_RSNIa[1], label=r'R$_{SNIa,MW}$ M05', linewidth = 6, linestyle = '-', color='#00b3ff', alpha=0.8)
         axs[0].semilogy(time_plot, Mstar_v, label= r'$M_{star}$', linewidth=3, color='#ff8c00')
@@ -276,8 +276,8 @@ class Plots(Setup):
         from matplotlib import pyplot as plt
         #plt.style.use(self._dir+'/galcem.mplstyle')
         Z_list = np.unique(self.ZA_sorted[:,0])
-        phys = np.loadtxt(self._dir_out + 'phys.dat')
-        gal_time = phys[c:,0]
+        phys = pd.read_csv(self._dir_out+'phys.dat', sep=',', comment='#')
+        gal_time = phys['time[Gyr]'].iloc[c:]
         solar_norm_H = self.c_class.solarA09_vs_H_bymass[Z_list]
         solar_norm_Fe = self.c_class.solarA09_vs_Fe_bymass[Z_list]
         Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
@@ -312,8 +312,8 @@ class Plots(Setup):
         from matplotlib import pyplot as plt
         #plt.style.use(self._dir+'/galcem.mplstyle')
         Z_list = np.unique(self.ZA_sorted[:,0])
-        phys = np.loadtxt(self._dir_out + 'phys.dat')
-        gal_time = phys[c:,0]
+        phys = pd.read_csv(self._dir_out+'phys.dat', sep=',', comment='#')
+        gal_time = phys['time[Gyr]'].iloc[c:]
         _, _, metallicity_value, metallicity_age = self._age_observations()
         a, b = np.polyfit(metallicity_age, metallicity_value, 1)
         solar_norm_H = self.c_class.solarA09_vs_H_bymass[Z_list]
@@ -348,8 +348,8 @@ class Plots(Setup):
         from matplotlib import pyplot as plt
         #plt.style.use(self._dir+'/galcem.mplstyle')
         Z_list = np.unique(self.ZA_sorted[:,0])
-        phys = np.loadtxt(self._dir_out + 'phys.dat')
-        gal_time = phys[c:,0]
+        phys = pd.read_csv(self._dir_out+'phys.dat', sep=',', comment='#')
+        gal_time = phys['time[Gyr]'].iloc[c:]
        # _, _, metallicity_value, metallicity_age = self._age_observations()
         #a, b = np.polyfit(metallicity_age, metallicity_value, 1)
         solar_norm_Fe = self.c_class.solarA09_vs_Fe_bymass[Z_list]
@@ -390,14 +390,14 @@ class Plots(Setup):
         import matplotlib.ticker as ticker
         Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
         Masses = np.log10(Mass_i[:,2:])#, where=Mass_i[:,2:]>0.)
-        phys = np.loadtxt(self._dir_out + 'phys.dat')
+        phys = pd.read_csv(self._dir_out+'phys.dat', sep=',', comment='#')
+        timex = phys['time[Gyr]']
         W_i_comp = pickle.load(open(self._dir_out + 'W_i_comp.pkl','rb'))
         #Mass_MRSN = np.log10(W_i_comp['MRSN'])
         Mass_BBN = np.log10(W_i_comp['BBN'])#, where=W_i_comp['BBN']>0.)
         Mass_SNCC = np.log10(W_i_comp['SNCC'])#, where=W_i_comp['SNCC']>0.)
         Mass_AGB = np.log10(W_i_comp['LIMs'])#, where=W_i_comp['LIMs']>0.)
         Mass_SNIa = np.log10(W_i_comp['SNIa'])#, where=W_i_comp['SNIa']>0.)
-        timex = phys[:,0]
         Z = self.ZA_sorted[:,0]
         A = self.ZA_sorted[:,1]
         if ncol==None: ncol = np.floor(np.sqrt(lenA)).astype('int')
@@ -467,7 +467,8 @@ class Plots(Setup):
         import matplotlib.ticker as ticker
         Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
         Masses = np.log10(Mass_i[:,2:])#, where=Mass_i[:,2:]>0.)
-        phys = np.loadtxt(self._dir_out + 'phys.dat')
+        phys = pd.read_csv(self._dir_out+'phys.dat', sep=',', comment='#')
+        timex = phys['time[Gyr]']
         W_i_comp = pickle.load(open(self._dir_out + 'W_i_comp.pkl','rb'))
         #Mass_MRSN = np.log10(W_i_comp['MRSN'], where=W_i_comp['MRSN']>0.)
         yr_rate = IN.nTimeStep * 1e9
@@ -475,7 +476,6 @@ class Plots(Setup):
         Mass_SNCC = np.log10(W_i_comp['SNCC']/yr_rate)#, where=W_i_comp['SNCC']>0., out=np.zeros((W_i_comp['SNCC']).shape))
         Mass_AGB = np.log10(W_i_comp['LIMs']/yr_rate)#, where=W_i_comp['LIMs']>0., out=np.zeros((W_i_comp['LIMs']).shape))
         Mass_SNIa = np.log10(W_i_comp['SNIa']/yr_rate)#, where=W_i_comp['SNIa']>0., out=np.zeros((W_i_comp['SNIa']).shape))
-        timex = phys[:,0]
         Z = self.ZA_sorted[:,0]
         A = self.ZA_sorted[:,1]
         if ncol==None: ncol = np.floor(np.sqrt(lenA)).astype('int')

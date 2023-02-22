@@ -13,8 +13,8 @@ def fit_isotope_interpolants(df,root,tf_funs,fit_names=[],plot_names=[]):
         if fit_names!='all' and name not in fit_names: continue
         # fit model
         interpolant = LinearAndNearestNeighbor_FI(
-            df = _df[['metallicity','mass','yield']],
-            ycol = 'yield',
+            df = _df[['metallicity','mass','massfrac']],
+            ycol = 'massfrac',
             tf_funs = tf_funs,
             name = name,
             plot = True if plot_names=='all' or name in plot_names else False,

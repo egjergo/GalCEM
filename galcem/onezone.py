@@ -72,7 +72,7 @@ class Setup:
         self.f_SNIa_v = np.array([D.f_SD_Ia for D in self.Greggio05_SD(self.time_chosen)])
         SNmassfrac = self.IMF_class.IMF_fraction(self.IN.Ml_SNCC, self.IN.Mu_SNCC, massweighted=True)
         SNnfrac = self.IMF_class.IMF_fraction(self.IN.Ml_SNCC, self.IN.Mu_SNCC, massweighted=False)
-        N_IMF = self.IMF_class.IMF_fraction(self.Ml, self.Mu, massweighted=False)
+        N_IMF = integr.quad(self.IMF, self.Ml, self.Mu)[0]
         self.IN.MW_RSNCC = self.IN.Mannucci05_convert_to_SNrate_yr('II', self.IN.morphology, 
                                                            SNmassfrac=SNmassfrac, SNnfrac=SNnfrac, NtotvsMtot=N_IMF)
         N_RSNIa = np.multiply(self.IN.Mannucci05_SN_rate('Ia', self.IN.morphology),
@@ -216,13 +216,24 @@ class OneZone(Setup):
         G_v = np.divide(self.Mgas_v, self.Mtot)
         S_v = 1 - G_v
         print("Saving the output...")
-        #SFR is divided by 1e9 to get the /Gyr to /yr conversion
-        np.savetxt(self._dir_out + 'phys.dat', np.column_stack((
-            self.time_chosen, self.Mtot, self.Mgas_v, self.Mstar_v, 
-            self.SFR_v/1e9, self.Infall_rate/1e9, self.Z_v, G_v, S_v, 
-            self.Rate_SNCC/1e9, self.Rate_SNIa/1e9, self.Rate_LIMs/1e9, 
-            self.f_SNIa_v)), fmt='%-12.4e',  
-            header = 'time[Gyr]    Mtot[Msun]   Mgas[Msun]   Mstar[Msun]  SFR[Msun/yr] Inf[Msun/yr] MZ           Gfrac        Sfrac        R_CC[Msun/yr] R_Ia[Msun/yr] R_LIMs[Msun/yr] DTD_SNIa[event/yr]')
+        phys_dat = {
+            'time[Gyr]'   : self.time_chosen,
+            'Mtot[Msun]'  : self.Mtot, 
+            'Mgas[Msun]'  : self.Mgas_v,
+            'Mstar[Msun]' : self.Mstar_v, 
+            'SFR[Msun/yr]': self.SFR_v/1e9, #/Gyr to /yr conversion
+            'Inf[Msun/yr]': self.Infall_rate/1e9, #/Gyr to /yr conversion
+            'Zfrac'       : self.Z_v,
+            'Gfrac'       : G_v, 
+            'Sfrac'       : S_v, 
+            'R_CC[M/yr]'  : self.Rate_SNCC/1e9,
+            'R_Ia[M/yr]'  : self.Rate_SNIa/1e9,
+            'R_LIMs[M/y]' : self.Rate_LIMs/1e9,
+            'DTD_Ia[N/yr]': self.f_SNIa_v
+        }
+        phys_df = pd.DataFrame(phys_dat)
+        phys_df.to_csv(self._dir_out+'phys.dat', index=False, 
+                       header="phys = pd.read_csv(run_path+'phys.dat', sep=',', comment='#')")
         np.savetxt(self._dir_out+'Mass_i.dat', np.column_stack((
             self.ZA_sorted, self.Mass_i_v)), fmt=' '.join(['%5.i']*2+['%12.4e']
                                                  *self.Mass_i_v[0,:].shape[0]),
