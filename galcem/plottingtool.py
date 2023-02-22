@@ -15,6 +15,8 @@ import numpy as np
 import pandas as pd
 from .onezone import Setup
 from .classes.inputs import Auxiliary
+import warnings
+warnings.filterwarnings("ignore")
 np.seterr(divide='ignore') 
 
 class Plots(Setup):
@@ -23,9 +25,10 @@ class Plots(Setup):
     """    
     def __init__(self, outdir = 'runs/mygcrun/'):
         self.tic = []
+        self.tic.append(time.process_time())
         self.IN = pickle.load(open(outdir + 'inputs.pkl','rb'))
         super().__init__(self.IN, outdir=outdir)
-        self.tic.append(time.perf_counter())
+        self.tic.append(time.process_time())
         package_loading_time = self.tic[-1]
         print('Lodaded the plotting class in %.1e seconds.'%package_loading_time)  
     
@@ -34,7 +37,7 @@ class Plots(Setup):
         return aux.repr(self) 
         
     def plots(self):
-        self.tic.append(time.perf_counter())
+        self.tic.append(time.process_time())
         print('Starting to plot')
         self.FeH_evolution_plot(logAge=True)
         self.Z_evolution_plot(logAge=True)
@@ -209,14 +212,14 @@ class Plots(Setup):
         axs[0].semilogy(time_plot, Mtot, label=r'$M_{tot}$', linewidth=4, color='black')
         axs[0].semilogy(time_plot, Mstar_v + Mgas_v, label= r'$M_g + M_s$', linewidth=3, linestyle = '--', color='#a9a9a9')
         axs[0].semilogy(time_plot, np.sum(Mass_i[2:4,2:], axis=0), label = r'$M_{He,g}$', linewidth=1, linestyle='--', color='#0073ff')
-        axs[1].semilogy(time_plot[:-1], np.divide(Rate_SNCC[:-1],1e9)*Mfin, label= r'$R_{SNCC}$', color = '#0034ff', linestyle=':', linewidth=3)
-        axs[1].semilogy(time_plot[:-1], np.divide(Rate_SNIa[:-1],1e9)*Mfin, label= r'$R_{SNIa}$', color = '#00b3ff', linestyle=':', linewidth=3)
-        axs[1].semilogy(time_plot[:-1], np.divide(Rate_LIMs[:-1],1e9)*Mfin, label= r'$R_{LIMs}$', color = '#ff00b3', linestyle=':', linewidth=3)
+        axs[1].semilogy(time_plot[:-1], Rate_SNCC[:-1], label= r'$R_{SNCC}$', color = '#0034ff', linestyle=':', linewidth=3)
+        axs[1].semilogy(time_plot[:-1], Rate_SNIa[:-1], label= r'$R_{SNIa}$', color = '#00b3ff', linestyle=':', linewidth=3)
+        axs[1].semilogy(time_plot[:-1], Rate_LIMs[:-1], label= r'$R_{LIMs}$', color = '#ff00b3', linestyle=':', linewidth=3)
         axs[1].semilogy(time_plot[:-1], Infall_rate[:-1], label= r'Infall', color = 'black', linestyle='-', linewidth=3)
-        axs[1].semilogy(time_plot[:-1], SFR_v[:-1]*Mfin, label= r'SFR', color = '#ff8c00', linestyle='--', linewidth=3)
-        axs[0].set_ylim(1e6, 1e11)
-        axs[1].set_ylim(1e-3, 1e2)
-        axt.set_ylim(1e-3, 1e2)
+        axs[1].semilogy(time_plot[:-1], SFR_v[:-1], label= r'SFR', color = '#ff8c00', linestyle='--', linewidth=3)
+        #axs[0].set_ylim(1e6, 1e11)
+        #axs[1].set_ylim(1e-3, 1e2)
+        #axt.set_ylim(1e-3, 1e2)
         axt.set_yscale('log')
         if not logAge:
             axs[0].set_xlim(0,13.8)

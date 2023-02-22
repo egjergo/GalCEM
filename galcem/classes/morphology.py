@@ -259,8 +259,6 @@ class Initial_Mass_Function:
             function = self.IMF()
         numerator = integr.quad(function, Mlow, Mhigh)[0]
         denominator = integr.quad(function, self.Ml, self.Mu)[0]
-        print(f'{numerator=}')
-        print(f'{denominator=}')
         return np.divide(numerator, denominator)
     
     def IMF_test(self):

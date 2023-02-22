@@ -70,6 +70,14 @@ class Setup:
         self.IMF = self.IMF_class.IMF() #() # Function @ input stellar mass
         self.Greggio05_SD = np.vectorize(morph.Greggio05) # [func(lifetime)]
         self.f_SNIa_v = np.array([D.f_SD_Ia for D in self.Greggio05_SD(self.time_chosen)])
+        SNmassfrac = self.IMF_class.IMF_fraction(self.IN.Ml_SNCC, self.IN.Mu_SNCC, massweighted=True)
+        SNnfrac = self.IMF_class.IMF_fraction(self.IN.Ml_SNCC, self.IN.Mu_SNCC, massweighted=False)
+        N_IMF = self.IMF_class.IMF_fraction(self.Ml, self.Mu, massweighted=False)
+        self.IN.MW_RSNCC = self.IN.Mannucci05_convert_to_SNrate_yr('II', self.IN.morphology, 
+                                                           SNmassfrac=SNmassfrac, SNnfrac=SNnfrac, NtotvsMtot=N_IMF)
+        N_RSNIa = np.multiply(self.IN.Mannucci05_SN_rate('Ia', self.IN.morphology),
+                              1.4 * self.IN.M_inf /1.e10 * 1e-2) # 1.4 Msun for Chandrasekhar's limit (SD scenario) 
+        self.IN.MW_RSNIa = np.array([N_RSNIa[0], N_RSNIa[0]+ N_RSNIa[1], N_RSNIa[0] - N_RSNIa[2]])
         
         # Initialize Yields
         self.iso_class = yi.Isotopes(self.IN)
@@ -212,17 +220,17 @@ class OneZone(Setup):
         np.savetxt(self._dir_out + 'phys.dat', np.column_stack((
             self.time_chosen, self.Mtot, self.Mgas_v, self.Mstar_v, 
             self.SFR_v/1e9, self.Infall_rate/1e9, self.Z_v, G_v, S_v, 
-            self.Rate_SNCC, self.Rate_SNIa, self.Rate_LIMs, 
+            self.Rate_SNCC/1e9, self.Rate_SNIa/1e9, self.Rate_LIMs/1e9, 
             self.f_SNIa_v)), fmt='%-12.4e',  
-            header = ' (0) time_chosen [Gyr]    (1) Mtot [Msun]    (2) Mgas_v [Msun]    (3) Mstar_v [Msun]    (4) SFR_v [Msun/yr]    (5)Infall_v [Msun/yr]    (6) Z_v    (7) G_v    (8) S_v     (9) Rate_SNCC     (10) Rate_SNIa     (11) Rate_LIMs     (12) DTD SNIa')
+            header = 'time[Gyr]    Mtot[Msun]   Mgas[Msun]   Mstar[Msun]  SFR[Msun/yr] Inf[Msun/yr] MZ           Gfrac        Sfrac        R_CC[Msun/yr] R_Ia[Msun/yr] R_LIMs[Msun/yr] DTD_SNIa[event/yr]')
         np.savetxt(self._dir_out+'Mass_i.dat', np.column_stack((
             self.ZA_sorted, self.Mass_i_v)), fmt=' '.join(['%5.i']*2+['%12.4e']
                                                  *self.Mass_i_v[0,:].shape[0]),
-                header = ' (0) elemZ,    (1) elemA,    (2) masses [Msun] of every isotope for every timestep')
+                header = 'elemZ    elemA    masses[Msun] # of every isotope for every timestep')
         np.savetxt(self._dir_out+'X_i.dat', np.column_stack((
             self.ZA_sorted, self.Xi_v)), fmt=' '.join(['%5.i']*2 + ['%12.4e']*
                                                     self.Xi_v[0,:].shape[0]),
-                header = ' (0) elemZ,    (1) elemA,    (2) abundance mass ratios of every isotope for every timestep (normalized to solar, Asplund et al., 2009)')
+                header = 'elemZ    elemA    X_i # abundance mass ratios of every isotope for every timestep (normalized to solar, Asplund et al., 2009)')
         pickle.dump(self.W_i_comp,open(self._dir_out + 'W_i_comp.pkl','wb'))
         self.aux.tic_count(string="Output saved in", tic=self.tic)
         self.file1.close()

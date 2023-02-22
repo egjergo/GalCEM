@@ -35,7 +35,7 @@ class Inputs:
         self.Galaxy_age = 13.8 # [Gyr]
         self.solar_age = 4.6 # [Gyr]
         self.solar_metallicity = 0.0134 # Asplund et al. (2009, Table 4)
-        self.r = 8 # [kpc] Compute around the solar neighborhood
+        self.r = 8 # [kpc] Compute at the solar radius
         self.k_SFR = 1 # SFR power law exponent
         
         self.morphology = 'spiral'
@@ -68,8 +68,8 @@ class Inputs:
 
         self.sd = 530.96618 # surf density coefficient for the disk (normalized to the MW mass?) 
         self.MW_SFR = 1.9 #+-0.4 [Msun/yr] from Chomiuk & Povich (2011) Galactic SFR (z=0)
-        self.MW_RSNIa = np.divide([1699.5622597959612, 2348.4781118615615, 1013.0199016364531], 1e6/2.8) # 1.4*2 Msun, average SNIa mass, data from Mannucci et al. (2005) https://ui.adsabs.harvard.edu/abs/2005A%26A...433..807M/abstract
-        self.MW_RSNCC = np.divide([7446.483293967046, 10430.201123624402, 4367.610510548821], 1e6/15) # 15 Msun, IMF-averaged mass, data from Mannucci et al. (2005) https://ui.adsabs.harvard.edu/abs/2005A%26A...433..807M/abstract
+        self.MW_RSNIa = np.empty(3) #np.divide([1699.5622597959612, 2348.4781118615615, 1013.0199016364531], 1e6/2.8) # 1.4*2 Msun, average SNIa mass, data from Mannucci et al. (2005) https://ui.adsabs.harvard.edu/abs/2005A%26A...433..807M/abstract via Molero+21
+        self.MW_RSNCC = np.empty(3) #np.divide([7446.483293967046, 10430.201123624402, 4367.610510548821], 1e6/15) # 15 Msun, IMF-averaged mass, data from Mannucci et al. (2005) https://ui.adsabs.harvard.edu/abs/2005A%26A...433..807M/abstract via Molero+21
         self.IMF_single_slope = 2.35 # IMF Salpeter power law
 
         self.custom_IMF = None
@@ -200,6 +200,8 @@ class Inputs:
     
     def Mannucci05_SN_rate(self, SNtype, morphology):
         '''
+        Observational constraint at present time
+        
         SN rate per century per 10^10 Msun in Galaxy mass
         Note: The SNII and SNIb/c rate is only expressed as an upper limit
         
@@ -235,18 +237,37 @@ class Inputs:
         }
         return dictionary[SNtype][morphology]
     
-    def Mannucci05_convert_to_SNrate_yr(self, SNtype, morphology):
+    def Mannucci05_convert_to_SNrate_yr(self, SNtype, morphology, SNmassfrac=.1878, SNnfrac=4.381e-3, NtotvsMtot=1.808):
         '''
         Returns the number of SNae of "SNtype" type, per year,
         at present day, for the galaxy's final mass.
         
-        Depends on the Galaxy's final mass, self. M_inf
+        Depends on the Galaxy's final mass, self.M_inf
+        
+        SNmassfrac is calibrated on Kroupa01 on the mass range 10-120Msun for SNtype='II',
+        and it is the fraction, by mass, of the SN mass range over the whole IMF.
+        Calculated with morph.Initial_Mass_Function.IMF_fraction
+        
+        SNnfrac is equivalent to SNmassfrac, but the fraction is computed by number.
+        NtotvsMtot is the ratio of the integral of the IMF vs the mass-weighted IMF
+        over the total mass range (Mtot = 1 by definition)
+        
+        From Mannucci05_SN_rate: N_SN / (century * 10^10 Msun)
+        
+        Mannucci... * (century/10^2yr) * (Mgal,fin/10^10Msun) * N_tot/N_SN * M_SN/M_tot * M_tot/N_tot  
+        This operation is valid only for non-starbursty systems (like spiral disks) where the SFR
+        has been near constant for several Gyr.
+        
+        OUTPUT
+        M_SN/yr the supernova rate in solar mass units per year.  
         '''
         to_Gal_fin_mass = self.M_inf /1.e10
         to_yr = 1.e-2
+        N_to_M = SNmassfrac / (SNnfrac * NtotvsMtot)
         rate = self.Mannucci05_SN_rate(SNtype, morphology)
-        return np.multiply(rate, to_Gal_fin_mass * to_yr)
-        
+        return np.multiply([rate[0], rate[0]+rate[1], rate[0]-rate[2]], 
+                           N_to_M * to_Gal_fin_mass * to_yr)
+        self.M_inf /1.e10
 
 class Auxiliary:
     '''
