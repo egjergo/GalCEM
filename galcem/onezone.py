@@ -68,8 +68,15 @@ class Setup:
         self.IMF_class = morph.Initial_Mass_Function(self.Ml, self.Mu, self.IN,
                                     self.IN.IMF_option, self.IN.custom_IMF)
         self.IMF = self.IMF_class.IMF() #() # Function @ input stellar mass
+        
+        #normalization
         self.Greggio05_SD = np.vectorize(morph.Greggio05) # [func(lifetime)]
-        self.f_SNIa_v = np.array([D.f_SD_Ia for D in self.Greggio05_SD(self.time_chosen)])
+        gal_time = np.logspace(-3,1.5, num=1000)
+        DTD_SNIa = [D.f_SD_Ia for D in self.Greggio05_SD(gal_time)]
+        K = 1/integr.simpson(DTD_SNIa, x=gal_time)
+        self.f_SNIa_v = np.array([K * D.f_SD_Ia for D in self.Greggio05_SD(self.time_chosen)])
+        
+        # Comparison of rates with observations from Mannucci+05
         SNmassfrac = self.IMF_class.IMF_fraction(self.IN.Ml_SNCC, self.IN.Mu_SNCC, massweighted=True)
         SNnfrac = self.IMF_class.IMF_fraction(self.IN.Ml_SNCC, self.IN.Mu_SNCC, massweighted=False)
         N_IMF = integr.quad(self.IMF, self.Ml, self.Mu)[0]
@@ -145,7 +152,7 @@ class Setup:
         # The total baryonic mass (i.e. the infall mass) is computed right away
         self.Mtot = np.insert(np.cumsum((self.Infall_rate[1:]
                             + self.Infall_rate[:-1]) * self.IN.nTimeStep / 2),
-                              0, self.IN.epsilon) 
+                              0, self.IN.epsilon) # !!!!!!! edit this with non-uniform timesteps
         self.Mstar_v = self.initialize()
         self.Mgas_v = self.initialize() 
         self.returned_Mass_v = self.initialize() 
@@ -250,8 +257,12 @@ class OneZone(Setup):
         '''Evolution routine'''
         #self.file1.write('A list of the proton/isotope number pairs for all the nuclides included in this run.\n ZA_sorted =\n\n')
         #self.file1.write(self.ZA_sorted)
+        # First timestep: the galaxy is empty
         self.Mass_i_v[:,0] = np.multiply(self.Mtot[0], self.models_BBN)
+        self.Mgas_v[0] = self.Mtot[0]
+        # Second timestep: infall only
         self.Mass_i_v[:,1] = np.multiply(self.Mtot[1], self.models_BBN)
+        self.Mgas_v[1] = self.Mtot[1]
         for n in range(len(self.time_chosen[:self.idx_Galaxy_age])):
             print('time [Gyr] = %.2f'%self.time_chosen[n])
             self.file1.write('n = %d\n'%n)
@@ -266,9 +277,9 @@ class OneZone(Setup):
                                     self.time_chosen, self.Z_v, self.SFR_v,
                               self.Greggio05_SD, self.IMF, self.ZA_sorted)
                 _rates = Wi_class.compute_rates()
-                self.Rate_SNCC[n] = _rates[0] #!!!!!!! automate
-                self.Rate_LIMs[n] = _rates[1]
-                self.Rate_SNIa[n] = _rates[2]
+                self.Rate_SNCC[n] = _rates['SNCC']
+                self.Rate_LIMs[n] = _rates['LIMs']
+                self.Rate_SNIa[n] = _rates['SNIa']
                 Wi_comp = {ch: Wi_class.compute(ch) 
                            for ch in self.IN.include_channel}
                 Z_comp = {}
@@ -307,7 +318,7 @@ class OneZone(Setup):
         Args:
             timestep_n ([int]): [timestep index]
         Returns:
-            [function]: [SFR as a function of Mgas]
+            [function]: [SFR as a function of Mgas] units of [Gyr^-1]
         '''
         return self.SFR_class.SFR(Mgas=self.Mgas_v, Mtot=self.Mtot, 
                                   timestep_n=timestep_n) 
@@ -336,7 +347,7 @@ class OneZone(Setup):
         Z_comps = kwargs['Z_comp'] 
         infall_comp = self.Infall_rate[n] * self.models_BBN[i]
         self.W_i_comp['BBN'][i,n] = infall_comp
-        sfr_comp = self.SFR_v[n] * self.Xi_v[i,n] 
+        sfr_comp = self.SFR_v[n] * self.Xi_v[i,n] # astration
         if n <= 0:
             val = infall_comp - sfr_comp
         else:

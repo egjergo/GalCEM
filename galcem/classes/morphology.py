@@ -113,7 +113,11 @@ class Star_Formation_Rate:
         return aux.repr(self)
 
     def SFRgal(self, k=None, Mgas=[], Mtot=[], timestep_n=0): 
-        ''' Talbot & Arnett (1975)'''
+        ''' 
+        Talbot & Arnett (1975), Portinari et al. (1998)
+        
+        Units of [Gyr^-1]
+        '''
         k = self.IN.k_SFR if k is None else k
         f_g = Mgas[timestep_n] / Mtot[timestep_n]
         return self.IN.nu  * (Mgas[timestep_n]) * f_g**(k-1) / self.IN.M_inf #* self.IN.SFR_rescaling

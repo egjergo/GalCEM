@@ -3,16 +3,16 @@ import pandas as pd
 import os
 from yield_interpolation.fit_isotope_interpolants import fit_isotope_interpolants
 
-def parse_c15_raw():
+def parse_c15_raw(_path='galcem/input/yields/lims/c15/tot/'):
     yield_eps = 1e-13
-    root_c15_raw_data = 'galcem/input/yields/lims/c15/tot/'
-    c15_phys = pd.read_fwf(root_c15_raw_data+'All_All_All_0_last_tp_20221214_21933.txt')
-    txts = os.listdir(root_c15_raw_data+'data/')
+    
+    c15_phys = pd.read_fwf(_path+'All_All_All_0_last_tp_20221214_21933.txt')
+    txts = os.listdir(_path+'data/')
     df = pd.DataFrame({col:[] for col in ['Isotope','A','Z','YIELD','MASS_INI','METALLICITY','IRV','MASS_EJ','MASS_FRACTION']})
     for txt_og in txts:
         print(txt_og)
         if '.DS_Store' in txt_og: continue
-        df_txt = pd.read_fwf(root_c15_raw_data+'data/'+txt_og, infer_nrows=400)
+        df_txt = pd.read_fwf(_path+'data/'+txt_og, infer_nrows=400)
         txt = txt_og.replace('zsun','z1.4m2').replace('_20210617_33100.txt','').replace('yields_tot_m','')
         prts = txt.split('_')
         prts = prts[0].split('z')+[prts[1]]

@@ -108,17 +108,18 @@ class Plots(Setup):
     def DTD_plot(self):
         print('Starting DTD_plot()')
         from matplotlib import pyplot as plt
-        #plt.style.use(self._dir+'/galcem.mplstyle')
+        plt.style.use(self._dir+'/galcem.mplstyle')
         phys = pd.read_csv(self._dir_out+'phys.dat', sep=',', comment='#')
         gal_time = phys['time[Gyr]'].iloc[:-1]
         DTD_SNIa = phys['DTD_Ia[N/yr]'].iloc[:-1]
         fig, ax = plt.subplots(1,1, figsize=(7,5))
-        ax.loglog(time, DTD_SNIa, color='blue', label='SNIa')
+        ax.plot(np.log10(gal_time*1e9), np.log10(DTD_SNIa), color='blue', label=r'Eq. (16) $\gamma=1$ IMF: Kroupa (2001)')
         ax.legend(loc='best', frameon=False, fontsize=13)
         ax.set_ylabel(r'Normalized DTD', fontsize=15)
-        ax.set_xlabel('Age [Gyr]', fontsize=15)
-        ax.set_ylim(1e-3,1e0)
-        ax.set_xlim(1e-2, 1.9e1)
+        ax.set_xlabel(r'SSP $\tau$ [yr]', fontsize=15)
+        #ax.set_ylim(-4.5,1)
+        ax.set_xlim(7.6, 10.2)
+        fig.suptitle(r"Greggio (2005) SD SNIa model (Fig. 3)", fontsize=15)
         fig.tight_layout()
         plt.savefig(self._dir_out_figs + 'DTD_SNIa.pdf', bbox_inches='tight')
         
@@ -272,6 +273,7 @@ class Plots(Setup):
         return FeH_value[FeH_id_sort], FeH_age[FeH_id_sort], metallicity_value[Z_id_sort], metallicity_age[Z_id_sort]
         
     def FeH_evolution_plot(self, c=2, elemZ=26, logAge=True):
+        '''Skip the first two timestep (0 empty Galaxy, 1 only infall)'''
         print('Starting FeH_evolution()')
         from matplotlib import pyplot as plt
         #plt.style.use(self._dir+'/galcem.mplstyle')
@@ -308,6 +310,7 @@ class Plots(Setup):
         plt.savefig(self._dir_out_figs + 'FeH_evolution'+str(xscale)+'.pdf', bbox_inches='tight')
 
     def Z_evolution_plot(self, c=2, logAge=False):
+        '''Skip the first two timestep (0 empty Galaxy, 1 only infall)'''
         print('Starting Z_evolution()')
         from matplotlib import pyplot as plt
         #plt.style.use(self._dir+'/galcem.mplstyle')

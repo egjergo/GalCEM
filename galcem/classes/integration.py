@@ -220,7 +220,10 @@ class Wi:
                 return self.IN.epsilon
     
     def compute_rates(self):
-        return [self.exec_compute_rate(ch) for ch in self.IN.include_channel]
+        rates = {}
+        for ch in self.IN.include_channel:
+            rates[ch] = self.exec_compute_rate(ch)
+        return rates #[self.exec_compute_rate(ch) for ch in self.IN.include_channel]
 
     def compute(self, channel_switch, vel_idx=None):
         if channel_switch == "SNIa":

@@ -31,7 +31,7 @@ class Inputs:
         self.num_MassGrid = 200
         self.include_channel = ['SNCC', 'LIMs', 'SNIa']
         
-        self.Galaxy_birthtime = 0.1 # [Gyr]
+        self.Galaxy_birthtime = 0. #0.1 # [Gyr]
         self.Galaxy_age = 13.8 # [Gyr]
         self.solar_age = 4.6 # [Gyr]
         self.solar_metallicity = 0.0134 # Asplund et al. (2009, Table 4)
