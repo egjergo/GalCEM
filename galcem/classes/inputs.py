@@ -48,7 +48,7 @@ class Inputs:
         self.wind_efficiency = 0 # !!!!!!! override: no overflow
 
         # Fraction of compact objects
-        #self.A_SNIa = 1. # Fixed inside morph.Greggio05() # Fraction of white dwarfs that underwent a SNIa
+        #self.A_SNIa = # Fixed inside morph.Greggio05() # Fraction of white dwarfs that underwent a SNIa
         self.A_NSM = 0.03 #0.06 # Fraction of neutron stars that underwent an episode of coalescence
         self.A_collapsars = 0.05 #0.06 # Fraction of massive stars that evolved into collapsars
 

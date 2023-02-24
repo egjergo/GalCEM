@@ -140,8 +140,8 @@ class Wi:
                             metallicity_grid]).T, columns=['lifetime_Gyr',
                                                            'metallicity'])
             return self.lifetime_class.dMdtauM(df_lz)
-        if derlog == True:
-            return 1   
+        #if derlog == True:
+        #    return 1   
 
     def yield_component(self, channel_switch, mass_grid, birthtime_grid, vel_idx=None):
         return interpolation(mass_grid, metallicity(birthtime_grid))
@@ -190,17 +190,17 @@ class Wi:
     def compute_rateSNIa(self, channel_switch='SNIa'):
         birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
         lifetime_grid = self.grid_picker(channel_switch, 'lifetime')
-        SFR_comp = self.SFR_component(birthtime_grid)
+        SFR_comp = np.multiply(self.SFR_component(birthtime_grid), self.IN.M_inf)
         F_SNIa = np.array([D.f_SD_Ia for D in self.Greggio05_SD(lifetime_grid)])
         #F_SNIa = [DTD_class.MaozMannucci12(t) for t in lifetime_grid]
         integrand = np.multiply(SFR_comp, F_SNIa)
-        return integr.simps(integrand, x=lifetime_grid)
+        return integr.simps(integrand, x=birthtime_grid)
  
     def compute_rate(self, channel_switch='SNCC'):
         # Computes the Type II SNae rate 
         birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
         mass_grid = self.grid_picker(channel_switch, 'mass')
-        SFR_comp = self.SFR_component(birthtime_grid)
+        SFR_comp = np.multiply(self.SFR_component(birthtime_grid), self.IN.M_inf)
         SFR_comp[SFR_comp<0] = 0.
         IMF_comp = self.IMF_component(mass_grid)
         integrand = np.multiply(SFR_comp, IMF_comp)
@@ -233,7 +233,7 @@ class Wi:
             mass_grid = self.grid_picker(channel_switch, 'mass')
             lifetime_grid = self.grid_picker(channel_switch, 'lifetime')        
             birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
-            SFR_comp = self.SFR_component(birthtime_grid)
+            SFR_comp = np.multiply(self.SFR_component(birthtime_grid), self.IN.M_inf)
             SFR_comp[SFR_comp<0] = 0.
             IMF_comp, mass_comp = self.mass_component(channel_switch, mass_grid, lifetime_grid, birthtime_grid) 
             #integrand = np.prod(np.vstack[SFR_comp, mass_comp, self.yield_load[i]])

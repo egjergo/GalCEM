@@ -218,9 +218,9 @@ class Plots(Setup):
         axs[1].semilogy(time_plot[:-1], Rate_LIMs[:-1], label= r'$R_{LIMs}$', color = '#ff00b3', linestyle=':', linewidth=3)
         axs[1].semilogy(time_plot[:-1], Infall_rate[:-1], label= r'Infall', color = 'black', linestyle='-', linewidth=3)
         axs[1].semilogy(time_plot[:-1], SFR_v[:-1], label= r'SFR', color = '#ff8c00', linestyle='--', linewidth=3)
-        #axs[0].set_ylim(1e6, 1e11)
-        #axs[1].set_ylim(1e-3, 1e2)
-        #axt.set_ylim(1e-3, 1e2)
+        axs[0].set_ylim(1e6, 1e11)
+        axs[1].set_ylim(1e-3, 1e2)
+        axt.set_ylim(1e-3, 1e2)
         axt.set_yscale('log')
         if not logAge:
             axs[0].set_xlim(0,13.8)
@@ -237,6 +237,8 @@ class Plots(Setup):
         else:
             axs[0].set_xscale('log')
             axs[1].set_xscale('log')
+            axs[0].set_xlim(self.IN.Galaxy_birthtime, 1.5e1)
+            axs[1].set_xlim(self.IN.Galaxy_birthtime, 1.5e1)
             axt.set_xscale('log')
             xscale = '_log'
         axs[0].tick_params(right=True, which='both', direction='in')

@@ -315,8 +315,8 @@ class Greggio05:
     def __init__(self, tauMS):
         self.tauMS = tauMS # 
         self.K = 0.86 # Valid for Kroupa01, alpha=2.35, gamma=1 of Eq. (16)
-        self.k_alpha = 1.55 # For Kroupa01, 2.83 for Salpeter55
-        self.A_Ia = 1e-3 # For Kroupa01, 5e-4 for Salpeter55
+        self.k_alpha = 1.55 # 1.55 For Kroupa01, 2.83 for Salpeter55
+        self.A_Ia = 1e-3 # 1e-3 For Kroupa01, 5e-4 for Salpeter55
         self.alpha = 2.35
         self.gamma = 1
         self.epsilon = 1 # Represented as solid and dashed lines in Fig. 2 for 1 and 0.5 respectively
@@ -337,7 +337,7 @@ class Greggio05:
     def f_SD_Ia_func(self):
         val = self.k_alpha * self.A_Ia * 10**self.K * self.n_SD * self.deriv_m2_abs
         if val > 0.:
-            return val
+            return val 
         else:
             return 0.
 

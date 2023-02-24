@@ -1,0 +1,34 @@
+# By Limongi & Chieffi (2018). Downloaded from http://orfeo.iaps.inaf.it/ 
+
+There are yields for 4 different scenarii:
+Set F: each mass ejects 0.07 Msun of Ni56
+Set I: 13,15,20,25 Msun like set F – M>25 fully collapse in the remnant, only the wind is ejected
+Set M: mixing and fall back [internal border fixed by [Ni/Fe]=0.2 – external border fixed at the base of the O shell (X(O)=0.001)] and then the mass cut is chosen again by requiring the ejection of 0.07 Msun of Ni56
+Set R: 13,15,20,25 Msun like set M – M>25 fully collapse in the remnant, only the wind is ejected
+
+For each set there are 19 files: 
+
+the filenames ending with .nod refer to yields in which the unstable nuclei are allowed to decay only for the first 2e4 s after the explosion.
+the filenames ending with .dec refer to yields in which the unstable nuclei are forced to fully decay to their closest stable daughter
+
+filenames containing the word “iso” refer to the isotopic abundances
+filenames containing the word “ele” refer to the elemental abundances
+
+filenames containing the word “exp” refer to the final explosive yields
+filenames containing the word “pre” refer to the pre explosive yields obtained by assuming the same mass cut of the explosive yields
+
+filenames containing the word “yieldstot” refer to the total yields ejected.
+filenames containing the word “yieldsnet” refer to the net yields, i.e. the total yields minus the initial amount
+
+the two files tabwind contain only the contribution of the wind
+
+Each file contains the yields – in solar masses - for all masses, metallicities and initial rotational velocity. Each evolution is identified by the sequence xxxmyyy
+xxx stands for the mass, eg. 060 means 60 Msun.
+m identifies the initial [Fe/H] = a(0), b(-1), c(-2) and d(-3).
+yyy shows the initial rotational velocity, 000(non rotating), 150 (150 km/s) and 300 (300 km/s).
+
+The two files, pfele and pfiso, contain the elemental and isotopic production factors for each mass, metallicity and initial rotational velocity
+
+The three files yields_exp_ele_int.txt, yields_exp_iso_int.txt and yields_exp_iso_int.nod contain the yields integrated over a standard Salpeter IMF with x=1.35:
+Each of these files has 39 columns:
+ele, z, a, 12 production factors for the 4 metallicities and 3 rotational velocities, 12 integrated yields for the 4 metallicities and 3 rotational velocities, 8 columns to neglect, 4 columns with the initial chemical composition adopted for the four metallicities.

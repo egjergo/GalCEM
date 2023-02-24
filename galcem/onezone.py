@@ -228,7 +228,7 @@ class OneZone(Setup):
             'Mtot[Msun]'  : self.Mtot, 
             'Mgas[Msun]'  : self.Mgas_v,
             'Mstar[Msun]' : self.Mstar_v, 
-            'SFR[Msun/yr]': self.SFR_v/1e9, #/Gyr to /yr conversion
+            'SFR[Msun/yr]': self.SFR_v/1e9 * self.IN.M_inf, # rescale to Msun/yr from Msun/Gyr/galMass
             'Inf[Msun/yr]': self.Infall_rate/1e9, #/Gyr to /yr conversion
             'Zfrac'       : self.Z_v,
             'Gfrac'       : G_v, 
@@ -271,17 +271,17 @@ class OneZone(Setup):
             self.Z_v[n] = np.divide(np.sum(self.Mass_i_v[self.i_Z:,n]),
                                     self.Mgas_v[n])
             self.file1.write(' sum X_i at n %d= %.3f\n'%(n, np.sum(
-                            self.Xi_v[:,n])))
+                             self.Xi_v[:,n])))
             if n > 0.: 
                 Wi_class = gcint.Wi(n, self.IN, self.lifetime_class, 
                                     self.time_chosen, self.Z_v, self.SFR_v,
-                              self.Greggio05_SD, self.IMF, self.ZA_sorted)
+                            self.Greggio05_SD, self.IMF, self.ZA_sorted)
                 _rates = Wi_class.compute_rates()
                 self.Rate_SNCC[n] = _rates['SNCC']
                 self.Rate_LIMs[n] = _rates['LIMs']
                 self.Rate_SNIa[n] = _rates['SNIa']
-                Wi_comp = {ch: Wi_class.compute(ch) 
-                           for ch in self.IN.include_channel}
+                Wi_comp = {ch: Wi_class.compute(ch)
+                        for ch in self.IN.include_channel}
                 Z_comp = {}
                 for ch in self.IN.include_channel:
                     if len(Wi_comp[ch]['birthtime_grid']) > 1.:
@@ -304,13 +304,13 @@ class OneZone(Setup):
         # Explicit general diff eq GCE function
         # Mgas(t)
         #print(f'{self.SFR_tn(n)==self.SFR_v[n]=}')
-        return (self.Infall_rate[n] - self.SFR_tn(n) * self.IN.M_inf + np.sum([
-                self.W_i_comp[ch][:,n] for ch in self.IN.include_channel]))
+        return self.Infall_rate[n] - self.SFR_tn(n) * self.IN.M_inf #+ np.sum([
+                #self.W_i_comp[ch][:,n] for ch in self.IN.include_channel])
     
     def Mstar_func(self, t_n, y_n, n, i=None):
         # Mstar(t)
-        return self.SFR_tn(n) * self.IN.M_inf - np.sum([
-               self.W_i_comp[ch][:,n] for ch in self.IN.include_channel])
+        return self.SFR_tn(n) * self.IN.M_inf #- np.sum([
+               #self.W_i_comp[ch][:,n] for ch in self.IN.include_channel])
 
     def SFR_tn(self, timestep_n):
         '''
@@ -354,7 +354,7 @@ class OneZone(Setup):
             Wi_vals = {}
             for ch in self.IN.include_channel:
                 if ch == 'SNIa':
-                    Wi_vals[ch] = (self.Rate_SNIa[n] * 
+                    Wi_vals[ch] = 0.5 * (self.Rate_SNIa[n] * # Don't count SNIas twice
                                    self.yield_models['SNIa'][i])
                 else:
                     if len(Wi_comps[ch]['birthtime_grid']) > 1.:
