@@ -49,21 +49,21 @@ class Wi_grid:
         metallicity_grid0 = self.Z_component(birthtime_grid0)
         metallicity_grid = np.ones(len(metallicity_grid0))
         
-        # # Make sure the grid points for the integration converge
-        # to_sec = 30
-        # timeout = time.time() + to_sec 
-        # while not np.allclose(metallicity_grid, metallicity_grid0, equal_nan=False):
-        #     metallicity_grid0 = metallicity_grid
+        # Make sure the grid points for the integration converge
+        to_sec = 30
+        timeout = time.time() + to_sec 
+        while not np.allclose(metallicity_grid, metallicity_grid0, equal_nan=False):
+            metallicity_grid0 = metallicity_grid
         df_mz = pd.DataFrame(np.array([mass_grid, metallicity_grid0]).T,
                                   columns=['mass', 'metallicity'])
         lifetime_grid = self.lifetime_class.interp_stellar_lifetimes(df_mz)
         birthtime_grid = self.time_chosen[self.age_idx] - lifetime_grid
         metallicity_grid = self.Z_component(birthtime_grid)
-        #     if time.time() > timeout:
-        #         print(f"Error: The metallicity grid isn't converging within {to_sec} seconds.")
-        # #         print(f"{metallicity_grid0=}")
-        # #         print(f"{metallicity_grid=}")
-        #         break     
+        if time.time() > timeout:
+            # print(f"{metallicity_grid0=}")
+            # print(f"{metallicity_grid=}")
+            print(f"Error: The metallicity grid isn't converging within {to_sec} seconds.")
+            pass     
         positive_idx = np.where(birthtime_grid > 0.)
         return (birthtime_grid[positive_idx], lifetime_grid[positive_idx], 
                 mass_grid[positive_idx])
@@ -239,4 +239,5 @@ class Wi:
             #integrand = np.prod(np.vstack[SFR_comp, mass_comp, self.yield_load[i]])
             integrand = np.prod(np.vstack([SFR_comp, mass_comp]), axis=0)
             #return integr.simps(integrand, x=birthtime_grid)
-            return {'integrand': integrand, 'birthtime_grid': birthtime_grid, 'mass_grid': mass_grid}
+            return {'integrand': integrand, 'birthtime_grid': birthtime_grid, 
+                    'mass_grid': mass_grid, 'lifetime_grid': lifetime_grid}
