@@ -36,7 +36,7 @@ class Inputs:
         self.solar_age = 4.6 # [Gyr]
         self.solar_metallicity = 0.0134 # Asplund et al. (2009, Table 4)
         self.r = 8 # [kpc] Compute at the solar radius
-        self.k_SFR = 1 # SFR power law exponent
+        self.k_SFR = 1.4 # SFR power law exponent
         
         self.morphology = 'spiral'
         self.M_inf = self.default_params('M_inf', self.morphology)
@@ -45,7 +45,7 @@ class Inputs:
         self.nu = self.default_params('nu', self.morphology)
         self.wind_efficiency = self.default_params('wind_efficiency', 
                                                    self.morphology)
-        self.wind_efficiency = 0 # !!!!!!! override: no overflow
+        self.wind_efficiency = 0 # !!!!!!! override: no outflow
 
         # Fraction of compact objects
         #self.A_SNIa = # Fixed inside morph.Greggio05() # Fraction of white dwarfs that underwent a SNIa
@@ -68,8 +68,8 @@ class Inputs:
 
         self.sd = 530.96618 # surf density coefficient for the disk (normalized to the MW mass?) 
         self.MW_SFR = 1.9 #+-0.4 [Msun/yr] from Chomiuk & Povich (2011) Galactic SFR (z=0)
-        self.MW_RSNIa = np.empty(3) #np.divide([1699.5622597959612, 2348.4781118615615, 1013.0199016364531], 1e6/2.8) # 1.4*2 Msun, average SNIa mass, data from Mannucci et al. (2005) https://ui.adsabs.harvard.edu/abs/2005A%26A...433..807M/abstract via Molero+21
-        self.MW_RSNCC = np.empty(3) #np.divide([7446.483293967046, 10430.201123624402, 4367.610510548821], 1e6/15) # 15 Msun, IMF-averaged mass, data from Mannucci et al. (2005) https://ui.adsabs.harvard.edu/abs/2005A%26A...433..807M/abstract via Molero+21
+        self.MW_RSNIa = np.empty(3) # Galactic SNIa rates (filled in Setup, from Mannucci+05)
+        self.MW_RSNCC = np.empty(3) # Galactic SNCC rates (filled in Setup, from Mannucci+05)
         self.IMF_single_slope = 2.35 # IMF Salpeter power law
 
         self.custom_IMF = None
@@ -92,8 +92,8 @@ class Inputs:
 
         self.delta_max = 8e-2 # Convergence limit for eq. 28, Portinari+98
         self.epsilon = 1e-32 # Avoid numerical errors - consistent with BBN
-        self.SFR_rescaling = 1 # !!!!!!! Constrained by present-day observations of the galaxy of interest
-        self.derlog = False
+        self.to_sec = .1 # Metallicity convergence break time
+        self.factor = 1 #!!!!!!!
         
         _dir = os.path.join(os.path.dirname( __file__ ), '..')
         self.s_lifetimes_p98 = pd.read_csv(_dir+'/input/starlifetime/portinari98table14.dat')

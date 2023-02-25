@@ -120,7 +120,7 @@ class Star_Formation_Rate:
         '''
         k = self.IN.k_SFR if k is None else k
         f_g = Mgas[timestep_n] / Mtot[timestep_n]
-        return self.IN.nu  * (Mgas[timestep_n]) * f_g**(k-1) / self.IN.M_inf #* self.IN.SFR_rescaling
+        return self.IN.nu  * (Mgas[timestep_n]) * f_g**(k-1) / self.IN.M_inf 
     
     def CSFR(self):
         '''
@@ -304,8 +304,14 @@ class Stellar_Lifetimes:
         Computes the first order derivative of the M(tau) function
         with respect to dtau, but multiplied by dtau/dt' = -1
         '''
-        return - self.mass_by_lifetime_metallicity_loaded(df_lifetime_metallicity,dwrt='lifetime_Gyr')
+        return - self.mass_by_lifetime_metallicity_loaded(df_lifetime_metallicity, dwrt='lifetime_Gyr')
 
+    def dtauMdM(self, df_mass_metallicity):#, time_chosen, n=1):
+        '''
+        Computes the first order derivative of the tau(M) function
+        with respect to dm, and multiplied by dt/dt' * dt/dtau = 1
+        '''
+        return self.lifetime_by_mass_metallicity_loaded(df_mass_metallicity, dwrt='mass')
 
 class Greggio05:
     '''Greggio (2005, A&A 441, 1055G) Single degenerate

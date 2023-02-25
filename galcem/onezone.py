@@ -295,7 +295,8 @@ class OneZone(Setup):
                         self.isotopes_evolution,self.time_chosen[n],
                         self.Mass_i_v[i,n], n, self.IN.nTimeStep,
                         i=i, Wi_comp=Wi_comp, Z_comp=Z_comp)
-            #self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
+            self.Mass_i_v[:, n] = np.multiply(self.Mass_i_v[:,n], #!!!!!!!
+                                              self.Mgas_v[n]/np.sum(self.Mass_i_v[:,n]))
         self.Z_v[-1] = np.divide(np.sum(self.Mass_i_v[self.i_Z:,-1]), 
                                 self.Mgas_v[-1])
         self.Xi_v[:,-1] = np.divide(self.Mass_i_v[:,-1], self.Mgas_v[-1]) 
@@ -304,13 +305,13 @@ class OneZone(Setup):
         # Explicit general diff eq GCE function
         # Mgas(t)
         #print(f'{self.SFR_tn(n)==self.SFR_v[n]=}')
-        return self.Infall_rate[n] - self.SFR_tn(n) * self.IN.M_inf #+ np.sum([
-                #self.W_i_comp[ch][:,n] for ch in self.IN.include_channel])
+        return self.Infall_rate[n] - self.SFR_tn(n) * self.IN.M_inf + np.sum([
+                self.W_i_comp[ch][:,n-1] for ch in self.IN.include_channel])
     
     def Mstar_func(self, t_n, y_n, n, i=None):
         # Mstar(t)
-        return self.SFR_tn(n) * self.IN.M_inf #- np.sum([
-               #self.W_i_comp[ch][:,n] for ch in self.IN.include_channel])
+        return self.SFR_tn(n) * self.IN.M_inf - np.sum([
+               self.W_i_comp[ch][:,n-1] for ch in self.IN.include_channel])
 
     def SFR_tn(self, timestep_n):
         '''
@@ -361,7 +362,7 @@ class OneZone(Setup):
                         if not self.yield_models[ch][i].empty:
                             yield_grid = Z_comps[ch]
                             yield_grid['mass'] = Wi_comps[ch]['mass_grid']
-                            Wi_vals[ch] = integr.simps(np.multiply(
+                            Wi_vals[ch] = self.IN.factor * integr.simps(np.multiply(
                                 Wi_comps[ch]['integrand'], 
                                 self.yield_models[ch][i](yield_grid)), 
                                         x=Wi_comps[ch]['birthtime_grid'])
