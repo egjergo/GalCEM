@@ -16,6 +16,11 @@ conda env create -f environment.yml
 conda activate gce
 ```
 
+## Pre-process the stellar lifetimes
+```
+python yield_interpolation/lifetime_mass_metallicity/main.py
+```
+
 ## Pre-process the SNCC and LIMs yields 
 (e.g., Limongi & Chieffi, 2018, and Cristallo et al., 2015)
 ```
@@ -35,7 +40,7 @@ python examples/mwe.py
 
 ```python
 import galcem as glc
-inputs = gc.Inputs()
+inputs = glc.Inputs()
 inputs.nTimeStep = .25
 oz = glc.OneZone(inputs,outdir='runs/MYDIR/')
 oz.main()

@@ -39,13 +39,6 @@ class Inputs:
         self.k_SFR = 1.4 # SFR power law exponent
         
         self.morphology = 'spiral'
-        self.M_inf = self.default_params('M_inf', self.morphology)
-        self.Reff = self.default_params('Reff', self.morphology)
-        self.tau_inf = self.default_params('tau_inf', self.morphology)
-        self.nu = self.default_params('nu', self.morphology)
-        self.wind_efficiency = self.default_params('wind_efficiency', 
-                                                   self.morphology)
-        self.wind_efficiency = 0 # !!!!!!! override: no outflow
 
         # Fraction of compact objects
         #self.A_SNIa = # Fixed inside morph.Greggio05() # Fraction of white dwarfs that underwent a SNIa

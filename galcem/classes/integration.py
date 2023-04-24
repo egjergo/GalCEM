@@ -145,8 +145,8 @@ class Wi:
                                                         'metallicity'])
         return self.lifetime_class.dtauMdM(df_lz)
     
-    def yield_component(self, channel_switch, mass_grid, birthtime_grid, vel_idx=None):
-        return interpolation(mass_grid, metallicity(birthtime_grid))
+    #def yield_component(self, channel_switch, mass_grid, birthtime_grid, vel_idx=None):
+    #    return interpolation(mass_grid, metallicity(birthtime_grid))
     
     def mass_component(self, channel_switch, mass_grid, lifetime_grid, birthtime_grid): #
         # Portinari+98, page 22, last eq. first column

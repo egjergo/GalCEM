@@ -39,17 +39,18 @@ class Setup:
         self.aux = Auxiliary()
         self.lifetime_class = morph.Stellar_Lifetimes(self.IN)
         
+        self.IN.M_inf = self.IN.default_params('M_inf', self.IN.morphology)
+        self.IN.Reff = self.IN.default_params('Reff', self.IN.morphology)
+        self.IN.tau_inf = self.IN.default_params('tau_inf', self.IN.morphology)
+        self.IN.nu = self.IN.default_params('nu', self.IN.morphology)
+        self.IN.wind_efficiency = 0 # !!!!!!! override: no outflow
+        
         # Setup
         self.Ml = self.IN.Ml_LIMs # Lower limit stellar mass [Msun] 
         self.Mu = self.IN.Mu_collapsars # Upper limit stellar mass [Msun]
-        self.mass_uniform = np.linspace(self.Ml, self.Mu, 
-                                        num = self.IN.num_MassGrid)
-        self.time_logspace = np.logspace(np.log10(IN.Galaxy_birthtime), 
-                                    np.log10(IN.Galaxy_age), num=IN.numTimeStep)
         self.time_uniform = np.arange(self.IN.Galaxy_birthtime, 
                             self.IN.Galaxy_age+self.IN.nTimeStep,
                                       self.IN.nTimeStep)
-        #self.time_uniform =  np.arange(IN.Galaxy_birthtime,IN.Galaxy_age,IN.nTimeStep)
         self.time_logspace = np.logspace(np.log10(self.IN.Galaxy_birthtime),
                     np.log10(self.IN.Galaxy_age), num=self.IN.numTimeStep)
         # For now, leave to time_chosen equal to time_uniform. 
@@ -61,6 +62,7 @@ class Setup:
         # The bulge goes as an inverse square law
         #sigma(t_G) before eq(7). Not used so far !!!!!!!
         surf_density_Galaxy = self.IN.sd / np.exp(self.IN.r / self.IN.Reff)
+        
         self.infall_class = morph.Infall(self.IN, time=self.time_chosen)
         self.infall = self.infall_class.inf()
         self.SFR_class = morph.Star_Formation_Rate(self.IN, self.IN.SFR_option,
@@ -149,6 +151,7 @@ class Setup:
         self.asplund3_percent = self.c_class.abund_percentage(self.ZA_sorted)
         # starting idx [int]. Excludes H and He for the metallicity selection
         self.i_Z = np.where(self.ZA_sorted[:,0]>2)[0][0] 
+        
         # The total baryonic mass (i.e. the infall mass) is computed right away
         self.Mtot = np.insert(np.cumsum((self.Infall_rate[1:]
                             + self.Infall_rate[:-1]) * self.IN.nTimeStep / 2),
@@ -263,7 +266,7 @@ class OneZone(Setup):
         # Second timestep: infall only
         self.Mass_i_v[:,1] = np.multiply(self.Mtot[1], self.models_BBN)
         self.Mgas_v[1] = self.Mtot[1]
-        for n in range(len(self.time_chosen[:self.idx_Galaxy_age])):
+        for n in range(len(self.time_chosen[:self.idx_Galaxy_age])+1):
             print('time [Gyr] = %.2f'%self.time_chosen[n])
             self.file1.write('n = %d\n'%n)
             self.total_evolution(n)        
@@ -272,6 +275,7 @@ class OneZone(Setup):
                                     self.Mgas_v[n])
             self.file1.write(' sum X_i at n %d= %.3f\n'%(n, np.sum(
                              self.Xi_v[:,n])))
+            
             if n > 0.: 
                 Wi_class = gcint.Wi(n, self.IN, self.lifetime_class, 
                                     self.time_chosen, self.Z_v, self.SFR_v,

@@ -57,5 +57,5 @@ if __name__ == '__main__':
             'metallicity':lambda x:np.log10(x), 'metallicity.prime':lambda x:1/(x*np.log(10)),
             'massfrac':lambda y:np.log10(y), 'massfrac.prime':lambda y:1/(y*np.log(10)), 'massfrac.inv':lambda y:10**y},
         fit_names = 'all', # 'all', ['c15_z8.a16.irv0.O16'],
-        plot_names =  'all', # [], 'all', ['c15_z8.a16.irv0.O16'] 
+        plot_names =  '[]', # [], 'all', ['c15_z8.a16.irv0.O16'] 
         )
