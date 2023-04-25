@@ -1,20 +1,10 @@
-# GalCEM
+# GalCEM 
+Modern IPA pronunciation: gálkɛ́m.
 
-Eda Gjergo (Wuhan University) <GalacticCEM@gmail.com>
+Direct queries to Eda Gjergo (Nanjing University) <GalacticCEM@gmail.com>
 
 ![GalCEM flowchart](/docs/figs/GalCEMdiagram.jpg "GalCEM flowchart")
 
-## TODO
-
-- build interpolation models based on `galcem/input/yields/lims/c15/...dat` and the corresponding .txt files
-- delete/merge code from `_scratch/`
-- update docs using `docs/index.rst` and `docs/components.rst` and in-code docstrings
-- update `yield_interpolation/` files
-- compile pkl files when init is first called instead of distributing with MANIFEST.in
-- use `'%d'%my_num` format instead of `f'...'` format
-- remove `pandas` req
-- refine `MANIFEST.IN`
-- make `verbose` option for printing output
 
 
 ## Setup
@@ -24,65 +14,34 @@ git clone git@github.com:egjergo/GalCEM.git
 cd GalCEM
 conda env create -f environment.yml
 conda activate gce
-conda develop .
-make sphinxdocs
+```
+
+## Pre-process the stellar lifetimes
+```
+python yield_interpolation/lifetime_mass_metallicity/main.py
+```
+
+## Pre-process the SNCC and LIMs yields 
+(e.g., Limongi & Chieffi, 2018, and Cristallo et al., 2015)
+```
+python yield_interpolation/lc18/main.py
+python yield_interpolation/c15/main.py
+```
+
+Under "fit_names" (for models) and "plot_names" (for figures) of the yield folder, you can choose to preprocess all ('all'), none ([]) or invididual elements (e.g., ['lc18_z8.a16.irv0.O16'])
+
+
+## Run the minimum working example
+```
 python examples/mwe.py
 ```
 
-## Upload to TestPyPI
-
-upload to test repo
-
-```
-python setup.py sdist
-twine check dist/*
-twine upload -r testpypi dist/*
-```
-
-test package from testpypi
-
-```
-conda create --name tmp python=3.8
-conda activate tmp
-pip install numpy scipy pandas
-pip install -i https://test.pypi.org/simple/ galcem==...
-python
-```
-
-then in the python console
+## Run a minimum working example from a Python console:
 
 ```python
-import galcem as gc
-inputs = gc.Inputs()
+import galcem as glc
+inputs = glc.Inputs()
 inputs.nTimeStep = .25
-oz = gc.OneZone(inputs,outdir='runs/ags1/')
+oz = glc.OneZone(inputs,outdir='runs/MYDIR/')
 oz.main()
 ```
-
-back in the terminal install matplotlib
-
-```
-pip install matplotlib
-python
-```
-
-now in the new python console 
-
-```python
-import galcem as gc
-inputs = gc.Inputs()
-inputs.nTimeStep = .25
-oz = gc.OneZone(inputs,outdir='runs/ags1/')
-oz.main()
-oz.plots()
-```
-
-## Upload to PyPI
-
-```
-python setup.py sdist
-twine check dist/*
-twine upload -r testpypi dist/*
-twine upload dist/*
-```
-

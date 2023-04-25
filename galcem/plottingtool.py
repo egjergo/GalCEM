@@ -1,8 +1,22 @@
+""""""""""""""""""""""""""""""""""""""""""""""""
+"                                              "
+"       PLOT CLASS FOR SINGLE-ZONE RUNS        "
+"  Contains the plot class to be paired with   " 
+"        the Setup class of onezone.py         "
+"                                              "
+" LIST OF CLASSES:                             "
+"    __        Plots (subclass)                "
+"                                              "
+""""""""""""""""""""""""""""""""""""""""""""""""
+
 import pickle
 import time
-from .onezone import Setup
 import numpy as np
 import pandas as pd
+from .onezone import Setup
+from .classes.inputs import Auxiliary
+import warnings
+warnings.filterwarnings("ignore")
 np.seterr(divide='ignore') 
 
 class Plots(Setup):
@@ -11,14 +25,19 @@ class Plots(Setup):
     """    
     def __init__(self, outdir = 'runs/mygcrun/'):
         self.tic = []
-        IN = pickle.load(open(outdir + 'inputs.pkl','rb'))
-        super().__init__(IN, outdir=outdir)
-        self.tic.append(time.perf_counter())
+        self.tic.append(time.process_time())
+        self.IN = pickle.load(open(outdir + 'inputs.pkl','rb'))
+        super().__init__(self.IN, outdir=outdir)
+        self.tic.append(time.process_time())
         package_loading_time = self.tic[-1]
-        print('Lodaded the plotting class in %.1e seconds.'%package_loading_time)   
+        print('Lodaded the plotting class in %.1e seconds.'%package_loading_time)  
+    
+    def __repr__(self):
+        aux = Auxiliary()
+        return aux.repr(self) 
         
     def plots(self):
-        self.tic.append(time.perf_counter())
+        self.tic.append(time.process_time())
         print('Starting to plot')
         self.FeH_evolution_plot(logAge=True)
         self.Z_evolution_plot(logAge=True)
@@ -36,7 +55,7 @@ class Plots(Setup):
         self.iso_evolution_comp_lelemz_plot()
         self.obs_table()
         #self.ind_evolution_plot()
-        #self.DTD_plot()
+        self.DTD_plot()
         ## self.elem_abundance() # compares and requires multiple runs (IMF & SFR variations)
         self.aux.tic_count(string="Plots saved in", tic=self.tic)
       
@@ -89,19 +108,20 @@ class Plots(Setup):
     def DTD_plot(self):
         print('Starting DTD_plot()')
         from matplotlib import pyplot as plt
-        #plt.style.use(self._dir+'/galcem.mplstyle')
-        phys = np.loadtxt(self._dir_out + 'phys.dat')
-        gal_time = phys[:-1,0]
-        DTD_SNIa = phys[:-1,12]
+        plt.style.use(self._dir+'/galcem.mplstyle')
+        phys = pd.read_csv(self._dir_out+'phys.dat', sep=',', comment='#')
+        gal_time = phys['time[Gyr]'].iloc[:-1]
+        DTD_SNIa = phys['DTD_Ia[N/yr]'].iloc[:-1]
         fig, ax = plt.subplots(1,1, figsize=(7,5))
-        ax.loglog(time, DTD_SNIa, color='blue', label='SNIa')
+        ax.plot(np.log10(gal_time*1e9), np.log10(DTD_SNIa), color='blue', label=r'Eq. (16) $\gamma=1$ IMF: Kroupa (2001)')
         ax.legend(loc='best', frameon=False, fontsize=13)
         ax.set_ylabel(r'Normalized DTD', fontsize=15)
-        ax.set_xlabel('Age [Gyr]', fontsize=15)
-        ax.set_ylim(1e-3,1e0)
-        ax.set_xlim(1e-2, 1.9e1)
+        ax.set_xlabel(r'SSP $\tau$ [yr]', fontsize=15)
+        #ax.set_ylim(-4.5,1)
+        ax.set_xlim(7.6, 10.2)
+        fig.suptitle(r"Greggio (2005) SD SNIa model (Fig. 3)", fontsize=15)
         fig.tight_layout()
-        plt.savefig(self._dir_out_figs + 'DTD.pdf', bbox_inches='tight')
+        plt.savefig(self._dir_out_figs + 'DTD_SNIa.pdf', bbox_inches='tight')
         
     def lifetimeratio_test_plot(self,colormap='Paired'):
         print('Starting lifetimeratio_test_plot()')
@@ -161,41 +181,41 @@ class Plots(Setup):
         print('Starting total_evolution_plot()')
         from matplotlib import pyplot as plt
         import matplotlib.ticker as ticker
+        Mfin = self.IN.M_inf
         #plt.style.use(self._dir+'/galcem.mplstyle')
-        phys = np.loadtxt(self._dir_out + 'phys.dat')
+        phys = pd.read_csv(self._dir_out+'phys.dat', sep=',', comment='#')
         Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
-        time_chosen = phys[:,0]
-        Mtot = phys[:,1]
-        Mgas_v = phys[:,2]
-        Mstar_v = phys[:,3]
-        SFR_v = phys[:,4]
-        Infall_rate = phys[:,5] 
-        Z_v = phys[:,6]
-        G_v = phys[:,7]
-        S_v = phys[:,8] 
-        Rate_SNCC = phys[:,9]
-        Rate_SNIa = phys[:,10]
-        Rate_LIMs = phys[:,11]
+        time_chosen = phys['time[Gyr]']#.iloc[:-1]
+        Mtot = phys['Mtot[Msun]']
+        Mgas_v = phys['Mgas[Msun]']
+        Mstar_v = phys['Mstar[Msun]']
+        SFR_v = phys['SFR[Msun/yr]']
+        Infall_rate = phys['Inf[Msun/yr]'] 
+        Z_v = phys['Zfrac']
+        G_v = phys['Gfrac']
+        S_v = phys['Sfrac'] 
+        Rate_SNCC = phys['R_CC[M/yr]']
+        Rate_SNIa = phys['R_Ia[M/yr]']
+        Rate_LIMs = phys['R_LIMs[M/y]']
         fig, axs = plt.subplots(1, 2, figsize=figsiz)
         axt = axs[1].twinx()
         time_plot = time_chosen
         xscale = '_lin'
-        MW_SFR_xcoord = 13.7
-        axs[0].hlines(self.IN.M_inf, 0, self.IN.age_Galaxy, label=r'$M_{gal,f}$', linewidth=1, linestyle = '-.', color='#8c00ff')
-        axt.vlines(MW_SFR_xcoord, self.IN.MW_SFR-.4, self.IN.MW_SFR+0.4, label=r'SFR$_{MW}$ CP11', linewidth = 6, linestyle = '-', color='#ff8c00', alpha=0.8)
-        axt.vlines(MW_SFR_xcoord, self.IN.MW_RSNCC[2], self.IN.MW_RSNCC[1], label=r'R$_{SNCC,MW}$ M05', linewidth = 6, linestyle = '-', color='#0034ff', alpha=0.8)
-        axt.vlines(MW_SFR_xcoord, self.IN.MW_RSNIa[2], self.IN.MW_RSNIa[1], label=r'R$_{SNIa,MW}$ M05', linewidth = 6, linestyle = '-', color='#00b3ff', alpha=0.8)
+        axs[0].hlines(self.IN.M_inf, 0, self.IN.Galaxy_age, label=r'$M_{gal,f}$', linewidth=1, linestyle = '-.', color='#8c00ff')
+        axt.vlines(self.IN.Galaxy_age, self.IN.MW_SFR-.4, self.IN.MW_SFR+0.4, label=r'SFR$_{MW}$ CP11', linewidth = 7, linestyle = '-', color='#ff8c00', alpha=0.8)
+        axt.vlines(self.IN.Galaxy_age, self.IN.MW_RSNCC[2], self.IN.MW_RSNCC[1], label=r'R$_{SNCC,MW}$ M05', linewidth = 6, linestyle = '-', color='#0034ff', alpha=0.8)
+        axt.vlines(self.IN.Galaxy_age, self.IN.MW_RSNIa[2], self.IN.MW_RSNIa[1], label=r'R$_{SNIa,MW}$ M05', linewidth = 6, linestyle = '-', color='#00b3ff', alpha=0.8)
+        axs[0].semilogy(time_plot, Mtot, label=r'$M_{tot}$', linewidth=4, color='black')
+        axs[0].semilogy(time_plot, Mstar_v + Mgas_v, label= r'$M_g + M_s$', linewidth=3, linestyle = '--', color='#a9a9a9')
         axs[0].semilogy(time_plot, Mstar_v, label= r'$M_{star}$', linewidth=3, color='#ff8c00')
         axs[0].semilogy(time_plot, Mgas_v, label= r'$M_{gas}$', linewidth=3, color='#0d00ff')
         axs[0].semilogy(time_plot, np.sum(Mass_i[:,2:], axis=0), label = r'$M_{g,tot,i}$', linewidth=2, linestyle=':', color='#00b3ff')
         axs[0].semilogy(time_plot, np.sum(Mass_i[:2,2:], axis=0), label = r'$M_{H,g}$', linewidth=1, linestyle='-.', color='#0033ff')
         axs[0].semilogy(time_plot, np.sum(Mass_i[4:,2:], axis=0), label = r'$M_{Z,g}$', linewidth=2, linestyle=':', color='#ff0073')
-        axs[0].semilogy(time_plot, Mtot, label=r'$M_{tot}$', linewidth=4, color='black')
-        axs[0].semilogy(time_plot, Mstar_v + Mgas_v, label= r'$M_g + M_s$', linewidth=3, linestyle = '--', color='#a9a9a9')
         axs[0].semilogy(time_plot, np.sum(Mass_i[2:4,2:], axis=0), label = r'$M_{He,g}$', linewidth=1, linestyle='--', color='#0073ff')
-        axs[1].semilogy(time_plot[:-1], np.divide(Rate_SNCC[:-1],1e9), label= r'$R_{SNCC}$', color = '#0034ff', linestyle=':', linewidth=3)
-        axs[1].semilogy(time_plot[:-1], np.divide(Rate_SNIa[:-1],1e9), label= r'$R_{SNIa}$', color = '#00b3ff', linestyle=':', linewidth=3)
-        axs[1].semilogy(time_plot[:-1], np.divide(Rate_LIMs[:-1],1e9), label= r'$R_{LIMs}$', color = '#ff00b3', linestyle=':', linewidth=3)
+        axs[1].semilogy(time_plot[:-1], Rate_SNCC[:-1], label= r'$R_{SNCC}$', color = '#0034ff', linestyle=':', linewidth=3)
+        axs[1].semilogy(time_plot[:-1], Rate_SNIa[:-1], label= r'$R_{SNIa}$', color = '#00b3ff', linestyle=':', linewidth=3)
+        axs[1].semilogy(time_plot[:-1], Rate_LIMs[:-1], label= r'$R_{LIMs}$', color = '#ff00b3', linestyle=':', linewidth=3)
         axs[1].semilogy(time_plot[:-1], Infall_rate[:-1], label= r'Infall', color = 'black', linestyle='-', linewidth=3)
         axs[1].semilogy(time_plot[:-1], SFR_v[:-1], label= r'SFR', color = '#ff8c00', linestyle='--', linewidth=3)
         axs[0].set_ylim(1e6, 1e11)
@@ -217,6 +237,8 @@ class Plots(Setup):
         else:
             axs[0].set_xscale('log')
             axs[1].set_xscale('log')
+            axs[0].set_xlim(self.IN.Galaxy_birthtime, 1.5e1)
+            axs[1].set_xlim(self.IN.Galaxy_birthtime, 1.5e1)
             axt.set_xscale('log')
             xscale = '_log'
         axs[0].tick_params(right=True, which='both', direction='in')
@@ -253,12 +275,13 @@ class Plots(Setup):
         return FeH_value[FeH_id_sort], FeH_age[FeH_id_sort], metallicity_value[Z_id_sort], metallicity_age[Z_id_sort]
         
     def FeH_evolution_plot(self, c=2, elemZ=26, logAge=True):
+        '''Skip the first two timestep (0 empty Galaxy, 1 only infall)'''
         print('Starting FeH_evolution()')
         from matplotlib import pyplot as plt
         #plt.style.use(self._dir+'/galcem.mplstyle')
         Z_list = np.unique(self.ZA_sorted[:,0])
-        phys = np.loadtxt(self._dir_out + 'phys.dat')
-        gal_time = phys[c:,0]
+        phys = pd.read_csv(self._dir_out+'phys.dat', sep=',', comment='#')
+        gal_time = phys['time[Gyr]'].iloc[c:]
         solar_norm_H = self.c_class.solarA09_vs_H_bymass[Z_list]
         solar_norm_Fe = self.c_class.solarA09_vs_Fe_bymass[Z_list]
         Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
@@ -269,18 +292,18 @@ class Plots(Setup):
         FeH = np.log10(np.divide(Fe, H)) - solar_norm_H[elemZ]
         fig, ax = plt.subplots(1,1, figsize=(7,5))
         ax.plot(gal_time, FeH, color='black', label='[Fe/H]', linewidth=3) 
-        ax.axvline(x=self.IN.age_Galaxy-self.IN.age_Sun, linewidth=2, color='orange', label=r'Age$_{\odot}$')
-        ax.plot(self.IN.age_Galaxy +0.5 - FeH_age, a*FeH_age+b, color='red', alpha=1, linewidth=3, label='linear fit on [Fe/H]')
-        ax.scatter(self.IN.age_Galaxy +0.5 - FeH_age, FeH_value, color='red', marker='*', alpha=0.3, label='Silva Aguirre et al. (2018)')
+        ax.axvline(x=self.IN.Galaxy_age-self.IN.solar_age, linewidth=2, color='orange', label=r'Age$_{\odot}$')
+        ax.plot(self.IN.Galaxy_age - FeH_age, a*FeH_age+b, color='red', alpha=1, linewidth=3, label='linear fit on [Fe/H]')
+        ax.scatter(self.IN.Galaxy_age - FeH_age, FeH_value, color='red', marker='*', alpha=0.3, label='Silva Aguirre et al. (2018)')
         ax.axhline(y=0, linewidth=1, color='orange', linestyle='--')
-        #ax.errorbar(self.IN.age_Galaxy - observ['age'], observ['FeH'], yerr=observ['FeHerr'], marker='s', label='Meusinger+91', mfc='gray', ecolor='gray', ls='none')
+        #ax.errorbar(self.IN.Galaxy_age - observ['age'], observ['FeH'], yerr=observ['FeHerr'], marker='s', label='Meusinger+91', mfc='gray', ecolor='gray', ls='none')
         ax.legend(loc='lower right', frameon=False, fontsize=17)
         ax.set_ylabel(r'['+np.unique(self.ZA_symb_list[elemZ].values)[0]+'/H]', fontsize=20)
         ax.set_xlabel('Galaxy Age [Gyr]', fontsize=20)
         ax.set_ylim(-2,1)
         xscale = '_lin'
         if not logAge:
-            ax.set_xlim(0,self.IN.age_Galaxy)
+            ax.set_xlim(0,self.IN.Galaxy_age)
         else:
             ax.set_xscale('log')
             xscale = '_log'
@@ -289,12 +312,13 @@ class Plots(Setup):
         plt.savefig(self._dir_out_figs + 'FeH_evolution'+str(xscale)+'.pdf', bbox_inches='tight')
 
     def Z_evolution_plot(self, c=2, logAge=False):
+        '''Skip the first two timestep (0 empty Galaxy, 1 only infall)'''
         print('Starting Z_evolution()')
         from matplotlib import pyplot as plt
         #plt.style.use(self._dir+'/galcem.mplstyle')
         Z_list = np.unique(self.ZA_sorted[:,0])
-        phys = np.loadtxt(self._dir_out + 'phys.dat')
-        gal_time = phys[c:,0]
+        phys = pd.read_csv(self._dir_out+'phys.dat', sep=',', comment='#')
+        gal_time = phys['time[Gyr]'].iloc[c:]
         _, _, metallicity_value, metallicity_age = self._age_observations()
         a, b = np.polyfit(metallicity_age, metallicity_value, 1)
         solar_norm_H = self.c_class.solarA09_vs_H_bymass[Z_list]
@@ -304,18 +328,18 @@ class Plots(Setup):
         ZH = np.log10(np.divide(Z, H)/self.IN.solar_metallicity)
         fig, ax = plt.subplots(1,1, figsize=(7,5))
         ax.plot(gal_time, ZH, color='blue', label='Z', linewidth=3)
-        ax.axvline(x=self.IN.age_Galaxy-self.IN.age_Sun, linewidth=2, color='orange', label=r'Age$_{\odot}$')
+        ax.axvline(x=self.IN.Galaxy_age-self.IN.solar_age, linewidth=2, color='orange', label=r'Age$_{\odot}$')
         ax.axhline(y=0, linewidth=1, color='orange', linestyle='--')
-        ax.plot(self.IN.age_Galaxy +0.5 - metallicity_age, a*metallicity_age+b, color='red', alpha=1, linewidth=3, label='linear fit on [M/H]')
-        ax.scatter(self.IN.age_Galaxy +0.5 - metallicity_age, metallicity_value, color='red', marker='*', alpha=0.3, label='Silva Aguirre et al. (2018)')
-        #ax.errorbar(self.IN.age_Galaxy - observ['age'], observ['FeH'], yerr=observ['FeHerr'], marker='s', label='Meusinger+91', mfc='gray', ecolor='gray', ls='none')
+        ax.plot(self.IN.Galaxy_age - metallicity_age, a*metallicity_age+b, color='red', alpha=1, linewidth=3, label='linear fit on [M/H]')
+        ax.scatter(self.IN.Galaxy_age - metallicity_age, metallicity_value, color='red', marker='*', alpha=0.3, label='Silva Aguirre et al. (2018)')
+        #ax.errorbar(self.IN.Galaxy_age - observ['age'], observ['FeH'], yerr=observ['FeHerr'], marker='s', label='Meusinger+91', mfc='gray', ecolor='gray', ls='none')
         ax.legend(loc='lower right', frameon=False, fontsize=17)
         ax.set_ylabel(r'metallicity', fontsize=20)
         ax.set_xlabel('Galaxy Age [Gyr]', fontsize=20)
         ax.set_ylim(-2,1)
         xscale = '_lin'
         if not logAge:
-            ax.set_xlim(0,self.IN.age_Galaxy)
+            ax.set_xlim(0,self.IN.Galaxy_age)
         else:
             ax.set_xscale('log')
             xscale = '_log'
@@ -329,8 +353,8 @@ class Plots(Setup):
         from matplotlib import pyplot as plt
         #plt.style.use(self._dir+'/galcem.mplstyle')
         Z_list = np.unique(self.ZA_sorted[:,0])
-        phys = np.loadtxt(self._dir_out + 'phys.dat')
-        gal_time = phys[c:,0]
+        phys = pd.read_csv(self._dir_out+'phys.dat', sep=',', comment='#')
+        gal_time = phys['time[Gyr]'].iloc[c:]
        # _, _, metallicity_value, metallicity_age = self._age_observations()
         #a, b = np.polyfit(metallicity_age, metallicity_value, 1)
         solar_norm_Fe = self.c_class.solarA09_vs_Fe_bymass[Z_list]
@@ -343,22 +367,22 @@ class Plots(Setup):
         fig, ax = plt.subplots(1,1, figsize=(7,5))
         ax.plot(time, NFe, color='magenta', label='[N/Fe]', linewidth=3)
         ax.plot(time, MgFe, color='teal', label='[Mg/Fe]', linewidth=3)
-        ax.axvline(x=self.IN.age_Galaxy-self.IN.age_Sun, linewidth=2, color='orange', label=r'Age$_{\odot}$')
+        ax.axvline(x=self.IN.Galaxy_age-self.IN.solar_age, linewidth=2, color='orange', label=r'Age$_{\odot}$')
         #ax.axhline(y=0, linewidth=1, color='orange', linestyle='--')
-        #ax.plot(self.IN.age_Galaxy +0.5 - metallicity_age, a*metallicity_age+b, color='red', alpha=1, linewidth=3, label='linear fit on [M/H]')
-        #ax.scatter(self.IN.age_Galaxy +0.5 - metallicity_age, metallicity_value, color='red', marker='*', alpha=0.3, label='Silva Aguirre et al. (2018)')
-        #ax.errorbar(self.IN.age_Galaxy - observ['age'], observ['FeH'], yerr=observ['FeHerr'], marker='s', label='Meusinger+91', mfc='gray', ecolor='gray', ls='none')
+        #ax.plot(self.IN.Galaxy_age +0.5 - metallicity_age, a*metallicity_age+b, color='red', alpha=1, linewidth=3, label='linear fit on [M/H]')
+        #ax.scatter(self.IN.Galaxy_age +0.5 - metallicity_age, metallicity_value, color='red', marker='*', alpha=0.3, label='Silva Aguirre et al. (2018)')
+        #ax.errorbar(self.IN.Galaxy_age - observ['age'], observ['FeH'], yerr=observ['FeHerr'], marker='s', label='Meusinger+91', mfc='gray', ecolor='gray', ls='none')
         ax.legend(loc='best', frameon=False, fontsize=17)
         ax.set_ylabel(r'[X/Fe]', fontsize=20)
         ax.set_xlabel('Galaxy Age [Gyr]', fontsize=20)
         ax.set_ylim(-2,1)
         xscale = '_lin'
         if not logAge:
-            ax.set_xlim(0,self.IN.age_Galaxy)
+            ax.set_xlim(0,self.IN.Galaxy_age)
         else:
             ax.set_xscale('log')
             xscale = '_log'
-            ax.set_xlim(2e-2,self.IN.age_Galaxy)
+            ax.set_xlim(2e-2,self.IN.Galaxy_age)
         #ax.set_xlim(1e-2, 1.9e1)
         fig.tight_layout()
         plt.savefig(self._dir_out_figs + 'ind_evolution'+str(xscale)+'.pdf', bbox_inches='tight')
@@ -371,14 +395,14 @@ class Plots(Setup):
         import matplotlib.ticker as ticker
         Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
         Masses = np.log10(Mass_i[:,2:])#, where=Mass_i[:,2:]>0.)
-        phys = np.loadtxt(self._dir_out + 'phys.dat')
+        phys = pd.read_csv(self._dir_out+'phys.dat', sep=',', comment='#')
+        timex = phys['time[Gyr]']
         W_i_comp = pickle.load(open(self._dir_out + 'W_i_comp.pkl','rb'))
         #Mass_MRSN = np.log10(W_i_comp['MRSN'])
         Mass_BBN = np.log10(W_i_comp['BBN'])#, where=W_i_comp['BBN']>0.)
         Mass_SNCC = np.log10(W_i_comp['SNCC'])#, where=W_i_comp['SNCC']>0.)
         Mass_AGB = np.log10(W_i_comp['LIMs'])#, where=W_i_comp['LIMs']>0.)
         Mass_SNIa = np.log10(W_i_comp['SNIa'])#, where=W_i_comp['SNIa']>0.)
-        timex = phys[:,0]
         Z = self.ZA_sorted[:,0]
         A = self.ZA_sorted[:,1]
         if ncol==None: ncol = np.floor(np.sqrt(lenA)).astype('int')
@@ -448,7 +472,8 @@ class Plots(Setup):
         import matplotlib.ticker as ticker
         Mass_i = np.loadtxt(self._dir_out + 'Mass_i.dat')
         Masses = np.log10(Mass_i[:,2:])#, where=Mass_i[:,2:]>0.)
-        phys = np.loadtxt(self._dir_out + 'phys.dat')
+        phys = pd.read_csv(self._dir_out+'phys.dat', sep=',', comment='#')
+        timex = phys['time[Gyr]']
         W_i_comp = pickle.load(open(self._dir_out + 'W_i_comp.pkl','rb'))
         #Mass_MRSN = np.log10(W_i_comp['MRSN'], where=W_i_comp['MRSN']>0.)
         yr_rate = IN.nTimeStep * 1e9
@@ -456,7 +481,6 @@ class Plots(Setup):
         Mass_SNCC = np.log10(W_i_comp['SNCC']/yr_rate)#, where=W_i_comp['SNCC']>0., out=np.zeros((W_i_comp['SNCC']).shape))
         Mass_AGB = np.log10(W_i_comp['LIMs']/yr_rate)#, where=W_i_comp['LIMs']>0., out=np.zeros((W_i_comp['LIMs']).shape))
         Mass_SNIa = np.log10(W_i_comp['SNIa']/yr_rate)#, where=W_i_comp['SNIa']>0., out=np.zeros((W_i_comp['SNIa']).shape))
-        timex = phys[:,0]
         Z = self.ZA_sorted[:,0]
         A = self.ZA_sorted[:,1]
         if ncol==None: ncol = np.floor(np.sqrt(lenA)).astype('int')
