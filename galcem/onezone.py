@@ -266,7 +266,7 @@ class OneZone(Setup):
         # Second timestep: infall only
         self.Mass_i_v[:,1] = np.multiply(self.Mtot[1], self.models_BBN)
         self.Mgas_v[1] = self.Mtot[1]
-        for n in range(len(self.time_chosen[:self.idx_Galaxy_age])+1):
+        for n in range(len(self.time_chosen[:self.idx_Galaxy_age])):
             print('time [Gyr] = %.2f'%self.time_chosen[n])
             self.file1.write('n = %d\n'%n)
             self.total_evolution(n)        
