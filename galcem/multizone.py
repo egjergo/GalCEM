@@ -5,8 +5,8 @@
 "     integro-differential equations of GCE    "
 "                                              "
 " LIST OF CLASSES:                             "
-"    __        OneZone (subclass of Setup)     "
-"                      (    from setup.py)     "
+"    __        Setup (parent)                  "
+"    __        OneZone (subclass)              "
 "                                              "
 """"""""""""""""""""""""""""""""""""""""""""""""
 
@@ -22,8 +22,9 @@ from .classes import yields as yi
 from .classes import integration as gcint
 from .classes.inputs import Auxiliary
 from .setup import Setup
-        
-class OneZone(Setup):
+
+
+class MultiZone(Setup):
     """
     OneZone class
     
@@ -57,7 +58,7 @@ class OneZone(Setup):
                         ff.write('\n %s type %s\n'%(key, str(type(value))))
                     #value.to_csv(self._dir_out + 'inputs.txt', mode='a',
                     #             sep='\t', index=True, header=True)
-        self.evolve()
+        #self.evolve()
         self.aux.tic_count(string="Computation time", tic=self.tic)
         G_v = np.divide(self.Mgas_v, self.Mtot)
         S_v = 1 - G_v
@@ -97,49 +98,49 @@ class OneZone(Setup):
         #self.file1.write('A list of the proton/isotope number pairs for all the nuclides included in this run.\n ZA_sorted =\n\n')
         #self.file1.write(self.ZA_sorted)
         # First timestep: the galaxy is empty
-        self.Mass_i_v[:,0] = np.multiply(self.Mtot[0], self.models_BBN)
-        self.Mgas_v[0] = self.Mtot[0]
+        self.Mass_i_v[:,0,:] = np.multiply(self.Mtot[0,:], self.models_BBN)
+        self.Mgas_v[0,:] = self.Mtot[0,:]
         # Second timestep: infall only
-        self.Mass_i_v[:,1] = np.multiply(self.Mtot[1], self.models_BBN)
-        self.Mgas_v[1] = self.Mtot[1]
+        self.Mass_i_v[:,1,:] = np.multiply(self.Mtot[1,:], self.models_BBN)
+        self.Mgas_v[1,:] = self.Mtot[1,:]
         for n in range(len(self.time_chosen[:self.idx_Galaxy_age])):
             print('time [Gyr] = %.2f'%self.time_chosen[n])
             self.file1.write('n = %d\n'%n)
             self.total_evolution(n)        
-            self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
-            self.Z_v[n] = np.divide(np.sum(self.Mass_i_v[self.i_Z:,n]),
-                                    self.Mgas_v[n])
+            self.Xi_v[:, n, :] = np.divide(self.Mass_i_v[:,n,:], self.Mgas_v[n,:])
+            self.Z_v[n, :] = np.divide(np.sum(self.Mass_i_v[self.i_Z:,n,:]),
+                                    self.Mgas_v[n,:])
             self.file1.write(' sum X_i at n %d= %.3f\n'%(n, np.sum(
                              self.Xi_v[:,n])))
             
-            if n > 0.: 
-                Wi_class = gcint.Wi(n, self.IN, self.lifetime_class, 
-                                    self.time_chosen, self.Z_v, self.SFR_v,
-                            self.Greggio05_SD, self.IMF, self.ZA_sorted)
-                _rates = Wi_class.compute_rates()
-                self.Rate_SNCC[n] = _rates['SNCC']
-                self.Rate_LIMs[n] = _rates['LIMs']
-                self.Rate_SNIa[n] = _rates['SNIa']
-                Wi_comp = {ch: Wi_class.compute(ch)
-                        for ch in self.IN.include_channel}
-                Z_comp = {}
-                for ch in self.IN.include_channel:
-                    if len(Wi_comp[ch]['birthtime_grid']) > 1.:
-                        Z_comp[ch] = pd.DataFrame(
-                        Wi_class.Z_component(Wi_comp[ch]['birthtime_grid']),
-                                            columns=['metallicity']) 
-                    else:
-                        Z_comp[ch] = pd.DataFrame(columns=['metallicity']) 
-                for i, _ in enumerate(self.ZA_sorted): 
-                    self.Mass_i_v[i, n+1] = self.aux.RK4(
-                        self.isotopes_evolution,self.time_chosen[n],
-                        self.Mass_i_v[i,n], n, self.IN.nTimeStep,
-                        i=i, Wi_comp=Wi_comp, Z_comp=Z_comp)
+            # if n > 0.: 
+            #     Wi_class = gcint.Wi(n, self.IN, self.lifetime_class, 
+            #                         self.time_chosen, self.Z_v, self.SFR_v,
+            #                 self.Greggio05_SD, self.IMF, self.ZA_sorted)
+            #     _rates = Wi_class.compute_rates()
+            #     self.Rate_SNCC[n] = _rates['SNCC']
+            #     self.Rate_LIMs[n] = _rates['LIMs']
+            #     self.Rate_SNIa[n] = _rates['SNIa']
+            #     Wi_comp = {ch: Wi_class.compute(ch)
+            #             for ch in self.IN.include_channel}
+            #     Z_comp = {}
+            #     for ch in self.IN.include_channel:
+            #         if len(Wi_comp[ch]['birthtime_grid']) > 1.:
+            #             Z_comp[ch] = pd.DataFrame(
+            #             Wi_class.Z_component(Wi_comp[ch]['birthtime_grid']),
+            #                                 columns=['metallicity']) 
+            #         else:
+            #             Z_comp[ch] = pd.DataFrame(columns=['metallicity']) 
+            #     for i, _ in enumerate(self.ZA_sorted): 
+            #         self.Mass_i_v[i, n+1] = self.aux.RK4(
+            #             self.isotopes_evolution,self.time_chosen[n],
+            #             self.Mass_i_v[i,n], n, self.IN.nTimeStep,
+            #             i=i, Wi_comp=Wi_comp, Z_comp=Z_comp)
             self.Mass_i_v[:, n] = np.multiply(self.Mass_i_v[:,n], #!!!!!!!
                                               self.Mgas_v[n]/np.sum(self.Mass_i_v[:,n]))
-        self.Z_v[-1] = np.divide(np.sum(self.Mass_i_v[self.i_Z:,-1]), 
+        self.Z_v[-1,:] = np.divide(np.sum(self.Mass_i_v[self.i_Z:,-1]), 
                                 self.Mgas_v[-1])
-        self.Xi_v[:,-1] = np.divide(self.Mass_i_v[:,-1], self.Mgas_v[-1]) 
+        self.Xi_v[:,-1,:] = np.divide(self.Mass_i_v[:,-1,:], self.Mgas_v[-1,:]) 
 
     def Mgas_func(self, t_n, y_n, n, i=None):
         # Explicit general diff eq GCE function
@@ -153,7 +154,7 @@ class OneZone(Setup):
         return self.SFR_tn(n) * self.IN.M_inf - np.sum([
                self.W_i_comp[ch][:,n-1] for ch in self.IN.include_channel])
 
-    def SFR_tn(self, timestep_n):
+    def SFR_tn(self, timestep_n, radius_j):
         '''
         Actual SFR employed within the integro-differential equation
         Args:
@@ -162,15 +163,19 @@ class OneZone(Setup):
             [function]: [SFR as a function of Mgas] units of [Gyr^-1]
         '''
         return self.SFR_class.SFR(Mgas=self.Mgas_v, Mtot=self.Mtot, 
-                                  timestep_n=timestep_n) 
+                                  timestep_n=timestep_n, radius_j=radius_j) 
     
     def total_evolution(self, n):
         '''Integral for the total physical quantities'''
-        self.SFR_v[n] = self.SFR_tn(n)
-        self.Mstar_v[n+1] = self.aux.RK4(self.Mstar_func, self.time_chosen[n],
-                                        self.Mstar_v[n], n, self.IN.nTimeStep)
-        self.Mgas_v[n+1] = self.aux.RK4(self.Mgas_func, self.time_chosen[n], 
-                                        self.Mgas_v[n], n, self.IN.nTimeStep)   
+        for j, r_center in enumerate(self.radii_mean):
+            #self.Mtot = np.insert(np.cumsum((self.Infall_rate[1:]
+            #                + self.Infall_rate[:-1]) * self.IN.nTimeStep / 2),
+            #                  0, self.IN.epsilon) # !!!!!!! edit this with non-uniform timesteps
+            self.SFR_v[n,j] = self.SFR_tn(n,j=j)
+            self.Mstar_v[n+1,j] = self.aux.RK4(self.Mstar_func, self.time_chosen[n],
+                                        self.Mstar_v[n,j], n, self.IN.nTimeStep)
+            self.Mgas_v[n+1,j] = self.aux.RK4(self.Mgas_func, self.time_chosen[n], 
+                                        self.Mgas_v[n,j], n, self.IN.nTimeStep)   
 
     def isotopes_evolution(self, t_n, y_n, n, **kwargs):
         '''

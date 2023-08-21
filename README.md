@@ -3,6 +3,9 @@ Modern IPA pronunciation: gálkɛ́m.
 
 Direct queries to Eda Gjergo (Nanjing University) <GalacticCEM@gmail.com>
 
+## Publications
+[Paper I - code architecture](https://ui.adsabs.harvard.edu/abs/2023ApJS..264...44G/abstract 'NASA/ADS link')
+
 ![GalCEM flowchart](/docs/figs/GalCEMdiagram.jpg "GalCEM flowchart")
 
 

@@ -31,14 +31,22 @@ class Inputs:
         self.num_MassGrid = 200
         self.include_channel = ['SNCC', 'LIMs', 'SNIa']
         
-        self.Galaxy_birthtime = 0. #0.1 # [Gyr]
+        self.Galaxy_birthtime = 0.001 #0.1 # [Gyr]
         self.Galaxy_age = 13.8 # [Gyr]
         self.solar_age = 4.6 # [Gyr]
         self.solar_metallicity = 0.0134 # Asplund et al. (2009, Table 4)
-        self.r = 8 # [kpc] Compute at the solar radius
-        self.k_SFR = 1.4 # SFR power law exponent
+        self.solar_surf_density = 75 # [Msun/pc^2]
+        self.solar_radius = 8 # [kpc] Compute at the solar radius
+        self.k_SFR = 1. # SFR power law exponent
+        
+        # Multizone
+        self.t_D = 4
         
         self.morphology = 'spiral'
+        self.multizone = True
+        self.Galaxy_radius = 20. # [kpc]
+        self.bulge_radius = 2. #2 #4 # [kpc]
+        self.n_shells = int(self.Galaxy_radius - self.bulge_radius)//2 + 1 # 5
 
         # Fraction of compact objects
         #self.A_SNIa = # Fixed inside morph.Greggio05() # Fraction of white dwarfs that underwent a SNIa
@@ -59,7 +67,7 @@ class Inputs:
         self.Ml_collapsars = 9 # [Msun] 
         self.Mu_collapsars = 150 # [Msun] 
 
-        self.sd = 530.96618 # surf density coefficient for the disk (normalized to the MW mass?) 
+        #self.sd = 530.96618 # surf density coefficient for the disk (normalized to the MW mass?) 
         self.MW_SFR = 1.9 #+-0.4 [Msun/yr] from Chomiuk & Povich (2011) Galactic SFR (z=0)
         self.MW_RSNIa = np.empty(3) # Galactic SNIa rates (filled in Setup, from Mannucci+05)
         self.MW_RSNCC = np.empty(3) # Galactic SNCC rates (filled in Setup, from Mannucci+05)

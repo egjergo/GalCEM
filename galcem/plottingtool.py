@@ -614,6 +614,24 @@ class Plots(Setup):
         plt.show(block=False)
         plt.savefig(self._dir_out_figs + 'elem_abundance.pdf', bbox_inches='tight')
     
+    def multizone_infall_plot(self):
+        from matplotlib import pyplot as plt
+        import matplotlib.ticker as ticker
+        fig = plt.figure()
+        threed = fig.add_subplot(projection='3d')
+        
+        X = np.log10(self.total_df['gal_radius'])
+        Y = np.log10(self.total_df['gal_age'])
+        Z = np.log10(self.total_df['infall_rate'])
+        threed.plot_trisurf(X,Y,Z)
+        
+        threed.set_xlabel('log(Galactic radius) [kpc]')
+        threed.set_ylabel('log(Galactic age) [Gyr]')
+        threed.set_zlabel('log(infall rate)')
+        plt.show(block=False)
+        plt.savefig(self._dir_out_figs + 'multizone_infall.pdf', bbox_inches='tight')
+        
+    
     def _select_elemZ_idx(self, elemZ):
         ''' auxiliary function that selects the isotope indexes where Z=elemZ '''
         return np.where(self.ZA_sorted[:,0]==elemZ)[0]

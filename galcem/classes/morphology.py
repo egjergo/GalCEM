@@ -51,10 +51,25 @@ class Infall:
         self.morphology = self.IN.morphology if morph is None else morph
         self.time = time
         self.option = self.IN.inf_option if option is None else option
+        self.tau1 = 0.5
+        self.tau2 = 15 # Chiosi80
+        self.Beta_0 = 0.1 # !!!!!!! Normalize
     
     def __repr__(self):
         aux = Auxiliary()
         return aux.repr(self)
+    
+    
+    def Chiosi_A(self):
+        return lambda r: 1 # This is the collapse component. Let's ignore it for now
+        
+    def Chiosi_B(self, radius_k=3.5):
+        return lambda r: self.Beta_0 * np.exp(-r/radius_k + self.IN.Galaxy_age/self.tau2)
+        
+    def radial_infall(self,r=None,t=None):
+        """Chiosi+80"""
+        
+        
     
     def infall_func_simple(self):
         '''
@@ -63,19 +78,53 @@ class Infall:
         '''
         return lambda t: np.exp(-t / self.IN.tau_inf)
         
-    def two_infall(self):
+    def sigma(self, r, sigma_d=531):
+        '''total surface mass density in the thin disk 
+        as a function of the Galactocentric distance r
+        
+        sigma_d [Msun pc^-2]
+        r [kpc]'''
+        return sigma_d * np.exp(-r/self.IN.Reff)
+    
+    def a_func(self, r):
+        return
+    
+    def b_func(self, r):
+        return
+    
+    def tau_h(self, r):
+        return 1 # [Gyr]
+    
+    def tau_D(self, r):
+        '''
+        INPUT
+            r [kpc]
+            
+        OUTPUT
+            timescale [Gyr]
+        '''
+        return 1.033 * r - 1.27
+    
+    def two_infall(self, r):
         '''
         My version of Chiappini+01
         '''
         # After a radial dependence upgrade
-        return None
+        inf_func = lambda t: (self.a_func(r) * np.exp(-t/self.tau_h(r))
+                                + self.b_func(r) * np.exp(-(t-self.IN.t_D)/self.tau_D(r)))
+        return inf_func
     
     def infall_func(self):
         ''' Picks the infall function based on the option'''
-        if not self.option:
-            return self.infall_func_simple()
-        elif self.option == 'two-infall':
-            return self.two_infall()
+        #if self.IN.multizone==False:
+        #    return self.infall_func_simple()
+        #elif self.IN.multizone==True:
+        #    return self.radial_infall()
+        #    if self.IN.twoinfall==True:
+        #        return self.two_infall()
+        #else:
+        #    print("NO INFALL DEFINED")
+        return self.infall_func_simple()
     
     def aInf(self):
         """
@@ -140,7 +189,7 @@ class Star_Formation_Rate:
                          / (14.0 / 15) - 0.6 + 0.6 * np.exp((14. / 15) * (z - 5.4))))}
         return CSFR.get(self.option_CSFR, "Invalid CSFR option")
         
-    def SFR(self, Mgas=None, Mtot=None, timestep_n=0):
+    def SFR(self, Mgas=None, Mtot=None, timestep_n=0, radius_j: float=8.):
         if not self.custom:
             if self.option == 'SFRgal':
                     return self.SFRgal(Mgas=Mgas, Mtot=Mtot, timestep_n=timestep_n)
