@@ -93,18 +93,19 @@ class OneZone(Setup):
         #self.file1.write('A list of the proton/isotope number pairs for all the nuclides included in this run.\n ZA_sorted =\n\n')
         #self.file1.write(self.ZA_sorted)
         # First timestep: the galaxy is empty
-        self.Mass_i_v[:,0] = np.multiply(self.Mtot[0], self.models_BBN)
         self.Mgas_v[0] = self.Mtot[0]
+        self.Mass_i_v[:,0] = np.multiply(self.Mtot[0], self.models_BBN)
         # Second timestep: infall only
-        self.Mass_i_v[:,1] = np.multiply(self.Mtot[1], self.models_BBN)
         self.Mgas_v[1] = self.Mtot[1]
+        self.Mass_i_v[:,1] = np.multiply(self.Mtot[1], self.models_BBN)
         for n in range(len(self.time_chosen[:self.idx_Galaxy_age])):
             print('time [Gyr] = %.2f'%self.time_chosen[n])
             self.file1.write('n = %d\n'%n)
             self.total_evolution(n)        
-            self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], self.Mgas_v[n])
+            self.Mass_i_v[:,n] *= self.Mgas_v[n] / np.sum(self.Mass_i_v[:,n])
+            self.Xi_v[:, n] = np.divide(self.Mass_i_v[:,n], np.sum(self.Mass_i_v[:,n]))
             self.Z_v[n] = np.divide(np.sum(self.Mass_i_v[self.i_Z:,n]),
-                                    self.Mgas_v[n])
+                                    np.sum(self.Mass_i_v[:,n]))
             self.file1.write(' sum X_i at n %d= %.3f\n'%(n, np.sum(
                              self.Xi_v[:,n])))
             
@@ -137,17 +138,20 @@ class OneZone(Setup):
                                 self.Mgas_v[-1])
         self.Xi_v[:,-1] = np.divide(self.Mass_i_v[:,-1], self.Mgas_v[-1]) 
 
+    def Mtot_func(self, t_n, y_n, n, i=None):
+        return self.Infall_rate[n] # - outflow !!!!!!!
+
     def Mgas_func(self, t_n, y_n, n, i=None):
         # Explicit general diff eq GCE function
         # Mgas(t)
         #print(f'{self.SFR_tn(n)==self.SFR_v[n]=}')
-        return self.Infall_rate[n] - self.SFR_tn(n) * self.IN.M_inf + np.sum([
-                self.W_i_comp[ch][:,n-1] for ch in self.IN.include_channel])
+        return self.Infall_rate[n] - self.SFR_tn(n) * self.IN.M_inf + np.sum([ # * self.IN.M_inf because of the normalization in the morph class
+                self.W_i_comp[ch][:,n] for ch in self.IN.include_channel])
     
     def Mstar_func(self, t_n, y_n, n, i=None):
         # Mstar(t)
-        return self.SFR_tn(n) * self.IN.M_inf - np.sum([
-               self.W_i_comp[ch][:,n-1] for ch in self.IN.include_channel])
+        return self.SFR_tn(n) * self.IN.M_inf - np.sum([ # * self.IN.M_inf because of the normalization in the morph class
+               self.W_i_comp[ch][:,n] for ch in self.IN.include_channel])
 
     def SFR_tn(self, timestep_n):
         '''
@@ -158,10 +162,12 @@ class OneZone(Setup):
             [function]: [SFR as a function of Mgas] units of [Gyr^-1]
         '''
         return self.SFR_class.SFR(Mgas=self.Mgas_v, Mtot=self.Mtot, 
-                                  timestep_n=timestep_n) 
+                                  timestep_n=timestep_n)
     
     def total_evolution(self, n):
         '''Integral for the total physical quantities'''
+        self.Mtot[n+1] = self.aux.RK4(self.Mtot_func, self.time_chosen[n],
+                                      self.Mtot[n], n, self.IN.nTimeStep)
         self.SFR_v[n] = self.SFR_tn(n)
         self.Mstar_v[n+1] = self.aux.RK4(self.Mstar_func, self.time_chosen[n],
                                         self.Mstar_v[n], n, self.IN.nTimeStep)

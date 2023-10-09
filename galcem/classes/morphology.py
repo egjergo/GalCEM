@@ -209,7 +209,8 @@ class Initial_Mass_Function:
                              lambda M: 1/(lim01*lim12) * self.powerlaw(M, alpha=alpha0),
                              lambda M: 1/lim12 * self.powerlaw(M, alpha=alpha1), 
                              lambda M: self.powerlaw(M, alpha=alpha2), 
-                             lambda M: self.powerlaw(M, alpha=alpha3)])
+                             lambda M: self.powerlaw(M, alpha=alpha3)
+                             ])
     
     def Chabrier03(self, systems=False, alpha=2.3):
         if systems == False: # for individual stars

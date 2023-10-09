@@ -138,9 +138,10 @@ class Setup:
         self.i_Z = np.where(self.ZA_sorted[:,0]>2)[0][0] 
         
         # The total baryonic mass (i.e. the infall mass) is computed right away
-        self.Mtot = np.insert(np.cumsum((self.Infall_rate[1:]
-                            + self.Infall_rate[:-1]) * self.IN.nTimeStep / 2),
-                              0, self.IN.epsilon) # !!!!!!! edit this with non-uniform timesteps
+        #self.Mtot = np.insert(np.cumsum((self.Infall_rate[1:]
+        #                    + self.Infall_rate[:-1]) * self.IN.nTimeStep / 2),
+        #                      0, self.IN.epsilon) # !!!!!!! edit this with non-uniform timesteps
+        self.Mtot = self.initialize()
         self.Mstar_v = self.initialize()
         self.Mgas_v = self.initialize() 
         self.returned_Mass_v = self.initialize() 
