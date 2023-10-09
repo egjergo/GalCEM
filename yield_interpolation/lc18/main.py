@@ -31,7 +31,7 @@ def parse_lc18_raw(_path='galcem/input/yields/sncc/lc18/'):
         _df.columns = cols
         _df = _df[1:]
         _df = pd.melt(_df,id_vars=cols[:4],value_name='yield')
-        _df[['mass','irv']] = _df['variable'].str.split(z_ini_key,1,expand=True)
+        _df[['mass','irv']] = _df['variable'].str.split(z_ini_key,n=3,expand=True)
         _df['mass'] = _df['mass'].astype(float)
         _df['irv'] = _df['irv'].astype(float)
         _df['metallicity'] = z_ini
@@ -49,7 +49,8 @@ def parse_lc18_raw(_path='galcem/input/yields/sncc/lc18/'):
         num_cols = ['a','z','yield','mass','metallicity','irv','mass_ej','massfrac','ysign']
         _df = _df[['isotope']+num_cols]
         _df[num_cols] = _df[num_cols].apply(pd.to_numeric)
-        df = df.append(_df,ignore_index=True)
+        #df = df.append(_df,ignore_index=True)
+        df = pd.concat([df, _df], ignore_index=True)
     df[['a','z','ysign']] = df[['a','z','ysign']].astype(int)
     #dfy0 = df[df['yield']==0]
     #print('setting %d rows with yield=0 to %.1e'%(len(dfy0),yield_eps))

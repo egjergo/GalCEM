@@ -30,7 +30,8 @@ def parse_c15_raw(_path='galcem/input/yields/lims/c15/tot/'):
         df_txt['MASS_FRACTION'] = df_txt['YIELD']/df_txt['MASS_EJ']
         df_txt.loc[np.isclose(df_txt['MASS_EJ'],0),'MASS_FRACTION'] = yield_eps
         df_txt['YSIGN'] = np.sign(df_txt['YIELD'])
-        df = df.append(df_txt)
+        #df = df.append(df_txt)
+        df = pd.concat([df, df_txt], ignore_index=True)
         print(df_txt.head())
         print('\n'+'~'*75+'\n')
     #df.columns = ['isotope','a','z','yield','mass','metallicity','irv']
@@ -57,5 +58,5 @@ if __name__ == '__main__':
             'metallicity':lambda x:np.log10(x), 'metallicity.prime':lambda x:1/(x*np.log(10)),
             'massfrac':lambda y:np.log10(y), 'massfrac.prime':lambda y:1/(y*np.log(10)), 'massfrac.inv':lambda y:10**y},
         fit_names = 'all', # 'all', ['c15_z8.a16.irv0.O16'],
-        plot_names =  '[]', # [], 'all', ['c15_z8.a16.irv0.O16'] 
+        plot_names =  [], # [], 'all', ['c15_z8.a16.irv0.O16'] 
         )
