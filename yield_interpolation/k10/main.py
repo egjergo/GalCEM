@@ -14,11 +14,13 @@ def parse_k10_raw():
     df = pd.concat(dfs,axis=0)
     df['yield'] = df['net_yield']+df['Xi_ini']*(df['mass_ini']-df['mass'])
     df['isotope'] = df['isotope'].str.strip()
+    df['mass_ej'] = df['mass_ini'] - df['mass']
     df.loc[df['isotope']=='al-6','isotope'] = 'al26'
     df = df[df['isotope']!='al*6']
-    df = df[['isotope','a','z','yield','mass','metallicity']]
+    df = df[['isotope','a','z','yield','mass','metallicity', 'mass_ej']]
     #df.loc[df['yield']<=0,'yield'] = df.loc[df['yield']>0,'yield'].min()
     df.loc[df['yield']<0,'yield'] = 0
+    df['massfrac'] = np.divide(df['yield'], df['mass_ej'])
     return df
 
 if __name__ == '__main__':
@@ -34,8 +36,10 @@ if __name__ == '__main__':
         tf_funs = {
             'mass':lambda x:np.log10(x), 'mass.prime':lambda x:1/(x*np.log(10)),
             'metallicity':lambda x:np.log10(x), 'metallicity.prime':lambda x:1/(x*np.log(10)),
-            'yield':lambda y:np.log10(y), 'yield.prime':lambda y:1/(y*np.log(10)), 'yield.inv':lambda y:10**y},
+            #'yield':lambda y:np.log10(y), 'yield.prime':lambda y:1/(y*np.log(10)), 'yield.inv':lambda y:10**y
+            'massfrac':lambda y:np.log10(y), 'massfrac.prime':lambda y:1/(y*np.log(10)), 'massfrac.inv':lambda y:10**y
+            },
         fit_names = 'all', # 'all', ['lc18_z8.a16.irv0.O16'],
-        plot_names = 'all' # [], 'all', ['lc18_z8.a16.irv0.O16']
+        plot_names = [] # [], 'all', ['lc18_z8.a16.irv0.O16']
         ) 
     

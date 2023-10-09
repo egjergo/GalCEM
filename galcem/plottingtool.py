@@ -13,7 +13,7 @@ import pickle
 import time
 import numpy as np
 import pandas as pd
-from .onezone import Setup
+from .gcsetup import Setup
 from .classes.inputs import Auxiliary
 import warnings
 warnings.filterwarnings("ignore")

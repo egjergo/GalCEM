@@ -16,6 +16,13 @@ conda env create -f environment.yml
 conda activate gce
 ```
 
+Either navigate to "yield_interpolation/FriendlyInterpolants" and 
+```
+git pull
+```
+
+or unzip "yield_interpolation/FriendlyInterpolants.zip"
+
 ## Pre-process the stellar lifetimes
 ```
 python yield_interpolation/lifetime_mass_metallicity/main.py
@@ -41,7 +48,7 @@ python examples/mwe.py
 ```python
 import galcem as glc
 inputs = glc.Inputs()
-inputs.nTimeStep = .25
+inputs.nTimeStep = .1
 oz = glc.OneZone(inputs,outdir='runs/MYDIR/')
 oz.main()
 ```
