@@ -86,7 +86,7 @@ class Inputs:
         self.delta_max = 8e-2 # Convergence limit for eq. 28, Portinari+98
         self.epsilon = 1e-32 # Avoid numerical errors - consistent with BBN
         self.to_sec = .1 # Metallicity convergence break time
-        self.factor = 1 #!!!!!!!
+        self.factor = 40 #!!!!!!!
         
         _dir = os.path.join(os.path.dirname( __file__ ), '..')
         self.s_lifetimes_p98 = pd.read_csv(_dir+'/input/starlifetime/portinari98table14.dat')

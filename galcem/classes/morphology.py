@@ -196,7 +196,7 @@ class Initial_Mass_Function:
         plaw = self.IN.IMF_single_slope if plaw is None else plaw
         return lambda Mstar: self.powerlaw(Mstar, alpha=plaw)
         
-    def Kroupa01(self, alpha0=0.3, alpha1=1.3, alpha2=2.3, alpha3=2.3,
+    def Kroupa01(self, alpha0=0.3, alpha1=1.3, alpha2=2.3, alpha3=1.7,
                 lim01=0.08, lim12=0.5, lim23=1.):
         '''lim refer to the mass limits that break the power law'''
         return lambda Mstar: np.piecewise(Mstar, 

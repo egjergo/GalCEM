@@ -69,9 +69,11 @@ class Setup:
         N_IMF = integr.quad(self.IMF, self.Ml, self.Mu)[0]
         self.IN.MW_RSNCC = self.IN.Mannucci05_convert_to_SNrate_yr('II', self.IN.morphology, 
                                                            SNmassfrac=SNmassfrac, SNnfrac=SNnfrac, NtotvsMtot=N_IMF)
+        self.IN.MW_RSNCC = np.array([0.87722279, 1.24470801, 0.52159193])
         N_RSNIa = np.multiply(self.IN.Mannucci05_SN_rate('Ia', self.IN.morphology),
                               1.4 * self.IN.M_inf /1.e10 * 1e-2) # 1.4 Msun for Chandrasekhar's limit (SD scenario) 
         self.IN.MW_RSNIa = np.array([N_RSNIa[0], N_RSNIa[0]+ N_RSNIa[1], N_RSNIa[0] - N_RSNIa[2]])
+        self.IN.MW_RSNIa = np.array([0.0119 , 0.01666, 0.00749])
         
         # Initialize Yields
         self.iso_class = yi.Isotopes(self.IN)
