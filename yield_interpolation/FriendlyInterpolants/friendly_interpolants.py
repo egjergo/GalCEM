@@ -9,11 +9,11 @@ class FriendlyInterpolant(object):
             df (pd.DataFrame): dataframe of features and response vector.
             tf_funs (dict): transform functions where keys are df column names potentially with '.inv' or prime appended '.prime'. 
                 Response transforms are required to have both col and col+'.inv' keys. 
-                If planning to take derivitive with respect to col, supply col+'.prime' key.
+                If planning to take derivative with respect to col, supply col+'.prime' key.
             xcols (list): list of feature col names. If None, use all col not equal to ycol. 
             ycol (str): column name of response vector.
             name (str): name of instance for plotting and printing
-            plot (pd.DataFrame): columns should be all feature columns. Each row is a vector of derivitives. 
+            plot (pd.DataFrame): columns should be all feature columns. Each row is a vector of derivatives. 
                 plot=True is equivalent to having a single row of 0 values.  
                 plot=False is equivalent to having no rows. 
             plot_mod (func): function which modifies input fig,ax before saving plot. 
@@ -147,9 +147,9 @@ class FriendlyInterpolant(object):
         yhattf = self._eval_with_grad(xtf,dwrt=zeros(self.d))
         yhat = self.tf_funs[self.ycol+'.inv'](yhattf)
         if (dwrt==0).all(): return yhat
-        # handle derivitives
+        # handle derivatives
         assert (dwrt>=0).all()
-        if sum(dwrt)!=1: raise Exception("currently only supports 1 derivitive at a time")
+        if sum(dwrt)!=1: raise Exception("currently only supports 1 derivative at a time")
         yhattfgrad = self._eval_with_grad(xtf,dwrt=dwrt)
         dwrt = self.xcols[argmax(dwrt)]
         # chain rule
@@ -196,7 +196,7 @@ class LinearAndNearestNeighbor_FI(FriendlyInterpolant):
         self.inhull_model = scipy.interpolate.LinearNDInterpolator(x,y,rescale=True)
         self.outhull_model = scipy.interpolate.NearestNDInterpolator(x,y,rescale=True)
     def _eval_with_grad(self, x, dwrt):
-        assert (dwrt==0).all() # derivitives not supported by LinearAndNearestNeighbor_FI
+        assert (dwrt==0).all() # derivatives not supported by LinearAndNearestNeighbor_FI
         y = self.inhull_model(x)
         y[isnan(y)] = self.outhull_model(x[isnan(y)])
         return y

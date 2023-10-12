@@ -73,6 +73,7 @@ def fit_lifetime_mass_metallicity_interpolants(df,root):
     yquery = mass_by_lifetime_metallicity_loaded(df)
     dyquery_dlifetime = mass_by_lifetime_metallicity_loaded(df,dwrt='lifetime_Gyr')
     dyquery_dmetallicity = mass_by_lifetime_metallicity_loaded(df,dwrt='metallicity')
+    print(np.multiply(dyquery_dmass, dyquery_dlifetime))
 
 if __name__ == '__main__':
     root = os.path.abspath(os.path.dirname(__file__))    

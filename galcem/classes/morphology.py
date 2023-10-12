@@ -199,6 +199,13 @@ class Initial_Mass_Function:
     def Kroupa01(self, alpha0=0.3, alpha1=1.3, alpha2=2.3, alpha3=1.7,
                 lim01=0.08, lim12=0.5, lim23=1.):
         '''lim refer to the mass limits that break the power law'''
+        alpha0 = self.IN.K01_params['alpha0']
+        alpha1 = self.IN.K01_params['alpha1']
+        alpha2 = self.IN.K01_params['alpha2']
+        alpha3 = self.IN.K01_params['alpha3']
+        lim01 = self.IN.K01_params['lim01']
+        lim12 = self.IN.K01_params['lim12']
+        lim23 = self.IN.K01_params['lim23']
         return lambda Mstar: np.piecewise(Mstar, 
                             [np.logical_or(Mstar < self.Ml, Mstar >= self.Mu),
                              np.logical_and(Mstar >= self.Ml, Mstar < lim01),
@@ -228,7 +235,8 @@ class Initial_Mass_Function:
     def IMF_select(self):
         if not self.custom:
             if self.option == 'Salpeter55': return self.Salpeter55()
-            if self.option == 'Kroupa01' or self.option == 'canonical': return self.Kroupa01()
+            if (self.option == 'Kroupa01' or self.option == 'canonical' 
+                or self.option == 'brokenplaw'): return self.Kroupa01()
             if self.option == 'Chabrier03': return self.Chabrier03()
         if self.custom:
             return self.custom

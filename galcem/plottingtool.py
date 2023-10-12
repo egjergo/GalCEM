@@ -633,7 +633,7 @@ class Plots(Setup):
         Masses2_i = []
         Fe = np.sum(Mass_i[self._select_elemZ_idx(26), c+2:], axis=0)
         H = np.sum(Mass_i[self._select_elemZ_idx(1), c+2:], axis=0)
-        for i,val in enumerate(Z_list):
+        for _, val in enumerate(Z_list):
             mass = np.sum(Mass_i[self._select_elemZ_idx(val), c+2:], axis=0)
             Masses2_i.append(np.log10(np.divide(mass,Fe)) - solar_norm_Fe[val])
         Masses2 = np.array(Masses2_i) 

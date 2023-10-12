@@ -44,10 +44,9 @@ class Setup:
         self.idx_Galaxy_age = self.aux.find_nearest(self.time_chosen, 
                                                     self.IN.Galaxy_age)
         # Surface density for the disk. 
+        self.surf_density_Galaxy = self.IN.sd / np.exp(self.IN.r / self.IN.Reff) # sigma(t_G) before eq(7). Not used so far !!!!!!!
         # The bulge goes as an inverse square law
-        #sigma(t_G) before eq(7). Not used so far !!!!!!!
-        surf_density_Galaxy = self.IN.sd / np.exp(self.IN.r / self.IN.Reff)
-        
+
         self.infall_class = morph.Infall(self.IN, time=self.time_chosen)
         self.infall = self.infall_class.inf()
         self.SFR_class = morph.Star_Formation_Rate(self.IN, self.IN.SFR_option,
@@ -67,13 +66,13 @@ class Setup:
         SNmassfrac = self.IMF_class.IMF_fraction(self.IN.Ml_SNCC, self.IN.Mu_SNCC, massweighted=True)
         SNnfrac = self.IMF_class.IMF_fraction(self.IN.Ml_SNCC, self.IN.Mu_SNCC, massweighted=False)
         N_IMF = integr.quad(self.IMF, self.Ml, self.Mu)[0]
-        self.IN.MW_RSNCC = self.IN.Mannucci05_convert_to_SNrate_yr('II', self.IN.morphology, 
-                                                           SNmassfrac=SNmassfrac, SNnfrac=SNnfrac, NtotvsMtot=N_IMF)
-        self.IN.MW_RSNCC = np.array([0.87722279, 1.24470801, 0.52159193])
+        #self.IN.MW_RSNCC = self.IN.Mannucci05_convert_to_SNrate_yr('II', self.IN.morphology, 
+        #                                                   SNmassfrac=SNmassfrac, SNnfrac=SNnfrac, NtotvsMtot=N_IMF)
+        self.IN.MW_RSNCC = np.array([0.87722279, 1.24470801, 0.52159193]) # Calibrated on the canonical MW
         N_RSNIa = np.multiply(self.IN.Mannucci05_SN_rate('Ia', self.IN.morphology),
                               1.4 * self.IN.M_inf /1.e10 * 1e-2) # 1.4 Msun for Chandrasekhar's limit (SD scenario) 
-        self.IN.MW_RSNIa = np.array([N_RSNIa[0], N_RSNIa[0]+ N_RSNIa[1], N_RSNIa[0] - N_RSNIa[2]])
-        self.IN.MW_RSNIa = np.array([0.0119 , 0.01666, 0.00749])
+        #self.IN.MW_RSNIa = np.array([N_RSNIa[0], N_RSNIa[0]+ N_RSNIa[1], N_RSNIa[0] - N_RSNIa[2]])
+        self.IN.MW_RSNIa = np.array([0.0119 , 0.01666, 0.00749]) # Calibrated on the canonical MW
         
         # Initialize Yields
         self.iso_class = yi.Isotopes(self.IN)

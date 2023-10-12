@@ -70,7 +70,16 @@ class Inputs:
         self.custom_SNIaDTD = None
 
         self.inf_option = None # None: default exponential decay, or 'two-infall'
-        self.IMF_option = 'Kroupa01' #'canonical', 'Salpeter55', 'Kroupa01'
+        if (self.IMF_option == 'Kroupa01') or (self.IMF_option == 'canonical') or (self.IMF_option == 'brokenplaw'):
+            self.K01_params = {
+                'alpha0': 0.3,
+                'alpha1': 1.3,
+                'alpha2': 2.3,
+                'alpha3': 1.7,
+                'lim01': 0.08, # Keep it higher than the lower mass limit
+                'lim12': 0.5,
+                'lim23': 1.
+            }
         self.SFR_option = 'SFRgal' # or 'CSFR'
         self.CSFR_option = None # None: no cosmic SFR, e.g. 'md14' for Madau & Dickinson (2014). This requires self.SFR_option='CSFR'
         self.SNIaDTD_option = 'Greggio05'# !!!!!!! 'GreggioRenzini83' # 'RuizMannucci01'
@@ -86,7 +95,7 @@ class Inputs:
         self.delta_max = 8e-2 # Convergence limit for eq. 28, Portinari+98
         self.epsilon = 1e-32 # Avoid numerical errors - consistent with BBN
         self.to_sec = .1 # Metallicity convergence break time
-        self.factor = 40 #!!!!!!!
+        self.factor = 1 #!!!!!!!
         
         _dir = os.path.join(os.path.dirname( __file__ ), '..')
         self.s_lifetimes_p98 = pd.read_csv(_dir+'/input/starlifetime/portinari98table14.dat')
