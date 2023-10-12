@@ -70,6 +70,7 @@ class Inputs:
         self.custom_SNIaDTD = None
 
         self.inf_option = None # None: default exponential decay, or 'two-infall'
+        self.IMF_option = 'brokenplaw' #'canonical', 'Salpeter55', 'Kroupa01'
         if (self.IMF_option == 'Kroupa01') or (self.IMF_option == 'canonical') or (self.IMF_option == 'brokenplaw'):
             self.K01_params = {
                 'alpha0': 0.3,
