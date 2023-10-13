@@ -1,6 +1,21 @@
+""""""""""""""""""""""""""""""""""""""""""""""""
+"                                              "
+"            FRIENDLY INTERPOLANTS             "
+"    Contains the module that interpolates     "
+"             yields and lifetimes             " 
+"                                              "
+" LIST OF CLASSES:                             "
+"    __ FriendlyInterpolant (parent)           "
+"    __ CubicSpline1D_FI (subclass)            "
+"    __ LinearAndNearestNeighbor_FI (subclass) "
+"    __ SmootheSpline2D_FI (subclass)          "
+"                                              "
+""""""""""""""""""""""""""""""""""""""""""""""""
+
 import scipy.interpolate
-from numpy import *
+import numpy as np
 import pandas as pd
+
 
 class FriendlyInterpolant(object):
     def __init__(self, df, tf_funs={}, xcols=None, ycol='y', name='model', plot=False, plot_mod=lambda fig: None, fig_root='./', plot_ops={}):
@@ -24,7 +39,7 @@ class FriendlyInterpolant(object):
         self.empty = False
         for k,v in {'sepfl':0,'sepfr':0,'sepfb':0,'sepft':0,'scatter':True,'view_init_azim':45}.items():
             if k not in plot_ops: plot_ops[k] = v
-        if isinstance(df,ndarray):
+        if isinstance(df,np.ndarray):
             assert df.ndim==2
             df = pd.DataFrame(df,columns=['x_{%d}'%i for i in range(df.shape[1]-1)]+['y'])
         self.ycol = ycol
@@ -42,11 +57,11 @@ class FriendlyInterpolant(object):
         else:
             self.tf_funs[self.ycol] = lambda y:y
             self.tf_funs[self.ycol+'.inv'] = lambda y:y
-            self.tf_funs[self.ycol+'.prime'] = lambda y:ones(len(y),dtype=float)
+            self.tf_funs[self.ycol+'.prime'] = lambda y:np.ones(len(y),dtype=float)
         for col in self.xcols:
             if col not in self.tf_funs:
                 self.tf_funs[col] = lambda x:x
-                self.tf_funs[col+'.prime'] = lambda x:ones(len(x),dtype=float)
+                self.tf_funs[col+'.prime'] = lambda x:np.ones(len(x),dtype=float)
         self.name = name        
         dftf = pd.DataFrame({col:self.tf_funs[col](df[col].to_numpy()) for col in list(df.columns)})
         self.descrip = df.describe()
@@ -64,12 +79,12 @@ class FriendlyInterpolant(object):
         if self.d==1:
             xcol = self.xcols[0]
             fig,ax = pyplot.subplots(nrows=len(dwrts),ncols=2,figsize=(4*2,4.5*len(dwrts)))
-            ax = atleast_2d(ax)
+            ax = np.atleast_2d(ax)
             for j,dfv in enumerate([dftf,df]):
                 xvmin,xvmax = dfv[xcol].min(),dfv[xcol].max()
                 xvsep = xvmax-xvmin
                 sepfl,sepfr = plot_ops['sepfl'],plot_ops['sepfr']
-                xvticks = linspace(xvmin-sepfl*xvsep,xvmax+xvsep*sepfr,nticks)
+                xvticks = np.linspace(xvmin-sepfl*xvsep,xvmax+xvsep*sepfr,nticks)
                 for i,dwrt in enumerate(dwrts):
                     if plot_ops['scatter'] and (dwrt==0).all(): ax[i,j].scatter(dfv[xcol],dfv[self.ycol],color='c')
                     yvhat = self.__call__(xvticks[:,None],dwrt) if j==1 else self._eval_with_grad(xvticks[:,None],dwrt)
@@ -94,10 +109,10 @@ class FriendlyInterpolant(object):
                 xv0min,xv0max,xv1min,xv1max = dfv[x0col].min(),dfv[x0col].max(),dfv[x1col].min(),dfv[x1col].max()
                 xv0sep,xv1sep = xv0max-xv0min,xv1max-xv1min
                 sepfl,sepfr,sepfb,sepft = plot_ops['sepfl'],plot_ops['sepfr'],plot_ops['sepfb'],plot_ops['sepft']
-                xv0ticks = linspace(xv0min-sepfl*xv0sep,xv0max+sepfr*xv0sep,nticks)
-                xv1ticks = linspace(xv1min-sepfb*xv1sep,xv1max+sepft*xv0sep,nticks)
-                xv0mesh,xv1mesh = meshgrid(xv0ticks,xv1ticks)
-                xvticks = vstack([xv0mesh.flatten(),xv1mesh.flatten()]).T
+                xv0ticks = np.linspace(xv0min-sepfl*xv0sep,xv0max+sepfr*xv0sep,nticks)
+                xv1ticks = np.linspace(xv1min-sepfb*xv1sep,xv1max+sepft*xv0sep,nticks)
+                xv0mesh,xv1mesh = np.meshgrid(xv0ticks,xv1ticks)
+                xvticks = np.vstack([xv0mesh.flatten(),xv1mesh.flatten()]).T
                 for i,dwrt in enumerate(dwrts):
                     yv = self.__call__(xvticks,dwrt) if j==1 else self._eval_with_grad(xvticks,dwrt)
                     yvmesh = yv.reshape(xv0mesh.shape)
@@ -128,12 +143,12 @@ class FriendlyInterpolant(object):
         if isinstance(dwrt,str):
             assert dwrt in self.xcols
             dwrt = {dwrt:1}
-        if isinstance(dwrt,list) or isinstance(dwrt,ndarray):
-            dwrt = atleast_1d(dwrt)
+        if isinstance(dwrt,list) or isinstance(dwrt,np.ndarray):
+            dwrt = np.atleast_1d(dwrt)
             assert dwrt.ndim==1 and len(dwrt)==self.d
             dwrt = {col:dwrt[i] for i,col in enumerate(self.xcols)}
         for xcol in self.xcols: dwrt[xcol] = dwrt[xcol] if xcol in dwrt else 0
-        dwrt = atleast_1d([dwrt[col] for col in self.xcols]).astype(int)
+        dwrt = np.atleast_1d([dwrt[col] for col in self.xcols]).astype(int)
         assert dwrt.ndim==1 and len(dwrt)==self.d
         return dwrt
     def _fit(self, x, y): 
@@ -141,17 +156,18 @@ class FriendlyInterpolant(object):
     def __call__(self, dfx, dwrt=None):
         assert dfx.ndim==2
         dwrt = self._parse_dwrt(dwrt)
-        if isinstance(dfx,ndarray): dfx = pd.DataFrame(dfx,columns=self.xcols)
+        print(f'{self.xcols=}')
+        if isinstance(dfx,np.ndarray): dfx = pd.DataFrame(dfx,columns=self.xcols)
         dftf = pd.DataFrame({col:self.tf_funs[col](dfx[col].to_numpy()) for col in self.xcols})
         xtf = dftf[self.xcols].to_numpy()
-        yhattf = self._eval_with_grad(xtf,dwrt=zeros(self.d))
+        yhattf = self._eval_with_grad(xtf,dwrt=np.zeros(self.d))
         yhat = self.tf_funs[self.ycol+'.inv'](yhattf)
         if (dwrt==0).all(): return yhat
         # handle derivatives
         assert (dwrt>=0).all()
         if sum(dwrt)!=1: raise Exception("currently only supports 1 derivative at a time")
         yhattfgrad = self._eval_with_grad(xtf,dwrt=dwrt)
-        dwrt = self.xcols[argmax(dwrt)]
+        dwrt = self.xcols[np.argmax(dwrt)]
         # chain rule
         # t_j = T_j(x_j) for j=1,...,d
         # ytf = M(t_1,...,t_d)
@@ -166,9 +182,9 @@ class FriendlyInterpolant(object):
         yhat = self.__call__(df)
         eps_abs = abs(yhat-y)
         metrics = {
-            'RMSE Abs': sqrt(mean(eps_abs**2)),
-            'MAE Abs': mean(eps_abs),
-            'Max Abs': max(eps_abs)}
+            'RMSE Abs': np.sqrt(np.mean(eps_abs**2)),
+            'MAE Abs': np.mean(eps_abs),
+            'Max Abs': np.max(eps_abs)}
         return metrics
     def __repr__(self):
         s = '%s(%s)\n'%(self.name,','.join(self.xcols))
@@ -182,7 +198,7 @@ class CubicSpline1D_FI(FriendlyInterpolant):
     def _fit(self, x, y):
         assert x.shape[1]==1
         x = x.squeeze()
-        ord = argsort(x)
+        ord = np.argsort(x)
         xsort = x[ord]
         ysort = y[ord]
         self.model = scipy.interpolate.CubicSpline(xsort,ysort,extrapolate=True)
@@ -198,13 +214,13 @@ class LinearAndNearestNeighbor_FI(FriendlyInterpolant):
     def _eval_with_grad(self, x, dwrt):
         assert (dwrt==0).all() # derivatives not supported by LinearAndNearestNeighbor_FI
         y = self.inhull_model(x)
-        y[isnan(y)] = self.outhull_model(x[isnan(y)])
+        y[np.isnan(y)] = self.outhull_model(x[np.isnan(y)])
         return y
 
 class SmootheSpline2D_FI(FriendlyInterpolant):
     def _fit(self, x, y):
         assert x.shape[1]==2 # SmootheSpline2D_FI only supports 2D input features
-        self.model = scipy.interpolate.SmoothBivariateSpline(x=x[:,0],y=x[:,1],z=y)
+        self.model = scipy.interpolate.SmoothBivariateSpline(x=x[:,0],y=x[:,1],z=y, eps=1e-32)
     def _eval_with_grad(self, x, dwrt):
         y = self.model(x=x[:,0],y=x[:,1],dx=dwrt[0],dy=dwrt[1],grid=False)
         return y
@@ -214,40 +230,40 @@ if __name__ == '__main__':
     import pandas as pd
     
     # 1D example
-    x = linspace(0,1,16)[1:-1]**2
-    y = sin(2*pi*x)/cos(pi*x/2)
+    x = np.linspace(0,1,16)[1:-1]**2
+    y = np.sin(2*np.pi*x)/np.cos(np.pi*x/2)
     cs1d = CubicSpline1D_FI(
         df = pd.DataFrame({'x':x,'y':y}),
         ycol = 'y',
         tf_funs = {
-            'x':lambda x:sqrt(x), 'x.prime':lambda x:1/(2*sqrt(x)),
-            'y':lambda y:exp(y), 'y.prime':lambda y:exp(y), 'y.inv':lambda y:log(y)},
+            'x':lambda x:np.sqrt(x), 'x.prime':lambda x:1/(2*np.sqrt(x)),
+            'y':lambda y:np.exp(y), 'y.prime':lambda y:np.exp(y), 'y.inv':lambda y:np.log(y)},
         name = 'cs1d',
         plot = [None,'x'])
     print(cs1d)
-    yhat = cs1d(pd.DataFrame({'x':random.rand(3)**2}),dwrt={'x':1})
+    yhat = cs1d(pd.DataFrame({'x':np.random.rand(3)**2}),dwrt={'x':1})
     
     # 2D examples
-    x = 10**random.rand(8**2,2)
-    y = sin(2*pi*x[:,0])*cos(2*pi*x[:,1])
+    x = 10**np.random.rand(8**2,2)
+    y = np.sin(2*np.pi*x[:,0])*np.cos(2*np.pi*x[:,1])
     df = pd.DataFrame({'x_0':x[:,0],'x_1':x[:,1],'y':y})
     tf_funs = {
-        'x_0':lambda x:log10(x), 'x_0.prime':lambda x:1/(x*log(10)),
-        'x_1':lambda x:log10(x), 'x_1.prime':lambda x:1/(x*log(10))}
+        'x_0':lambda x:np.log10(x), 'x_0.prime':lambda x:1/(x*np.log(10)),
+        'x_1':lambda x:np.log10(x), 'x_1.prime':lambda x:1/(x*np.log(10))}
     lnn2d = LinearAndNearestNeighbor_FI(df,tf_funs,name='lnn2d',plot=None)
     print(lnn2d)
-    yhat = lnn2d(pd.DataFrame(10**random.rand(3,2),columns=['x_0','x_1']))
+    yhat = lnn2d(pd.DataFrame(10**np.random.rand(3,2),columns=['x_0','x_1']))
     ss2d = SmootheSpline2D_FI(df,tf_funs,name='ss2d',plot=[None,'x_0','x_1'])
-    yhat = ss2d(pd.DataFrame(10**random.rand(3,2),columns=['x_0','x_1']),dwrt='x_1')
+    yhat = ss2d(pd.DataFrame(10**np.random.rand(3,2),columns=['x_0','x_1']),dwrt='x_1')
     print(ss2d)
 
     # Arbitrary dimension example
     d = 5
-    x = random.rand(8**3,d)
-    y = prod(sin(2*pi*x),1)
-    lnnd = LinearAndNearestNeighbor_FI(hstack([x,y[:,None]]),name='lnn%d'%d)
+    x = np.random.rand(8**3,d)
+    y = np.prod(np.sin(2*np.pi*x),1)
+    lnnd = LinearAndNearestNeighbor_FI(np.hstack([x,y[:,None]]),name='lnn%d'%d)
     print(lnnd)
-    yhat = lnnd(random.rand(3,d))
+    yhat = lnnd(np.random.rand(3,d))
 
 
     

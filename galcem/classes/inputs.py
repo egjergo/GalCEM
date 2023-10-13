@@ -15,6 +15,7 @@ import time
 import math
 import numpy as np
 import pandas as pd
+import scipy.integrate as integr
 
 
 class Inputs:
@@ -96,7 +97,7 @@ class Inputs:
         self.delta_max = 8e-2 # Convergence limit for eq. 28, Portinari+98
         self.epsilon = 1e-32 # Avoid numerical errors - consistent with BBN
         self.to_sec = .1 # Metallicity convergence break time
-        self.factor = 1 #!!!!!!!
+        #self.factor = 1 #!!!!!!!
         
         _dir = os.path.join(os.path.dirname( __file__ ), '..')
         self.s_lifetimes_p98 = pd.read_csv(_dir+'/input/starlifetime/portinari98table14.dat')
@@ -303,7 +304,8 @@ class Auxiliary:
     
     def deriv(self, func, x, n=1):
         ''' Returns the nth order derivative of a function '''
-        return sm.derivative(func, x)
+        from scipy.misc import derivative
+        return derivative(func, x)
 
     def tic_count(self, string="Computation time", tic=None):
         tic.append(time.process_time())
@@ -347,13 +349,13 @@ class Auxiliary:
         lookback time.
         '''
         H0 = 100 * h * 3.24078e-20 * 3.15570e16 # [ km s^-1 Mpc^-1 * Mpc km^-1 * s Gyr^-1 ]
-        age = scipy.integrate.quad(lambda z: 1 / ( (z + 1) *np.sqrt(OmegaLambda0 + 
+        age = integr.simps(integrand, x=birthtime_grid).quad(lambda z: 1 / ( (z + 1) *np.sqrt(OmegaLambda0 + 
                                 Omegam0 * (z+1)**3 + Omegar0 * (z+1)**4) ), 
                                 zf, np.inf)[0] / H0 # Since BB [Gyr]
         if not lookback_time:
             return age
         else:
-            age0 = scipy.ntegrate.quad(lambda z: 1 / ( (z + 1) *np.sqrt(OmegaLambda0 
+            age0 = integr.quad(lambda z: 1 / ( (z + 1) *np.sqrt(OmegaLambda0 
                                 + Omegam0 * (z+1)**3 + Omegar0 * (z+1)**4) ),
                                  0, np.inf)[0] / H0 # present time [Gyr]
             return age0 - age

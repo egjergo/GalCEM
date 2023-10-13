@@ -152,9 +152,10 @@ class Wi:
         # Portinari+98, page 22, last eq. first column
         birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
         IMF_comp = self.IMF_component(mass_grid) # overwrite continuously in __init__
-        dtauM = self.dMdtauM_component(lifetime_grid, birthtime_grid) 
+        #dMdtau = self.dMdtauM_component(lifetime_grid, birthtime_grid) 
+        dtaudM = 0.03#self.dtauMdM_component(mass_grid, birthtime_grid)
         #print(f'{channel_switch} {dtauM=}')
-        return IMF_comp, IMF_comp * dtauM
+        return IMF_comp, np.divide(IMF_comp, dtaudM)
  
     def compute_rateSNIa(self, channel_switch='SNIa'):
         birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
@@ -173,9 +174,9 @@ class Wi:
         SFR_comp[SFR_comp<0] = 0.
         IMF_comp = self.IMF_component(mass_grid)
         integrand = np.multiply(SFR_comp, IMF_comp)
-        dtaudM = self.dtauMdM_component(mass_grid, birthtime_grid)
+        dtaudM = 0.03#self.dtauMdM_component(mass_grid, birthtime_grid)
         integrand = np.divide(integrand, dtaudM)
-        return self.IN.factor * integr.simps(integrand, x=birthtime_grid) #integr.simps(np.multiply(integrand, dtaudM), x=mass_grid)
+        return integr.simps(integrand, x=birthtime_grid) #self.IN.factor * integr.simps(integrand, x=birthtime_grid) #integr.simps(np.multiply(integrand, dtaudM), x=mass_grid)
     
     def exec_compute_rate(self, channel_switch):
         if channel_switch == 'SNIa':
