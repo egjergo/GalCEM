@@ -156,7 +156,6 @@ class FriendlyInterpolant(object):
     def __call__(self, dfx, dwrt=None):
         assert dfx.ndim==2
         dwrt = self._parse_dwrt(dwrt)
-        print(f'{self.xcols=}')
         if isinstance(dfx,np.ndarray): dfx = pd.DataFrame(dfx,columns=self.xcols)
         dftf = pd.DataFrame({col:self.tf_funs[col](dfx[col].to_numpy()) for col in self.xcols})
         xtf = dftf[self.xcols].to_numpy()

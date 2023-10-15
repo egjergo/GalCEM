@@ -60,7 +60,7 @@ class Wi_grid:
             birthtime_grid = self.time_chosen[self.age_idx] - lifetime_grid
             metallicity_grid = self.Z_component(birthtime_grid)
             if time.time() > timeout:
-                print(f"Warning: The metallicity grid isn't converging within {self.IN.to_sec} seconds.")
+                #print(f"Warning: The metallicity grid isn't converging within {self.IN.to_sec} seconds.")
                 break
         #print(f'{trackZ=}')
         positive_idx = np.where(birthtime_grid > 0.)
@@ -176,7 +176,7 @@ class Wi:
         integrand = np.multiply(SFR_comp, IMF_comp)
         dtaudM = 0.03#self.dtauMdM_component(mass_grid, birthtime_grid)
         integrand = np.divide(integrand, dtaudM)
-        return integr.simps(integrand, x=birthtime_grid) #self.IN.factor * integr.simps(integrand, x=birthtime_grid) #integr.simps(np.multiply(integrand, dtaudM), x=mass_grid)
+        return integr.simps(integrand, x=mass_grid) #self.IN.factor * integr.simps(integrand, x=birthtime_grid) #integr.simps(np.multiply(integrand, dtaudM), x=mass_grid)
     
     def exec_compute_rate(self, channel_switch):
         if channel_switch == 'SNIa':
@@ -199,7 +199,7 @@ class Wi:
 
     def compute(self, channel_switch, vel_idx=None):
         if channel_switch == "SNIa":
-            return {'integrand': [0.5], 'birthtime_grid': [0.5], 'mass_grid': [0.5]}
+            return {'integrand': [0.5], 'birthtime_grid': [0.5], 'mass_grid': [0.5], 'lifetime_grid': [0.5]}
         else:
             vel_idx = self.IN.LC18_vel_idx if vel_idx is None else vel_idx
             mass_grid = self.grid_picker(channel_switch, 'mass')

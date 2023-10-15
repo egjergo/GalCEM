@@ -32,9 +32,9 @@ def fit_lifetime_mass_metallicity_interpolants(df,root):
         df = df,
         ycol = 'lifetime_Gyr',
         tf_funs = {
-            'mass':lambda x:np.log10(x), 'mass.prime':lambda x:1/(x*np.log(10)),
+            'mass':lambda x:x**(1/3.), 'mass.prime':lambda x:1 / (3 * x**(2/3.)),
             'metallicity':lambda x:np.sqrt(x), 'metallicity.prime':lambda x:1/(2*np.sqrt(x)),
-            'lifetime_Gyr':lambda y:np.log10(y), 'lifetime_Gyr.prime':lambda y:1/(y*np.log(10)), 'lifetime_Gyr.inv':lambda y:10**y},
+            'lifetime_Gyr':lambda y:y**(1/3.), 'lifetime_Gyr.prime':lambda y:1 / (3 * y**(2/3.)), 'lifetime_Gyr.inv':lambda y:y**3},
         name = 'LifetimeInterpolant',
         plot = [None,'mass','metallicity'],#False,
         fig_root = root+'/figs/',
@@ -55,9 +55,9 @@ def fit_lifetime_mass_metallicity_interpolants(df,root):
         df = df[['lifetime_Gyr','mass','metallicity']],
         ycol = 'mass',
         tf_funs = {
-            'lifetime_Gyr':lambda x:np.log10(x), 'lifetime_Gyr.prime':lambda x:1/(x*np.log(10)),
+            'lifetime_Gyr':lambda x:x**(1/3.), 'lifetime_Gyr.prime':lambda x:1 / (3 * x**(2/3.)),
             'metallicity':lambda x:np.sqrt(x), 'metallicity.prime':lambda x:1/(2*np.sqrt(x)),
-            'mass':lambda y:np.log10(y), 'mass.prime':lambda y:1/(y*np.log(10)), 'mass.inv':lambda y:10**y},
+            'mass':lambda y:y**(1/3.), 'mass.prime':lambda y:1/(3 * y**(2/3.)), 'mass.inv':lambda y:y**3},
         name = 'MassInterpolant',
         plot = [None,'lifetime_Gyr','metallicity'], #False,
         fig_root = root+'/figs/',
@@ -74,9 +74,13 @@ def fit_lifetime_mass_metallicity_interpolants(df,root):
     dyquery_dlifetime = mass_by_lifetime_metallicity_loaded(df,dwrt='lifetime_Gyr')
     dyquery_dmetallicity = mass_by_lifetime_metallicity_loaded(df,dwrt='metallicity')
     print(np.multiply(dyquery_dmass, dyquery_dlifetime))
+    import matplotlib.pyplot as plt
+    plt.figure()
+    plt.plot(np.multiply(dyquery_dmass, dyquery_dlifetime))
+    plt.show(block=False)
 
 if __name__ == '__main__':
-    root = os.path.abspath(os.path.dirname(__file__))    
+    root = os.path.abspath(os.path.dirname(__file__)) # 'yield_interpolation/lifetime_mass_metallicity'
     for dirs in ['models', 'figs']:
         if not os.path.exists(root+'/'+dirs):
                 os.makedirs(root+'/'+dirs)

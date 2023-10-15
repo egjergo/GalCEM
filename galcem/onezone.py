@@ -207,7 +207,7 @@ class OneZone(Setup):
                             Wi_vals[ch] = integr.simps(np.multiply(#self.IN.factor * integr.simps(np.multiply(
                                 Wi_comps[ch]['integrand'], 
                                 self.yield_models[ch][i](yield_grid)), 
-                                        x=Wi_comps[ch]['birthtime_grid'])
+                                        x=Wi_comps[ch]['mass_grid'])
                         else:
                             Wi_vals[ch] = 0.
                     else:
