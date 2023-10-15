@@ -126,7 +126,7 @@ class Wi:
         return SFR_interp(birthtime_grid)
 
     def IMF_component(self, mass_grid):
-        # Returns the IMF vector computed at the mass grids
+        ''' Returns the IMF vector computed at the mass grids'''
         return self.IMF(mass_grid)
     
     def dMdtauM_component(self, lifetime_grid, birthtime_grid):
@@ -143,42 +143,38 @@ class Wi:
         df_lz = pd.DataFrame(np.array([mass_grid,
                         metallicity_grid]).T, columns=['mass',
                                                         'metallicity'])
-        return self.lifetime_class.dtauMdM(df_lz)
-    
-    #def yield_component(self, channel_switch, mass_grid, birthtime_grid, vel_idx=None):
-    #    return interpolation(mass_grid, metallicity(birthtime_grid))
+        return 0.03 # self.lifetime_class.dtauMdM(df_lz)
     
     def mass_component(self, channel_switch, mass_grid, lifetime_grid, birthtime_grid): #
-        # Portinari+98, page 22, last eq. first column
+        ''' Portinari+98, page 22, last eq. first column'''
         birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
         IMF_comp = self.IMF_component(mass_grid) # overwrite continuously in __init__
         #dMdtau = self.dMdtauM_component(lifetime_grid, birthtime_grid) 
-        dtaudM = 0.03#self.dtauMdM_component(mass_grid, birthtime_grid)
-        #print(f'{channel_switch} {dtauM=}')
-        return IMF_comp, np.divide(IMF_comp, dtaudM)
+        dtaudM = self.dtauMdM_component(mass_grid, birthtime_grid)
+        mass_comp = np.divide(IMF_comp, dtaudM)
+        return IMF_comp, mass_comp
  
     def compute_rateSNIa(self, channel_switch='SNIa'):
         birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
         lifetime_grid = self.grid_picker(channel_switch, 'lifetime')
         SFR_comp = np.multiply(self.SFR_component(birthtime_grid), self.IN.M_inf)
         F_SNIa = np.array([D.f_SD_Ia for D in self.Greggio05_SD(lifetime_grid)])
-        #F_SNIa = [DTD_class.MaozMannucci12(t) for t in lifetime_grid]
         integrand = np.multiply(SFR_comp, F_SNIa)
         return integr.simps(integrand, x=birthtime_grid)
  
     def compute_rate(self, channel_switch='SNCC'):
         '''Computes the rates of convolved enrichment channels '''
         birthtime_grid = self.grid_picker(channel_switch, 'birthtime')
+        lifetime_grid = self.grid_picker(channel_switch, 'lifetime')
         mass_grid = self.grid_picker(channel_switch, 'mass')
         SFR_comp = np.multiply(self.SFR_component(birthtime_grid), self.IN.M_inf)
         SFR_comp[SFR_comp<0] = 0.
-        IMF_comp = self.IMF_component(mass_grid)
-        integrand = np.multiply(SFR_comp, IMF_comp)
-        dtaudM = 0.03#self.dtauMdM_component(mass_grid, birthtime_grid)
-        integrand = np.divide(integrand, dtaudM)
-        return integr.simps(integrand, x=mass_grid) #self.IN.factor * integr.simps(integrand, x=birthtime_grid) #integr.simps(np.multiply(integrand, dtaudM), x=mass_grid)
+        IMF_comp, mass_comp = self.mass_component(channel_switch, mass_grid, lifetime_grid, birthtime_grid) 
+        integrand = np.multiply(SFR_comp, mass_comp)
+        return integr.simps(integrand, x=mass_grid) # integr.simps(integrand, x=birthtime_grid) #integr.simps(np.multiply(integrand, dtaudM), x=mass_grid)
     
     def exec_compute_rate(self, channel_switch):
+        '''Returns the total mass returned to the ISM by the respective channel in units of [Msun/yr]'''
         if channel_switch == 'SNIa':
             if len(self.grid_picker('SNIa', 'birthtime')) > 0.:
                 #R_SNIa = self.IN.A_SNIa * self.compute_rate(channel_switch='SNIa')
@@ -192,12 +188,14 @@ class Wi:
                 return self.IN.epsilon
     
     def compute_rates(self):
+        '''Creates a dictionary containing the return rates for every enrichment channel'''
         rates = {}
         for ch in self.IN.include_channel:
             rates[ch] = self.exec_compute_rate(ch)
         return rates #[self.exec_compute_rate(ch) for ch in self.IN.include_channel]
 
     def compute(self, channel_switch, vel_idx=None):
+        '''Used for the integration of individual isotopes'''
         if channel_switch == "SNIa":
             return {'integrand': [0.5], 'birthtime_grid': [0.5], 'mass_grid': [0.5], 'lifetime_grid': [0.5]}
         else:
@@ -209,6 +207,5 @@ class Wi:
             SFR_comp[SFR_comp<0] = 0.
             IMF_comp, mass_comp = self.mass_component(channel_switch, mass_grid, lifetime_grid, birthtime_grid) 
             integrand = np.prod(np.vstack([SFR_comp, mass_comp]), axis=0)
-            #return integr.simps(integrand, x=birthtime_grid)
             return {'integrand': integrand, 'birthtime_grid': birthtime_grid, 
                     'mass_grid': mass_grid, 'lifetime_grid': lifetime_grid}
