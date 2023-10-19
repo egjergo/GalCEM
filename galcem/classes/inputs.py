@@ -73,11 +73,11 @@ class Inputs:
         self.inf_option = None # None: default exponential decay, or 'two-infall'
         self.IMF_option = 'brokenplaw' #'canonical', 'Salpeter55', 'Kroupa01'
         if (self.IMF_option == 'Kroupa01') or (self.IMF_option == 'canonical') or (self.IMF_option == 'brokenplaw'):
-            self.K01_params = {
+            self.K01_params = { 
                 'alpha0': 0.3,
                 'alpha1': 1.3,
                 'alpha2': 2.3,
-                'alpha3': 1.7,
+                'alpha3': 2.3,
                 'lim01': 0.08, # Keep it higher than the lower mass limit
                 'lim12': 0.5,
                 'lim23': 1.
@@ -97,7 +97,7 @@ class Inputs:
         self.delta_max = 8e-2 # Convergence limit for eq. 28, Portinari+98
         self.epsilon = 1e-32 # Avoid numerical errors - consistent with BBN
         self.to_sec = .1 # Metallicity convergence break time
-        #self.factor = 1 #!!!!!!!
+        self.dtau = 0.04 #!!!!!!!
         
         _dir = os.path.join(os.path.dirname( __file__ ), '..')
         self.s_lifetimes_p98 = pd.read_csv(_dir+'/input/starlifetime/portinari98table14.dat')
@@ -219,6 +219,10 @@ class Inputs:
         RETURNS
             list          [value, +err, -err]
         '''
+        if morphology != 'elliptical':
+            if morphology != 'spiral':
+                morphology = 'irregular'
+        print(morphology)
         dictionary = {
             'Ia': {
                 'elliptical': [0.044, 0.016, 0.014],

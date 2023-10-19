@@ -4,6 +4,7 @@ import galcem as glc
 
 inputs = glc.Inputs()
 inputs.nTimeStep = 0.1 #0.1 (computational tests) #.002 recommended (or 0.01) #.0250 minimum size that doesn't affect SNIa rate
+#inputs.morphology = 'ReticulumII'
 
 directory_name = str(input("Enter the run's folder name (default is 'base'): ") or "base")
 dir_name = 'runs/'+f"{datetime.datetime.now():%Y%m%d}"+'_'+directory_name+'_'+str(int(inputs.nTimeStep*1000))+'Myr/'

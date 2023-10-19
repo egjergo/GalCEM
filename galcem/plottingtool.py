@@ -291,7 +291,7 @@ class Plots(Setup):
         H = np.sum(Mass_i[self._select_elemZ_idx(1), c+2:], axis=0)
         FeH = np.log10(np.divide(Fe, H)) - solar_norm_H[elemZ]
         fig, ax = plt.subplots(1,1, figsize=(7,5))
-        ax.plot(gal_time, FeH, color='black', label='[Fe/H]', linewidth=3) 
+        ax.plot(gal_time[:-1], FeH[:-1], color='black', label='[Fe/H]', linewidth=3) 
         ax.axvline(x=self.IN.Galaxy_age-self.IN.solar_age, linewidth=2, color='orange', label=r'Age$_{\odot}$')
         ax.plot(self.IN.Galaxy_age - FeH_age, a*FeH_age+b, color='red', alpha=1, linewidth=3, label='linear fit on [Fe/H]')
         ax.scatter(self.IN.Galaxy_age - FeH_age, FeH_value, color='red', marker='*', alpha=0.3, label='Silva Aguirre et al. (2018)')
@@ -327,7 +327,7 @@ class Plots(Setup):
         H = np.sum(Mass_i[self._select_elemZ_idx(1), c+2:], axis=0)
         ZH = np.log10(np.divide(Z, H)/self.IN.solar_metallicity)
         fig, ax = plt.subplots(1,1, figsize=(7,5))
-        ax.plot(gal_time, ZH, color='blue', label='Z', linewidth=3)
+        ax.plot(gal_time[:-1], ZH[:-1], color='blue', label='Z', linewidth=3)
         ax.axvline(x=self.IN.Galaxy_age-self.IN.solar_age, linewidth=2, color='orange', label=r'Age$_{\odot}$')
         ax.axhline(y=0, linewidth=1, color='orange', linestyle='--')
         ax.plot(self.IN.Galaxy_age - metallicity_age, a*metallicity_age+b, color='red', alpha=1, linewidth=3, label='linear fit on [M/H]')
@@ -696,7 +696,7 @@ class Plots(Setup):
                     ax.set_xlabel('[Fe/H]', fontsize = 15)
             if i < len(Z_list)-2:
                 ip = i+2 # Shift to skip H and He
-                ax.plot(FeH, Masses2[ip], color='black', linewidth=2)
+                ax.plot(FeH[:-1], Masses2[ip][:-1], color='black', linewidth=2)
                 ax.annotate(f"{Z_list[ip]}{Z_symb_list[Z_list[ip]]}", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
                 ax.set_ylim(-5.9, 5.9)
                 ax.set_xlim(-6.5, 1.5)
@@ -811,7 +811,7 @@ class Plots(Setup):
                     ax.legend(ncol=7, loc='lower left', bbox_to_anchor=(-.2, 1.), frameon=False, fontsize=9)
             if i < nrow*ncol:
                 ip = i+2 # Shift to skip H and He
-                ax.plot(FeH, Masses2[ip], color='black', linewidth=2)
+                ax.plot(FeH[:-1], Masses2[ip][:-1], color='black', linewidth=2)
                 ax.annotate(f"{Z_list[ip]}{Z_symb_list[Z_list[ip]]}", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
                 if romano10 == True:
                     if Z_symb_list[Z_list[ip]] in r10_labels:
@@ -1055,7 +1055,7 @@ class Plots(Setup):
                     ax.legend(ncol=7, loc='lower left', bbox_to_anchor=(-0.2, 1.05), frameon=False, fontsize=9)
             if i < nrow*ncol:
                 ip = i+2 # Shift to skip H and He
-                ax.plot(FeH, Masses2[ip], color='black', linewidth=2)
+                ax.plot(FeH[:-1], Masses2[ip][:-1], color='black', linewidth=2)
                 ax.annotate(f"{Z_list[ip]}{Z_symb_list[Z_list[ip]]}", xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
                 ax.set_ylim(-4.9, 4.9)
                 ax.set_xlim(-6.5, 1.5)
