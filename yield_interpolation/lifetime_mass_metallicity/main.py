@@ -32,9 +32,9 @@ def fit_lifetime_mass_metallicity_interpolants(df,root):
         df = df,
         ycol = 'lifetime_Gyr',
         tf_funs = {
-            'mass':lambda x:x**(1/3.), 'mass.prime':lambda x:1 / (3 * x**(2/3.)),
+            'mass':lambda x:np.log10(x), 'mass.prime':lambda x:1/(x*np.log(10)),
             'metallicity':lambda x:np.sqrt(x), 'metallicity.prime':lambda x:1/(2*np.sqrt(x)),
-            'lifetime_Gyr':lambda y:y**(1/3.), 'lifetime_Gyr.prime':lambda y:1 / (3 * y**(2/3.)), 'lifetime_Gyr.inv':lambda y:y**3},
+            'lifetime_Gyr':lambda y:np.log10(y), 'lifetime_Gyr.prime':lambda y:1/(y*np.log(10)), 'lifetime_Gyr.inv':lambda y:10**y},
         name = 'LifetimeInterpolant',
         plot = [None,'mass','metallicity'],#False,
         fig_root = root+'/figs/',
@@ -55,9 +55,9 @@ def fit_lifetime_mass_metallicity_interpolants(df,root):
         df = df[['lifetime_Gyr','mass','metallicity']],
         ycol = 'mass',
         tf_funs = {
-            'lifetime_Gyr':lambda x:x**(1/3.), 'lifetime_Gyr.prime':lambda x:1 / (3 * x**(2/3.)),
+            'lifetime_Gyr':lambda x:np.log10(x), 'lifetime_Gyr.prime':lambda x:1/(x*np.log(10)),
             'metallicity':lambda x:np.sqrt(x), 'metallicity.prime':lambda x:1/(2*np.sqrt(x)),
-            'mass':lambda y:y**(1/3.), 'mass.prime':lambda y:1/(3 * y**(2/3.)), 'mass.inv':lambda y:y**3},
+            'mass':lambda y:np.log10(y), 'mass.prime':lambda y:1/(y*np.log(10)), 'mass.inv':lambda y:10**y},
         name = 'MassInterpolant',
         plot = [None,'lifetime_Gyr','metallicity'], #False,
         fig_root = root+'/figs/',
