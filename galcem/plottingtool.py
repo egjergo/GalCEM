@@ -618,6 +618,10 @@ class Plots(Setup):
         ''' auxiliary function that selects the isotope indexes where Z=elemZ '''
         return np.where(self.ZA_sorted[:,0]==elemZ)[0]
    
+    def _select_elemA_idx(self, elemZ):
+        ''' auxiliary function that selects the isotope indexes where Z=elemZ '''
+        return np.where(self.ZA_sorted[:,1]==elemZ)[0]
+    
     def observational_plot(self, figsiz = (15,10), c=3):
         print('Starting observational_plot()')
         import glob
