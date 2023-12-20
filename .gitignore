@@ -144,6 +144,7 @@ cython_debug/
 runs/
 !/galcem/input/**
 /galcem/input/yields/snia/k20/*
+/galcem/input/yields/**/tk/*
 yield_interpolation/**/figs
 yield_interpolation/**/models
 **.DS_Store**

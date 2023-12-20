@@ -42,6 +42,8 @@ class OneZone(Setup):
         self.tic.append(time.process_time())
         self.file1 = open(self._dir_out + "Terminal_output.txt", "w")
         pickle.dump(self.IN,open(self._dir_out + 'inputs.pkl','wb'))
+        
+        # "Pretty" printout for the inputs
         with open(self._dir_out + 'inputs.txt', 'w') as f: 
             for key, value in self.IN.__dict__.items(): 
                 if type(value) is not pd.DataFrame:
@@ -53,7 +55,9 @@ class OneZone(Setup):
                         ff.write('\n %s type %s\n'%(key, str(type(value))))
                     #value.to_csv(self._dir_out + 'inputs.txt', mode='a',
                     #             sep='\t', index=True, header=True)
+                    
         self.evolve()
+        
         self.aux.tic_count(string="Computation time", tic=self.tic)
         G_v = np.divide(self.Mgas_v, self.Mtot)
         S_v = 1 - G_v
@@ -137,6 +141,9 @@ class OneZone(Setup):
         self.Z_v[-1] = np.divide(np.sum(self.Mass_i_v[self.i_Z:,-1]), 
                                 self.Mgas_v[-1])
         self.Xi_v[:,-1] = np.divide(self.Mass_i_v[:,-1], self.Mgas_v[-1]) 
+
+    def Infall_func(self, t_n, y_n, n, i=None):
+        return self.infall(self.time_chosen)
 
     def Mtot_func(self, t_n, y_n, n, i=None):
         return self.Infall_rate[n] # - outflow !!!!!!!

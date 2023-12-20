@@ -40,7 +40,7 @@ class Setup:
                     np.log10(self.IN.Galaxy_age), num=self.IN.numTimeStep)
         # For now, leave to time_chosen equal to time_uniform. 
         # Some computations depend on a uniform timestep
-        self.time_chosen = self.time_uniform
+        self.time_chosen = self.time_uniform #self.time_logspace
         self.idx_Galaxy_age = self.aux.find_nearest(self.time_chosen, 
                                                     self.IN.Galaxy_age)
         # Surface density for the disk. 
@@ -110,7 +110,6 @@ class Setup:
         ZA_all = np.vstack((self.ZA_LIMs, self.ZA_SNIa,
                             self.ZA_SNCC))#, self.ZA_NSM, self.ZA_MRSN))
         
-        self.Infall_rate = self.infall(self.time_chosen)
         # Sorted list of unique [Z,A] pairs which include all isotopes
         self.ZA_sorted = self.c_class.ZA_sorted(ZA_all) 
         # name of elements for all isotopes
@@ -142,6 +141,7 @@ class Setup:
         #self.Mtot = np.insert(np.cumsum((self.Infall_rate[1:]
         #                    + self.Infall_rate[:-1]) * self.IN.nTimeStep / 2),
         #                      0, self.IN.epsilon) # !!!!!!! edit this with non-uniform timesteps
+        self.Infall_rate = self.initialize() #self.infall(self.time_chosen)
         self.Mtot = self.initialize()
         self.Mstar_v = self.initialize()
         self.Mgas_v = self.initialize() 
@@ -166,7 +166,7 @@ class Setup:
     def __repr__(self):
         aux = Auxiliary()
         return aux.repr(self)
-   
+    
     def initialize(self,matrix=False):
         if matrix==True:
             return self.IN.epsilon * np.ones((len(self.ZA_sorted),

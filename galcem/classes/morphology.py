@@ -11,6 +11,7 @@
 "    __        Stellar_Lifetimes               "
 "    __        Greggio05                       "
 "    __        DTD                             "
+"    __        NSM_DTD                         "
 "                                              "
 """"""""""""""""""""""""""""""""""""""""""""""""
 
@@ -112,6 +113,12 @@ class Star_Formation_Rate:
         aux = Auxiliary()
         return aux.repr(self)
 
+    def custom_SFR(self, time, k=None, Mgas=[], Mtot=[], timestep_n=0):
+        SFR_val = interp.interp1d(self.IN.custom_SFR['time'], 
+                                  self.IN.custom_SFR['SFR'],
+                                  fill_value='extrapolate')
+        return SFR_val(time)
+
     def SFRgal(self, k=None, Mgas=[], Mtot=[], timestep_n=0): 
         ''' 
         Talbot & Arnett (1975), Portinari et al. (1998)
@@ -140,8 +147,8 @@ class Star_Formation_Rate:
                          / (14.0 / 15) - 0.6 + 0.6 * np.exp((14. / 15) * (z - 5.4))))}
         return CSFR.get(self.option_CSFR, "Invalid CSFR option")
         
-    def SFR(self, Mgas=None, Mtot=None, timestep_n=0):
-        if not self.custom:
+    def SFR(self, Mgas=None, Mtot=None, timestep_n=0, custom_time=None):
+        if self.custom.empty:
             if self.option == 'SFRgal':
                     return self.SFRgal(Mgas=Mgas, Mtot=Mtot, timestep_n=timestep_n)
             elif self.option == 'CSFR':
@@ -149,9 +156,9 @@ class Star_Formation_Rate:
                     return self.CSFR(self.option_CSFR)
                 else:
                     print('Please define the CSFR option "option_CSFR"')
-        if self.custom:
+        else:
             print('Using custom SFR')
-            return self.custom
+            return self.custom_SFR()
             
     def outflow(self, Mgas, morphology, SFR=SFRgal, wind_eff=None, k=1):
         wind_eff = self.IN.wind_efficiency if wind_eff is None else wind_eff
@@ -402,7 +409,7 @@ class Greggio05:
      
 class DTD:
     '''
-    For all delayed time distibutions (inactive for now)
+    For all delayed time distibutions 
     '''
     def __init__(self):
         self.A_Ia = .35
@@ -425,3 +432,11 @@ class DTD:
                     return self.MaozMannucci12()
         if self.custom:
             return self.custom
+     
+     
+class NSM_DTD:
+    '''
+    For the neutron star merger single stellar population time delay 
+    '''
+    def __init__(self, gas_mass):
+        self.nu = 1 # Schmidt-Kennicut Law for spirals

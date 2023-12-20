@@ -405,7 +405,7 @@ class Plots(Setup):
         Mass_SNIa = np.log10(W_i_comp['SNIa'])#, where=W_i_comp['SNIa']>0.)
         Z = self.ZA_sorted[:,0]
         A = self.ZA_sorted[:,1]
-        if ncol==None: ncol = np.floor(np.sqrt(lenA)).astype('int')
+        if ncol==None: ncol = np.floor(np.sqrt(len(A))).astype('int')
         nrow = np.ceil(len(A)/ncol).astype('int')
         #print('(# nuclides, nrow, ncol) = (%d, %d, %d)'%(len(Z), nrow, ncol))
         fig, axs = plt.subplots(nrow, ncol, figsize=figsize)#, sharex=True)

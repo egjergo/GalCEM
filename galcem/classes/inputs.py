@@ -27,12 +27,12 @@ class Inputs:
     def __init__(self):
         '''	applies to the thick disk at 8 kpc '''        
         # Time parameters
-        self.nTimeStep = 0.01 #0.002 #0.01 
-        self.numTimeStep = 2000 # Like FM
+        self.nTimeStep = 0.01 #0.002 #0.01 [Gyr]
+        self.numTimeStep = 2000 #2000 # Like FM [how many timesteps]
         self.num_MassGrid = 200
         self.include_channel = ['SNCC', 'LIMs', 'SNIa']
         
-        self.Galaxy_birthtime = 0. #0.1 # [Gyr]
+        self.Galaxy_birthtime = 0.05 #0.1 # [Gyr]
         self.Galaxy_age = 13.8 # [Gyr]
         self.solar_age = 4.6 # [Gyr]
         self.solar_metallicity = 0.0134 # Asplund et al. (2009, Table 4)
@@ -47,7 +47,7 @@ class Inputs:
         self.A_collapsars = 0.05 #0.06 # Fraction of massive stars that evolved into collapsars
 
         # Mass limits
-        self.Ml_SNIa = 1. # Lower limit for total binary mass for SNIae [Msun]
+        self.Ml_SNIa = 1.6 # Lower limit for total binary mass for SNIae [Msun]
         self.Mu_SNIa = 16 # Upper limit for total binary mass for SNIae [Msun]
         self.Ml_LIMs = 0.07 # [Msun] 
         self.Mu_LIMs = 9 # [Msun] 
@@ -60,18 +60,27 @@ class Inputs:
         self.Ml_collapsars = 9 # [Msun] 
         self.Mu_collapsars = 150 # [Msun] 
 
-        self.sd = 530.96618 # surf density coefficient for the disk (normalized to the MW mass?) 
+        self.sd = 530.96618 # surf density coefficient for the disk (normalized to the MW mass?) !!!!!!!
+        
         self.MW_SFR = 1.9 #+-0.4 [Msun/yr] from Chomiuk & Povich (2011) Galactic SFR (z=0)
         self.MW_RSNIa = np.empty(3) # Galactic SNIa rates (filled in Setup, from Mannucci+05)
         self.MW_RSNCC = np.empty(3) # Galactic SNCC rates (filled in Setup, from Mannucci+05)
-        self.IMF_single_slope = 2.35 # IMF Salpeter power law
-
+        
         self.custom_IMF = None
-        self.custom_SFR = None
+        self.import_custom_SFR = None#np.loadtxt('galcem/input/custom_SFR/data.dat')
+        if not self.import_custom_SFR.empty:
+            self.custom_SFR = pd.DataFrame(
+                {
+                    'time': self.import_custom_SFR[:,0],
+                    'SFR': self.import_custom_SFR[:,1]
+                }
+            )
         self.custom_SNIaDTD = None
 
         self.inf_option = None # None: default exponential decay, or 'two-infall'
         self.IMF_option = 'brokenplaw' #'canonical', 'Salpeter55', 'Kroupa01'
+        if self.IMF_option == 'Salpeter55':
+            self.IMF_single_slope = 2.35 # IMF Salpeter power law 
         if (self.IMF_option == 'Kroupa01') or (self.IMF_option == 'canonical') or (self.IMF_option == 'brokenplaw'):
             self.K01_params = { 
                 'alpha0': 0.3,
@@ -83,26 +92,27 @@ class Inputs:
                 'lim23': 1.
             }
         self.SFR_option = 'SFRgal' # or 'CSFR'
-        self.CSFR_option = None # None: no cosmic SFR, e.g. 'md14' for Madau & Dickinson (2014). This requires self.SFR_option='CSFR'
+        self.CSFR_option = None # !!!!!!! remove? None: no cosmic SFR, e.g. 'md14' for Madau & Dickinson (2014). This requires self.SFR_option='CSFR'
         self.SNIaDTD_option = 'Greggio05'# !!!!!!! 'GreggioRenzini83' # 'RuizMannucci01'
 
-        self.yields_NSM_option = 'r14'
-        self.yields_MRSN_option = 'n17'
+        self.yields_NSM_option = 'r14' # 'r14', 'tk'
+        self.yields_MRSN_option = 'n17' # 'n17', 'tk'
+        self.yields_Collapsar_option = 'tk' # 'n17', 'tk'
         self.yields_LIMs_option = 'c15' #'k10'
         self.yields_SNCC_option = 'lc18'
         self.LC18_vel_idx = 0 # !!!!!!! eventually you should write a function to compute this
-        self.yields_SNIa_option = 'i99' # 'k20' 
+        self.yields_SNIa_option = 'i99' # 'k20', 'i99'
         self.yields_BBN_option = 'gp13'
 
-        self.delta_max = 8e-2 # Convergence limit for eq. 28, Portinari+98
         self.epsilon = 1e-32 # Avoid numerical errors - consistent with BBN
         self.to_sec = .1 # Metallicity convergence break time
-        self.dtau = 0.04 #!!!!!!!
         
         _dir = os.path.join(os.path.dirname( __file__ ), '..')
         self.s_lifetimes_p98 = pd.read_csv(_dir+'/input/starlifetime/portinari98table14.dat')
         self.s_lifetimes_p98.columns = [name.replace('#M','M').replace('Z=0.','Z') for name in self.s_lifetimes_p98.columns]
+        
         self.periodic = pd.read_csv(_dir+'/input/physics/periodicinfo.dat', sep=',', comment='#')
+        
         self.asplund3 = pd.read_csv(_dir+'/input/physics/asplund09/table3.dat', sep=',', comment='#')
         self.asplund1 = pd.read_csv(_dir+'/input/physics/asplund09/table1.dat', sep=',', comment='#')
         for col in self.asplund1.columns[2:]:
@@ -200,7 +210,12 @@ class Inputs:
                 'Sextan': 11,
                 'UrsaMinor': 11}
         }
-        return dictionary[choice][morphology]
+        if morphology not in dictionary[choice]:
+            par = (input(f"Morphology not in the dictionary. Enter your custom value for {choice} in {morphology}:\t"))
+            return float(par)
+        else:
+            return dictionary[choice][morphology]
+    
     
     def Mannucci05_SN_rate(self, SNtype, morphology):
         '''
@@ -221,8 +236,11 @@ class Inputs:
         '''
         if morphology != 'elliptical':
             if morphology != 'spiral':
-                morphology = 'irregular'
-        print(morphology)
+                if morphology != 'irregular':
+                    print("Can't use Mannucci05 data")
+                    morphology = 'irregular'
+                    #break
+                    print("WARNING: Morphology is not in the Mannucci05_SN_rate dictionary. using 'irregular' instead.") # !!!!!!! make sure that it breaks 
         dictionary = {
             'Ia': {
                 'elliptical': [0.044, 0.016, 0.014],

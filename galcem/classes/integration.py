@@ -143,7 +143,7 @@ class Wi:
         df_lz = pd.DataFrame(np.array([mass_grid,
                         metallicity_grid]).T, columns=['mass',
                                                         'metallicity'])
-        return self.IN.dtau # self.lifetime_class.dtauMdM(df_lz)
+        return self.lifetime_class.dtauMdM(df_lz) #self.IN.dtau  
     
     def mass_component(self, channel_switch, mass_grid, lifetime_grid, birthtime_grid): #
         ''' Portinari+98, page 22, last eq. first column'''
