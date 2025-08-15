@@ -78,7 +78,7 @@ class Plots(Setup):
         smap = ax.scatter(x,y, marker='s', alpha=0.95, edgecolors='none', s=5, cmap=cmap_name, c=percent_colors) 
         smap.set_clim(0, 100)
         norm = colors.Normalize(vmin=0, vmax=100)
-        cb = fig.colorbar(cm.ScalarMappable(norm=norm, cmap=cmap_name), orientation='vertical', pad=0.0)
+        cb = fig.colorbar(cm.ScalarMappable(norm=norm, cmap=cmap_name), orientation='vertical', pad=0.0, ax=ax)
         cb.set_label(label=r'Isotope $\odot$ abundance %', fontsize=17)
         ax.set_ylabel(r'Proton (Atomic) Number Z', fontsize=20)
         ax.set_xlabel(r'Atomic Mass $A$', fontsize=20)
