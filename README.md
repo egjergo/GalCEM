@@ -52,3 +52,10 @@ inputs.nTimeStep = .1
 oz = glc.OneZone(inputs,outdir='runs/MYDIR/')
 oz.main()
 ```
+
+## Compare existing abundance runs
+
+See [abundance comparisons](docs/abundance_comparison.md) for configurable
+IMF/SFR comparisons at equal metallicity, treatment of nonmonotonic histories,
+and PDF/PNG figure generation from existing simulation outputs.
+
