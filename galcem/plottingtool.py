@@ -11,6 +11,7 @@
 
 import pickle
 import time
+from pathlib import Path
 import numpy as np
 import pandas as pd
 from .gcsetup import Setup
@@ -541,9 +542,16 @@ class Plots(Setup):
         plt.savefig(self._dir_out_figs + 'iso_evolution_comp_lz'+str(xscale)+'.pdf', bbox_inches='tight')
 
     def _extract_normalized_abundances(self, Z_list, Mass_i_loc, c=3):
-        solar_norm_H = self.c_class.solarA09_vs_H_bymass[Z_list]
-        solar_norm_Fe = self.c_class.solarA09_vs_Fe_bymass[Z_list]
-        Mass_i = np.loadtxt(Mass_i_loc)
+        solar_norm_H = self.c_class.solarA09_vs_H_bymass
+        solar_norm_Fe = self.c_class.solarA09_vs_Fe_bymass
+        Mass_i = np.loadtxt(Mass_i_loc, ndmin=2)
+        if not isinstance(c, (int, np.integer)) or c < 0:
+            raise ValueError('c must be a non-negative integer.')
+        if Mass_i.shape[1] < c + 4:
+            raise ValueError('%s: need at least two retained timesteps.' % Mass_i_loc)
+        if not np.array_equal(Mass_i[:, :2], self.ZA_sorted):
+            raise ValueError('%s: isotope rows must match the baseline [Z, A] layout.'
+                             % Mass_i_loc)
         #Fe = np.sum(Mass_i[np.intersect1d(np.where(ZA_sorted[:,0]==26)[0], np.where(ZA_sorted[:,1]==56)[0]), c+2:], axis=0)
         Fe = np.sum(Mass_i[self._select_elemZ_idx(26), c+2:], axis=0)
         H = np.sum(Mass_i[self._select_elemZ_idx(1), c+2:], axis=0)
@@ -555,65 +563,230 @@ class Plots(Setup):
         normalized_abundances = np.array(abund_i)
         return normalized_abundances, FeH
 
-    def elem_abundance(self, figsiz = (32,10), c=3, setylim = (-6, 6), setxlim=(-6.5, 0.5)):
+    @staticmethod
+    def _abundance_track(FeH, abundance, name):
+        """Return one finite, single-valued track without sorting its history."""
+        x = np.asarray(FeH, dtype=float)
+        y = np.asarray(abundance, dtype=float)
+        if x.ndim != 1 or y.ndim != 1 or x.shape != y.shape:
+            raise ValueError('%s: [Fe/H] and [X/Fe] must be equal-length 1-D arrays.'
+                             % name)
+        finite = np.isfinite(x) & np.isfinite(y)
+        valid = np.flatnonzero(finite)
+        if valid.size < 2:
+            raise ValueError('%s: fewer than two finite abundance samples.' % name)
+        # Undefined initial/final abundances have no logarithmic coordinates.
+        # An interior gap must not be bridged by interpolation.
+        first, last = valid[0], valid[-1] + 1
+        if not finite[first:last].all():
+            raise ValueError('%s: interior non-finite abundance samples; select a '
+                             'contiguous history_slices interval or use '
+                             "comparison='tracks'." % name)
+        x, y = x[first:last], y[first:last]
+        dx = np.diff(x)
+        repeated = dx == 0
+        if np.any(repeated & (np.diff(y) != 0)):
+            raise ValueError('%s: repeated [Fe/H] has different [X/Fe]; use '
+                             "comparison='tracks' or select one history branch."
+                             % name)
+        # Only identical consecutive (x, y) pairs can be removed safely.
+        keep = np.r_[True, ~repeated]
+        x, y = x[keep], y[keep]
+        if x.size < 2:
+            raise ValueError('%s: fewer than two distinct metallicities.' % name)
+        dx = np.diff(x)
+        if np.all(dx < 0):
+            # Reversing an entirely decreasing track preserves adjacency.
+            x, y = x[::-1], y[::-1]
+        elif not np.all(dx > 0):
+            raise ValueError('%s: nonmonotonic [Fe/H] history; use '
+                             "comparison='tracks' or select one contiguous "
+                             'history_slices branch. Histories are never sorted.'
+                             % name)
+        return x, y
+
+    @staticmethod
+    def _abundance_band(FeH_a, abundance_a, FeH_b, abundance_b,
+                        names=('model A', 'model B')):
+        """Piecewise-linear envelope at common [Fe/H], with no extrapolation.
+
+        The grid is the union of the two tracks' knots inside their intersection.
+        Intersections between the curves are included before taking min/max.
+        A band spans two supplied models; it is not a statistical uncertainty.
+        """
+        xa, ya = Plots._abundance_track(FeH_a, abundance_a, names[0])
+        xb, yb = Plots._abundance_track(FeH_b, abundance_b, names[1])
+        left, right = max(xa[0], xb[0]), min(xa[-1], xb[-1])
+        if left >= right:
+            raise ValueError('%s and %s: no finite-width overlapping [Fe/H] range.'
+                             % names)
+        if np.array_equal(xa, xb):
+            grid, a, b = xa, ya, yb
+        else:
+            grid = np.unique(np.r_[left, xa[(xa >= left) & (xa <= right)],
+                                   xb[(xb >= left) & (xb <= right)], right])
+            a, b = np.interp(grid, xa, ya), np.interp(grid, xb, yb)
+        difference = a - b
+        crossing = ((difference[:-1] < 0) & (difference[1:] > 0)
+                    | (difference[:-1] > 0) & (difference[1:] < 0))
+        if crossing.any():
+            idx = np.flatnonzero(crossing)
+            roots = grid[idx] + (grid[idx + 1] - grid[idx]) * (
+                -difference[idx] / (difference[idx + 1] - difference[idx]))
+            grid = np.unique(np.r_[grid, roots])
+            a, b = np.interp(grid, xa, ya), np.interp(grid, xb, yb)
+        return grid, np.minimum(a, b), np.maximum(a, b)
+
+    def elem_abundance(self, figsiz=(32, 10), c=3, setylim=(-6, 6),
+                       setxlim=(-6.5, 0.5), *, run_dirs=None, elements=None,
+                       comparison='bands', history_slices=None,
+                       output_path=None, show=True):
+        """Compare existing runs at equal [Fe/H], without evolving a model.
+
+        run_dirs maps baseline, lowIMF, highIMF, lowSFR, highSFR, lowZ and
+        highZ to directories containing Mass_i.dat. With an explicit mapping,
+        baseline defaults to this Plots instance's run; absent comparisons are
+        omitted. IMF/SFR variants must be supplied in pairs. None retains the
+        historical seven-run layout. All runs must share the baseline isotope
+        row layout and use its solar normalization.
+
+        Bands require single-valued monotonic tracks and overlapping finite
+        metallicities. comparison='tracks' instead plots each history in time
+        order, preserving loops and gaps. history_slices optionally maps run
+        keys to contiguous Python slices of the extracted histories. It must
+        select physically corresponding phases if used to construct bands.
+
+        elements selects atomic numbers for a compact figure. The legacy c
+        convention is retained: c + 2 time samples are skipped (in addition
+        to the two isotope-ID columns). output_path defaults to the instance's
+        figs/elem_abundance.pdf; use a .pdf or .svg path for vector output.
+        Return (figure, axes), also when show=False.
+        """
         print('Starting elem_abundance()')
         from matplotlib import pyplot as plt
-        #plt.style.use(self._dir+'/galcem.mplstyle')
         import matplotlib.ticker as ticker
-        Z_list = np.unique(self.ZA_sorted[:,0])
-        ncol = self.aux.find_nearest(np.power(np.arange(20),2), len(Z_list))
-        if len(Z_list) < ncol:
-            nrow = ncol
-        else:
-            nrow = ncol + 1
-        Z_symb_list = self.IN.periodic['elemSymb'][Z_list] # name of elements for all isotopes
-        
-        normalized_abundances, FeH = self._extract_normalized_abundances(Z_list, Mass_i_loc='runs/baseline/Mass_i.dat', c=c+2)
-        normalized_abundances_lowZ, FeH_lowZ = self._extract_normalized_abundances(Z_list, Mass_i_loc='runs/lifetimeZ0003/Mass_i.dat', c=c+2)
-        normalized_abundances_highZ, FeH_highZ = self._extract_normalized_abundances(Z_list, Mass_i_loc='runs/lifetimeZ06/Mass_i.dat', c=c+2)
-        normalized_abundances_lowIMF, FeH_lowIMF = self._extract_normalized_abundances(Z_list, Mass_i_loc='runs/IMF1pt2/Mass_i.dat', c=c+2)
-        normalized_abundances_highIMF, FeH_highIMF = self._extract_normalized_abundances(Z_list, Mass_i_loc='runs/IMF1pt7/Mass_i.dat', c=c+2)
-        normalized_abundances_lowSFR, FeH_lowSFR = self._extract_normalized_abundances(Z_list, Mass_i_loc='runs/k_SFR_0.5/Mass_i.dat', c=c+2)
-        normalized_abundances_highSFR, FeH_highSFR = self._extract_normalized_abundances(Z_list, Mass_i_loc='runs/k_SFR_2/Mass_i.dat', c=c+2)
-        
-        fig, axs = plt.subplots(nrow, ncol, figsize =figsiz)#, sharex=True)
+
+        defaults = dict(baseline='runs/baseline', lowZ='runs/lifetimeZ0003',
+                        highZ='runs/lifetimeZ06', lowIMF='runs/IMF1pt2',
+                        highIMF='runs/IMF1pt7', lowSFR='runs/k_SFR_0.5',
+                        highSFR='runs/k_SFR_2')
+        directories = defaults if run_dirs is None else dict(run_dirs)
+        unknown = set(directories) - set(defaults)
+        if unknown:
+            raise ValueError('Unknown run_dirs keys: %s' % sorted(unknown))
+        directories.setdefault('baseline', self._dir_out)
+        if comparison not in ('bands', 'tracks'):
+            raise ValueError("comparison must be 'bands' or 'tracks'.")
+        pairs = [('IMF', 'lowIMF', 'highIMF', '#0072B2'),
+                 ('SFR', 'lowSFR', 'highSFR', '#D55E00')]
+        for label, low, high, _ in pairs:
+            if (low in directories) != (high in directories):
+                raise ValueError('%s comparison requires both %s and %s.'
+                                 % (label, low, high))
+        slices = {} if history_slices is None else dict(history_slices)
+        if set(slices) - set(directories):
+            raise ValueError('history_slices contains a run absent from run_dirs.')
+        for selection in slices.values():
+            if not isinstance(selection, slice) or selection.step not in (None, 1):
+                raise ValueError('history_slices must contain contiguous slices '
+                                 'with step 1.')
+        available = np.unique(self.ZA_sorted[:, 0])
+        Z_list = available if elements is None else np.asarray(elements)
+        if (Z_list.ndim != 1 or Z_list.size == 0
+                or not np.isin(Z_list, available).all()
+                or np.unique(Z_list).size != Z_list.size):
+            raise ValueError('elements must be distinct tracked atomic numbers.')
+        Z_list = Z_list.astype(int)
+        histories = {}
+        for key, directory in directories.items():
+            abundances, metallicity = self._extract_normalized_abundances(
+                Z_list, Mass_i_loc=Path(directory) / 'Mass_i.dat', c=c+2)
+            selection = slices.get(key, slice(None))
+            histories[key] = (metallicity[selection], abundances[:, selection])
+
+        # Validate every band before creating or saving a partial figure.
+        bands = {}
+        for label, low, high, _ in pairs:
+            if low not in histories:
+                continue
+            xa, ya = histories[low]
+            xb, yb = histories[high]
+            common = np.array_equal(xa, xb)
+            print('%s [Fe/H] samples: %s.' % (
+                label, 'identical' if common else 'different'))
+            if comparison == 'bands':
+                bands[label] = []
+                for i, z in enumerate(Z_list):
+                    try:
+                        bands[label].append(self._abundance_band(
+                            xa, ya[i], xb, yb[i], names=(low, high)))
+                    except ValueError as exc:
+                        raise ValueError('%s band, Z=%d: %s' % (label, z, exc)) from exc
+
+        ncol = min(len(Z_list), max(1, int(np.ceil(np.sqrt(len(Z_list))))))
+        nrow = int(np.ceil(len(Z_list) / ncol))
+        fig, axs = plt.subplots(nrow, ncol, figsize=figsiz, squeeze=False,
+                                sharex=True, sharey=True)
         for i, ax in enumerate(axs.flat):
-            if i < len(Z_list):
-                #ax.plot(FeH, Masses[i], color='blue')
-                #ax.plot(FeH, Masses2[i], color='orange', linewidth=2)
-                ax.fill_between(FeH, normalized_abundances_lowIMF[i], normalized_abundances_highIMF[i], alpha=0.2, color='blue')
-                ax.fill_between(FeH, normalized_abundances_lowSFR[i], normalized_abundances_highSFR[i], alpha=0.2, color='red')
-                ax.plot(FeH, normalized_abundances[i], color='red', alpha=0.3)
-                ax.plot(FeH_lowZ, normalized_abundances_lowZ[i], color='red', linestyle=':', alpha=0.3)
-                ax.plot(FeH_highZ, normalized_abundances_highZ[i], color='red', linestyle='--', alpha=0.3)
-                ax.axhline(y=0, color='grey', linestyle='--', linewidth=1, alpha=0.5)
-                ax.axvline(x=0, color='grey', linestyle='--', linewidth=1, alpha=0.5)
-                ax.annotate('%s%d'%(Z_list[i],Z_symb_list[i]), xy=(0.5, 0.92), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=12, alpha=0.7)
-                ax.set_ylim(setylim) #(-2, 2) #(-1.5, 1.5)
-                ax.set_xlim(setxlim) #(-11, -2) #(-8.5, 0.5)
-                ax.xaxis.set_minor_locator(ticker.MultipleLocator(base=1))
-                ax.tick_params(width=1, length=2, axis='x', which='minor', bottom=True, top=True, direction='in')
-                ax.yaxis.set_minor_locator(ticker.MultipleLocator(base=1))
-                ax.tick_params(width=1, length=2, axis='y', which='minor', left = True, right = True, direction='in')
-                ax.xaxis.set_major_locator(ticker.MultipleLocator(base=5))
-                ax.tick_params(width=1, length = 5, axis='x', which='major', bottom=True, top=True, direction='in')
-                ax.yaxis.set_major_locator(ticker.MultipleLocator(base=5))
-                ax.tick_params(width=1, length = 5, axis='y', which='major', left = True, right = True, direction='in')
-            else:
-                fig.delaxes(ax)
-        for i in range(nrow):
-            for j in range(ncol):
-                if j != 0:
-                    axs[i,j].set_yticklabels([])
-                if i != nrow-1:
-                    axs[i,j].set_xticklabels([])
-        axs[nrow//2,0].set_ylabel('[X/Fe]', fontsize = 15)
-        axs[nrow-1, ncol//2].set_xlabel('[Fe/H]', fontsize = 15)
-        fig.tight_layout(rect = [0.03, 0, 1, 1])
-        fig.subplots_adjust(wspace=0., hspace=0.)
-        plt.show(block=False)
-        plt.savefig(self._dir_out_figs + 'elem_abundance.pdf', bbox_inches='tight')
+            if i >= len(Z_list):
+                ax.set_visible(False)
+                continue
+            for label, low, high, color in pairs:
+                if low not in histories:
+                    continue
+                if comparison == 'bands':
+                    grid, lower, upper = bands[label][i]
+                    ax.fill_between(grid, lower, upper, color=color, alpha=0.24,
+                                    linewidth=0, label=label + ' model range')
+                else:
+                    for key, style, variant in [(low, '-', '1'), (high, '--', '2')]:
+                        x, abundance = histories[key]
+                        valid = np.isfinite(x) & np.isfinite(abundance[i])
+                        ax.plot(np.where(valid, x, np.nan),
+                                np.where(valid, abundance[i], np.nan),
+                                color=color, linestyle=style, linewidth=1.5,
+                                label='%s variant %s' % (label, variant))
+            for key, style, color, label in [
+                    ('baseline', '-', '#202020', 'Baseline'),
+                    ('lowZ', ':', '#009E73', 'Lifetime variant 1'),
+                    ('highZ', '--', '#009E73', 'Lifetime variant 2')]:
+                if key in histories:
+                    x, abundance = histories[key]
+                    valid = np.isfinite(x) & np.isfinite(abundance[i])
+                    ax.plot(np.where(valid, x, np.nan),
+                            np.where(valid, abundance[i], np.nan),
+                            color=color, linestyle=style, linewidth=1.6, label=label)
+            ax.axhline(0, color='0.7', linestyle=':', linewidth=0.7, zorder=0)
+            ax.axvline(0, color='0.7', linestyle=':', linewidth=0.7, zorder=0)
+            symbol = self.IN.periodic['elemSymb'][Z_list[i]]
+            ax.text(0.95, 0.92, '%s (%d)' % (symbol, Z_list[i]),
+                    transform=ax.transAxes, ha='right', va='top', fontsize=12)
+            ax.set_ylim(setylim)
+            ax.set_xlim(setxlim)
+            ax.xaxis.set_major_locator(ticker.MaxNLocator(nbins=4))
+            ax.yaxis.set_major_locator(ticker.MaxNLocator(nbins=4))
+            ax.xaxis.set_minor_locator(ticker.AutoMinorLocator(2))
+            ax.yaxis.set_minor_locator(ticker.AutoMinorLocator(2))
+            ax.tick_params(which='both', direction='in', top=True, right=True)
+            row, col = divmod(i, ncol)
+            if col == 0:
+                ax.set_ylabel('[X/Fe]', fontsize=13)
+            if i + ncol >= len(Z_list):
+                ax.tick_params(labelbottom=True)
+                ax.set_xlabel('[Fe/H]', fontsize=13)
+        handles, labels = axs[0, 0].get_legend_handles_labels()
+        fig.legend(handles, labels, loc='upper center', frameon=False,
+                   ncol=min(4, len(labels)), fontsize=11)
+        fig.tight_layout(rect=(0, 0, 1, 0.88 if len(labels) > 4 else 0.92))
+        destination = (Path(self._dir_out_figs) / 'elem_abundance.pdf'
+                       if output_path is None else Path(output_path))
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(str(destination), bbox_inches='tight', dpi=300)
+        if show:
+            plt.show(block=False)
+        return fig, axs
     
+
     def _select_elemZ_idx(self, elemZ):
         ''' auxiliary function that selects the isotope indexes where Z=elemZ '''
         return np.where(self.ZA_sorted[:,0]==elemZ)[0]
