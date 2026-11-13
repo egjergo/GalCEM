@@ -158,7 +158,7 @@ class Star_Formation_Rate:
                     print('Please define the CSFR option "option_CSFR"')
         else:
             print('Using custom SFR')
-            return self.custom_SFR()
+            return self.custom_SFR(timestep_n)
             
     def outflow(self, Mgas, morphology, SFR=SFRgal, wind_eff=None, k=1):
         wind_eff = self.IN.wind_efficiency if wind_eff is None else wind_eff

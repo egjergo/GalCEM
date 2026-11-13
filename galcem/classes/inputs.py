@@ -67,8 +67,8 @@ class Inputs:
         self.MW_RSNCC = np.empty(3) # Galactic SNCC rates (filled in Setup, from Mannucci+05)
         
         self.custom_IMF = None
-        self.import_custom_SFR = None#np.loadtxt('galcem/input/custom_SFR/data.dat')
-        if not self.import_custom_SFR.empty:
+        self.import_custom_SFR = np.loadtxt('galcem/input/custom_SFR/data.dat')
+        if self.import_custom_SFR is not None:
             self.custom_SFR = pd.DataFrame(
                 {
                     'time': self.import_custom_SFR[:,0],
